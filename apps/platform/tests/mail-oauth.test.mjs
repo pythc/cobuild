@@ -1,0 +1,185 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {mkdtemp,rm} from 'node:fs/promises';
+import {tmpdir} from 'node:os';
+import {join} from 'node:path';
+import {request} from 'node:http';
+import {createHash} from 'node:crypto';
+import {Client} from '@modelcontextprotocol/sdk/client/index.js';
+import {StreamableHTTPClientTransport} from '@modelcontextprotocol/sdk/client/streamableHttp.js';
+import {UnauthorizedError} from '@modelcontextprotocol/sdk/client/auth.js';
+import {createHttpServer} from '../server/http.mjs';
+import {fixtureConfig,fixtureIdentity} from './helpers/mail-fixtures.mjs';
+import {MAIL_RESOURCE,MAIL_ISSUER,allowedMailRedirect} from '../server/mail-oauth.mjs';
+
+const navigationURL=r=>{assert.equal(r.status,200);assert.equal(r.headers.location,undefined);assert.equal(r.headers['referrer-policy'],'no-referrer');assert.match(r.headers['content-security-policy'],/form-action 'none'/);return new URL(r.text.match(/<meta http-equiv="refresh" content="0;url=([^"]+)"/)[1].replaceAll('&amp;','&'));};
+const cookies=r=>(r.headers['set-cookie']||[]).map(v=>v.split(';')[0]).join('; ');
+const requestId=r=>r.text.match(/name="request" value="([\w-]{43})"/)[1];
+const verifier='v'.repeat(43),challenge=createHash('sha256').update(verifier).digest('base64url');
+async function harness(extra={}){
+  const directory=await mkdtemp(join(tmpdir(),'110lab-host-oauth-'));let time=Date.now(),server;
+  const options={mail:{enabled:true,directory,config:fixtureConfig,localTest:true,now:()=>time,fetchIdentity:async()=>fixtureIdentity,...extra}};
+  const start=async()=>{server=await createHttpServer(options);await new Promise(r=>server.listen(0,'127.0.0.1',r));};await start();
+  const stop=()=>new Promise(r=>{server.close(r);server.closeAllConnections();});
+  const call=(path,{data,form,headers={},method=data||form?'POST':'GET'}={})=>new Promise((resolve,reject)=>{
+    const body=form?new URLSearchParams(form).toString():data?JSON.stringify(data):undefined;
+    const req=request({host:'127.0.0.1',port:server.address().port,path,method,headers:{Host:'internal.110-lab.cn',Accept:'application/json, text/event-stream',Origin:MAIL_ISSUER,...(body?{'Content-Type':form?'application/x-www-form-urlencoded':'application/json'}:{}),...headers}},res=>{const parts=[];res.on('data',c=>parts.push(c));res.on('end',()=>{const text=Buffer.concat(parts).toString();let body;try{body=JSON.parse(text);}catch{}resolve({status:res.statusCode,headers:res.headers,text,body});});});req.on('error',reject);req.end(body);
+  });
+  return {call,advance(ms){time+=ms;},async restart(){await stop();await start();},async enableUnified(){options.mail.unifiedIdentityEnabled=true;options.mail.fetchDirectory=async()=>[{subject:fixtureIdentity.subject}];await stop();await start();},async close(){await stop();await rm(directory,{recursive:true,force:true});}};
+}
+async function grant(h){
+  const registered=await h.call('/register',{data:{redirect_uris:['http://127.0.0.1/callback/fixture_client'],token_endpoint_auth_method:'none',grant_types:['authorization_code','refresh_token'],response_types:['code']}});
+  assert.equal(registered.status,201);const client=registered.body.client_id,redirect='http://127.0.0.1:49111/callback/fixture_client';
+  const query=new URLSearchParams({client_id:client,redirect_uri:redirect,response_type:'code',code_challenge:challenge,code_challenge_method:'S256',resource:MAIL_RESOURCE,scope:'mail:session',state:'fictional_host_state'});
+  const authorization=await h.call('/authorize?'+query);assert.equal(authorization.status,200);const bind=cookies(authorization);
+  assert.equal(authorization.headers['referrer-policy'],'strict-origin');
+  assert.equal((await h.call('/mail/oauth/login',{form:{request:requestId(authorization)},headers:{Cookie:bind,Origin:'null'}})).status,400,'opaque origins must remain rejected');
+  const start=await h.call('/mail/oauth/login',{form:{request:requestId(authorization)},headers:{Cookie:bind}});assert.equal(start.status,200);
+  assert.equal((await h.call('/mail/oauth/login',{form:{request:requestId(authorization)},headers:{Cookie:bind}})).status,400);
+  const feishu=navigationURL(start);assert.equal(feishu.origin,'https://accounts.feishu.cn');assert.equal(feishu.searchParams.get('redirect_uri'),MAIL_ISSUER+'/mail/auth/callback');
+  const callback=await h.call('/mail/auth/callback?'+new URLSearchParams({state:feishu.searchParams.get('state'),code:'fictional-code'}),{headers:{Cookie:bind+'; '+cookies(start)}});
+  assert.equal(callback.status,200);assert.equal(callback.headers['referrer-policy'],'strict-origin');assert.match(callback.text,/确认连接/);assert.doesNotMatch(callback.text,/<code>|一次性登录码/);
+  assert.equal(callback.headers['set-cookie'],undefined,'host consent must not also sign the browser into the mailbox');
+  const approval=await h.call('/mail/oauth/approve',{form:{request:requestId(callback)},headers:{Cookie:bind}});assert.equal(approval.status,200);
+  const returned=navigationURL(approval);assert.equal(returned.origin,'http://127.0.0.1:49111');assert.equal(returned.searchParams.get('state'),'fictional_host_state');assert.equal(returned.searchParams.get('iss'),MAIL_ISSUER);
+  assert.equal((await h.call('/mail/oauth/approve',{form:{request:requestId(callback)},headers:{Cookie:bind}})).status,400);
+  return {client_id:client,code:returned.searchParams.get('code'),redirect_uri:redirect,resource:MAIL_RESOURCE,grant_type:'authorization_code',code_verifier:verifier};
+}
+test('host OAuth completes Feishu -> PKCE -> MCP -> cookie-bound iframe without manual code',async()=>{
+  const h=await harness();try{
+    const metadata=await h.call('/.well-known/oauth-authorization-server');assert.equal(metadata.body.authorization_response_iss_parameter_supported,true);assert.deepEqual(metadata.body.code_challenge_methods_supported,['S256']);
+    assert.equal((await h.call('/.well-known/oauth-protected-resource/mcp/workbench-v6-1')).body.resource,MAIL_RESOURCE);
+    const tokenForm=await grant(h);
+    for(const patch of [{code_verifier:'x'.repeat(43)},{redirect_uri:'http://127.0.0.1:49112/callback/fixture_client'},{resource:'https://other.example/mcp'},{client_id:'unknown-client'}])assert.equal((await h.call('/token',{form:{...tokenForm,...patch}})).status,400);
+    const token=await h.call('/token',{form:tokenForm});assert.equal(token.status,200);assert.equal((await h.call('/token',{form:tokenForm})).status,400);
+    const bearer=token.body.access_token;
+    const login=async()=>{const started=await h.call('/api/mail/embedded/auth/start',{data:{}});return {state:started.body.state,jar:cookies(started)};};
+    const connect=(state,header=bearer,fresh=false)=>h.call('/mcp/workbench-v6-1',{data:{jsonrpc:'2.0',id:1,method:'tools/call',params:{name:'connect_110lab_mail',arguments:{state,fresh}}},headers:{Authorization:'Bearer '+header}});
+    const flow=await login();const denied=await connect(flow.state,'x'.repeat(43));assert.equal(denied.status,401);assert.match(denied.headers['www-authenticate'],/resource_metadata=/);assert.equal(denied.body.result.isError,true);assert.ok(denied.body.result._meta['mcp/www_authenticate']);
+    const handoff=await connect(flow.state);assert.equal(handoff.status,200);const ticket=handoff.body.result._meta.mailHandoff.ticket;assert.doesNotMatch(JSON.stringify(handoff.body.result.content),new RegExp(ticket));
+    assert.equal((await h.call('/api/mail/embedded/auth/redeem',{data:{state:flow.state,ticket}})).status,401);
+    const redeemed=await h.call('/api/mail/embedded/auth/redeem',{data:{state:flow.state,ticket},headers:{Cookie:flow.jar}});assert.equal(redeemed.status,200);assert.match(redeemed.headers['set-cookie'][0],/HttpOnly; SameSite=None.*Secure; Partitioned/);
+    assert.equal((await h.call('/api/mail/embedded/auth/redeem',{data:{state:flow.state,ticket},headers:{Cookie:flow.jar}})).status,401);
+    const session=await h.call('/api/mail/embedded/session',{headers:{Cookie:cookies(redeemed)}});assert.equal(session.body.role,'super_admin');
+    assert.equal((await h.call('/api/mail/session',{headers:{Cookie:cookies(redeemed)}})).status,401);
+    await h.restart();assert.equal((await h.call('/api/mail/embedded/session',{headers:{Cookie:cookies(redeemed)}})).status,200);
+    h.advance(300001);const aged=await login(),agedResult=await connect(aged.state);const agedCookie=await h.call('/api/mail/embedded/auth/redeem',{data:{state:aged.state,ticket:agedResult.body.result._meta.mailHandoff.ticket},headers:{Cookie:aged.jar}});
+    const me=await h.call('/api/mail/embedded/session',{headers:{Cookie:cookies(agedCookie)}});
+    const mutation=await h.call('/api/mail/embedded/administrators/grant',{data:{email:'nobody@110-lab.cn',revision:1,confirmed:true},headers:{Cookie:cookies(agedCookie),'X-CSRF-Token':me.body.csrf}});assert.equal(mutation.status,403);assert.match(mutation.body.error,/重新通过飞书/);
+    const fresh=await login();assert.ok((await connect(fresh.state,bearer,true)).body.result._meta['mcp/www_authenticate']);
+    assert.equal((await h.call('/token',{form:{client_id:tokenForm.client_id,grant_type:'refresh_token',refresh_token:token.body.refresh_token,resource:MAIL_RESOURCE}})).status,400);
+  }finally{await h.close();}
+});
+test('OAuth rejects redirects and cross-browser consent and rotates/revokes refresh families',async()=>{
+  for(const url of ['https://evil.example/callback','http://127.0.0.1.evil.example/callback','https://chatgpt.com.evil.example/connector_platform_oauth_redirect','http://127.0.0.1/callback?next=evil','http://evil@127.0.0.1/callback','javascript:alert(1)'])assert.equal(allowedMailRedirect(url),false);
+  const h=await harness();try{
+    assert.equal((await h.call('/register',{data:{redirect_uris:['https://evil.example/callback'],token_endpoint_auth_method:'none'}})).status,400);
+    assert.equal((await h.call('/register',{data:{redirect_uris:['http://127.0.0.1/callback'],token_endpoint_auth_method:'none'},headers:{Host:'110-lab.cn'}})).status,404);
+    assert.equal((await h.call('/mail/oauth/login',{form:{request:'a'.repeat(43)}})).status,400);
+    assert.equal((await h.call('/mail/oauth/approve',{form:{request:'a'.repeat(43)},headers:{Origin:'https://evil.example'}})).status,400);
+    const form=await grant(h),tokens=(await h.call('/token',{form})).body;
+    const refresh={client_id:form.client_id,grant_type:'refresh_token',refresh_token:tokens.refresh_token,resource:MAIL_RESOURCE};
+    const next=await h.call('/token',{form:refresh});assert.equal(next.status,200);assert.notEqual(next.body.refresh_token,tokens.refresh_token);
+    assert.equal((await h.call('/token',{form:refresh})).status,400);
+    assert.equal((await h.call('/token',{form:{...refresh,refresh_token:next.body.refresh_token}})).status,400);
+  }finally{await h.close();}
+});
+
+test('an MCP HTTP client discovers OAuth after a protected call and retries with its token',async()=>{
+  const h=await harness(),client=new Client({name:'fictional-oauth-client',version:'1'});
+  let information,tokens,pkce,authorization;
+  const paths=[],redirect='http://127.0.0.1:49112/callback/fictional_client';
+  const provider={redirectUrl:redirect,clientMetadata:{redirect_uris:[redirect],token_endpoint_auth_method:'none',grant_types:['authorization_code','refresh_token'],response_types:['code']},state:()=> 'fictional_client_state',clientInformation:()=>information,saveClientInformation:v=>{information=v;},tokens:()=>tokens,saveTokens:v=>{tokens=v;},saveCodeVerifier:v=>{pkce=v;},codeVerifier:()=>pkce,redirectToAuthorization:u=>{authorization=u;}};
+  const localFetch=async(input,init={})=>{
+    const url=new URL(input instanceof Request?input.url:String(input));assert.equal(url.origin,MAIL_ISSUER,'no live OAuth or external requests in this test');paths.push(url.pathname);
+    const headers=Object.fromEntries(new Headers(init.headers)),body=init.body;
+    const response=await h.call(url.pathname+url.search,{method:init.method||'GET',headers,...(body?headers['content-type']?.includes('application/json')?{data:JSON.parse(body)}:{form:Object.fromEntries(new URLSearchParams(body))}:{})});
+    return new Response(response.status===204?null:response.text,{status:response.status,headers:Object.fromEntries(Object.entries(response.headers).map(([k,v])=>[k,Array.isArray(v)?v.join(', '):v]))});
+  };
+  const transport=new StreamableHTTPClientTransport(new URL(MAIL_RESOURCE),{authProvider:provider,fetch:localFetch});
+  try{
+    await client.connect(transport);await client.callTool({name:'open_110lab',arguments:{}});assert.equal(authorization,undefined);
+    const started=await h.call('/api/mail/embedded/auth/start',{data:{}}),state=started.body.state;
+    await assert.rejects(client.callTool({name:'connect_110lab_mail',arguments:{state}}),UnauthorizedError);
+    assert.ok(information);assert.ok(authorization);assert.ok(paths.includes('/.well-known/oauth-protected-resource/mcp/workbench-v6-1'));assert.ok(paths.includes('/register'));assert.equal(authorization.searchParams.get('resource'),MAIL_RESOURCE);
+    const page=await h.call(authorization.pathname+authorization.search),bind=cookies(page);
+    const launch=await h.call('/mail/oauth/login',{form:{request:requestId(page)},headers:{Cookie:bind}});
+    const feishu=navigationURL(launch);
+    const callback=await h.call('/mail/auth/callback?'+new URLSearchParams({state:feishu.searchParams.get('state'),code:'fictional-code'}),{headers:{Cookie:bind+'; '+cookies(launch)}});
+    const approved=await h.call('/mail/oauth/approve',{form:{request:requestId(callback)},headers:{Cookie:bind}});
+    const destination=navigationURL(approved);assert.equal(destination.searchParams.get('state'),'fictional_client_state');assert.equal(destination.searchParams.get('iss'),MAIL_ISSUER);
+    await transport.finishAuth(destination.searchParams.get('code'));
+    const result=await client.callTool({name:'connect_110lab_mail',arguments:{state}});assert.equal(result.isError,undefined);
+    assert.equal((await h.call('/api/mail/embedded/auth/redeem',{data:{state,ticket:result._meta.mailHandoff.ticket},headers:{Cookie:cookies(started)}})).status,200);
+    // Invalid tokens must challenge without making anonymous tools unusable.
+    tokens={...tokens,access_token:'x'.repeat(43)};
+    assert.equal((await client.callTool({name:'open_110lab',arguments:{}})).isError,undefined);
+  }finally{await client.close();await h.close();}
+});
+
+
+test('unified browser session is reused for scoped MCP consent and global logout revokes the resulting grant',async()=>{
+ let memberActive=true;
+ const h=await harness({unifiedIdentityEnabled:true,fetchDirectory:async()=>memberActive?[{subject:fixtureIdentity.subject}]:[]});
+ try{
+  const started=await h.call('/api/mail/auth/start',{data:{}}),launch=await h.call('/mail/auth/launch?state='+started.body.state);
+  const cb=await h.call('/mail/auth/callback?state='+started.body.state+'&code=fixture',{headers:{Cookie:cookies(launch)}});
+  const native=cookies(cb);assert.match(native,/110lab_mail_test=/);
+  const registered=await h.call('/register',{data:{redirect_uris:['http://127.0.0.1/callback/fixture_client'],token_endpoint_auth_method:'none',grant_types:['authorization_code','refresh_token'],response_types:['code'],scope:'mail:session'}});
+  const client=registered.body.client_id;
+  const page=await h.call('/authorize?'+new URLSearchParams({client_id:client,response_type:'code',redirect_uri:'http://127.0.0.1/callback/fixture_client',state:'state-for-new-scope',code_challenge:challenge,code_challenge_method:'S256',resource:MAIL_RESOURCE,scope:'mail:session'}),{headers:{Cookie:native}});
+  assert.match(page.text,/允许连接/);assert.doesNotMatch(page.text,/action="\/mail\/oauth\/login"/);
+  const approved=await h.call('/mail/oauth/approve',{form:{request:requestId(page)},headers:{Cookie:native+'; '+cookies(page)}});
+  const code=navigationURL(approved).searchParams.get('code');
+  const token=await h.call('/token',{form:{client_id:client,grant_type:'authorization_code',code,code_verifier:verifier,redirect_uri:'http://127.0.0.1/callback/fixture_client',resource:MAIL_RESOURCE}});
+  assert.equal(token.status,200);
+  const flow=await h.call('/api/mail/embedded/auth/start',{data:{}});
+  const operation=()=>h.call('/mcp/workbench-v6-1',{data:{jsonrpc:'2.0',id:1,method:'tools/call',params:{name:'connect_110lab_mail',arguments:{state:flow.body.state}}},headers:{Authorization:'Bearer '+token.body.access_token}});
+  const handoff=await operation();assert.equal(handoff.status,200);
+  const ticket=handoff.body.result._meta.mailHandoff.ticket;
+  memberActive=false;assert.equal((await operation()).status,401,'departed members cannot use an anchored MCP grant');
+  memberActive=true;assert.equal((await operation()).status,200);
+  const redeemed=await h.call('/api/mail/embedded/auth/redeem',{data:{state:flow.body.state,ticket},headers:{Cookie:cookies(flow)}});
+  assert.equal(redeemed.status,200);
+  const embeddedJar=cookies(redeemed);
+  assert.equal((await h.call('/api/mail/embedded/session',{headers:{Cookie:embeddedJar}})).status,200);
+  const session=await h.call('/api/mail/session',{headers:{Cookie:native}});
+  assert.equal((await h.call('/api/mail/logout',{data:{},headers:{Cookie:native,'X-CSRF-Token':session.body.csrf}})).status,200);
+  assert.equal((await operation()).status,401);
+  assert.equal((await h.call('/api/mail/embedded/session',{headers:{Cookie:embeddedJar}})).status,401,'embedded cookies must follow the central logout too');
+  assert.equal((await h.call('/token',{form:{client_id:client,grant_type:'refresh_token',refresh_token:token.body.refresh_token,resource:MAIL_RESOURCE}})).status,400);
+ }finally{await h.close();}
+});
+
+
+test('unified login cannot bypass the recent-verification requirement for administrator changes',async()=>{
+ const h=await harness({unifiedIdentityEnabled:true,fetchDirectory:async()=>[{subject:fixtureIdentity.subject}]});
+ try {
+  const started=await h.call('/api/mail/auth/start',{data:{}}), launch=await h.call('/mail/auth/launch?state='+started.body.state);
+  const cb=await h.call('/mail/auth/callback?state='+started.body.state+'&code=fixture',{headers:{Cookie:cookies(launch)}}), native=cookies(cb);
+  const registered=await h.call('/register',{data:{redirect_uris:['http://127.0.0.1/callback/fixture_client'],token_endpoint_auth_method:'none'}}),client=registered.body.client_id;
+  const query=new URLSearchParams({client_id:client,response_type:'code',redirect_uri:'http://127.0.0.1/callback/fixture_client',state:'state-for-new-scope',code_challenge:challenge,code_challenge_method:'S256',resource:MAIL_RESOURCE,scope:'mail:session'});
+  const page=await h.call('/authorize?'+query,{headers:{Cookie:native}});
+  const approval=await h.call('/mail/oauth/approve',{form:{request:requestId(page)},headers:{Cookie:native+'; '+cookies(page)}});
+  const token=await h.call('/token',{form:{client_id:client,grant_type:'authorization_code',code:navigationURL(approval).searchParams.get('code'),code_verifier:verifier,redirect_uri:'http://127.0.0.1/callback/fixture_client',resource:MAIL_RESOURCE}});
+  assert.equal(token.status,200);
+  h.advance(300001);
+  const freshFlow=await h.call('/api/mail/embedded/auth/start',{data:{}});
+  const stepup=await h.call('/mcp/workbench-v6-1',{data:{jsonrpc:'2.0',id:2,method:'tools/call',params:{name:'connect_110lab_mail',arguments:{state:freshFlow.body.state,fresh:true}}},headers:{Authorization:'Bearer '+token.body.access_token}});
+  assert.ok(stepup.body.result._meta['mcp/www_authenticate']);
+  const freshPage=await h.call('/authorize?'+new URLSearchParams({client_id:client,response_type:'code',redirect_uri:'http://127.0.0.1/callback/fixture_client',state:'state-for-step-up',code_challenge:challenge,code_challenge_method:'S256',resource:MAIL_RESOURCE,scope:'mail:session'}),{headers:{Cookie:native}});
+  assert.match(freshPage.text,/action="\/mail\/oauth\/login"/,'an old unified browser cookie must not bypass a recent identity check');
+ } finally {await h.close();}
+});
+
+
+test('upgrading to unified identity requires old unanchored MCP credentials to reconnect once',async()=>{
+ const h=await harness();try{
+  const form=await grant(h),token=await h.call('/token',{form});assert.equal(token.status,200);
+  await h.enableUnified();
+  const started=await h.call('/api/mail/embedded/auth/start',{data:{}});
+  const result=await h.call('/mcp/workbench-v6-1',{data:{jsonrpc:'2.0',id:1,method:'tools/call',params:{name:'connect_110lab_mail',arguments:{state:started.body.state}}},headers:{Authorization:'Bearer '+token.body.access_token}});
+  assert.equal(result.status,401);
+  assert.equal((await h.call('/token',{form:{client_id:form.client_id,grant_type:'refresh_token',refresh_token:token.body.refresh_token,resource:MAIL_RESOURCE}})).status,400);
+ }finally{await h.close();}
+});

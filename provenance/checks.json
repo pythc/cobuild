@@ -1,0 +1,141 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-27",
+  "environment": {
+    "os": "Darwin",
+    "architecture": "arm64",
+    "node": "24.15.0",
+    "pnpm": "11.25.0"
+  },
+  "scope": "source consolidation, independent local dependencies and builds; not deployable suite acceptance",
+  "tests": [
+    {
+      "name": "suite",
+      "passed": 31,
+      "failed": 0,
+      "localLog": ".local/suite-tests-final.log",
+      "logSha256": "2929836237561567f132503ced672a7c74f3b1693f02ac8495816f2fb1cf3e6d"
+    },
+    {
+      "name": "platform",
+      "passed": 64,
+      "failed": 0,
+      "localLog": ".local/platform-regression.log",
+      "logSha256": "305ddf93a476543a84d07945a662c365d25449b7bb4eec38564232a2f944ad08"
+    },
+    {
+      "name": "makit-session",
+      "passed": 8,
+      "failed": 0,
+      "localLog": ".local/makit-session-tests.log",
+      "logSha256": "9b94c64b2198a1263b9814f58a2a4de4bb5b4d23d04f4280a38a3bb40979af3f"
+    },
+    {
+      "name": "makit-database",
+      "passed": 18,
+      "failed": 0,
+      "localLog": ".local/makit-isolated-integration.log",
+      "logSha256": "7af49f8422a50dbe55c942fd6a7e2721fd856810c4cc83eaab99a644732989d8"
+    },
+    {
+      "name": "makit-migrations",
+      "passed": 8,
+      "failed": 0,
+      "localLog": ".local/makit-isolated-integration.log",
+      "logSha256": "7af49f8422a50dbe55c942fd6a7e2721fd856810c4cc83eaab99a644732989d8"
+    },
+    {
+      "name": "evalab-context",
+      "passed": 27,
+      "failed": 0,
+      "localLog": ".local/evalab-context-tests.log",
+      "logSha256": "900eac65f7b9d74603c972af1a17ee9da9432936d0762a2c4cfb35251801e33b"
+    },
+    {
+      "name": "relay",
+      "passed": 64,
+      "failed": 0,
+      "localLog": ".local/relay-tests-final.log",
+      "logSha256": "82a810d15df95ef23b9d165151d343582713adbe0515f558e422e8ecda556bcd"
+    },
+    {
+      "name": "weknow-search-and-save",
+      "passed": 10,
+      "failed": 0,
+      "localLog": ".local/weknow-search-tests-final.log",
+      "logSha256": "2607767267966d8ed59c6c8122313983f71663db89a5df07bd1acb917d19bd47"
+    }
+  ],
+  "totalTestsPassed": 230,
+  "builds": [
+    {
+      "component": "platform",
+      "independentInstall": true,
+      "buildPassed": true,
+      "localLog": ".local/platform-build-final.log",
+      "logSha256": "415166c5a486ab2c4beadd4bddf8befc2802f0f791d4c807a5bdd05855e9ef30"
+    },
+    {
+      "component": "makit",
+      "independentInstall": true,
+      "buildPassed": true,
+      "localLog": ".local/makit-build.log",
+      "logSha256": "0e70d421ab9372ccf11dfc9dc78c118e2e12796ae5cd58541b1279ea3d83b762"
+    },
+    {
+      "component": "weknow",
+      "independentInstall": true,
+      "buildPassed": true,
+      "localLog": ".local/weknow-build-community.log",
+      "logSha256": "de9adacfa8ae72bfa6a4a33cdd1bd29dfc5bf8dd767180fd8a1deb95fcec92e4"
+    },
+    {
+      "component": "evalab",
+      "independentInstall": true,
+      "buildPassed": true,
+      "localLog": ".local/evalab-build.log",
+      "logSha256": "74127bdedb8bf50006e6d26481701844fc3cb493c6236e9cebdb4b821186c6c9"
+    },
+    {
+      "component": "relay",
+      "independentInstall": true,
+      "buildPassed": true,
+      "localLog": ".local/relay-build-final.log",
+      "logSha256": "41ea1a88a8aa148f8bfc9ea8a3614200b587db5f8b241bcc1f3463e148e284be"
+    }
+  ],
+  "originalSourceComparison": {
+    "comparedFiles": 2776,
+    "changed": [],
+    "allBaselineSourcesUnchanged": true
+  },
+  "makitDatabaseIsolation": {
+    "kind": "isolated-test-database",
+    "productionAccess": false,
+    "checks": [
+      {
+        "stage": "migrations",
+        "exitCode": 0
+      },
+      {
+        "stage": "runtime-role",
+        "exitCode": 0
+      },
+      {
+        "stage": "integration",
+        "exitCode": 0
+      }
+    ],
+    "image": "sha256:b0f9560a2de083e2cc7382e75f808c7381a32852a7ec49117deedb300e552b24",
+    "containerRemoved": true,
+    "passed": true
+  },
+  "notCovered": [
+    "clean Linux deployment",
+    "generic local identity",
+    "optional-module runtime enforcement",
+    "project-document-requirement end-to-end",
+    "full license and security audit",
+    "upgrade and restore of the complete suite"
+  ]
+}

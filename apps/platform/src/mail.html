@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>公共邮箱管理 · CoBuild</title><style>/* MAIL_CSS */</style></head>
+<body>
+<header><a href="/" class="brand">110<span>lab</span></a><h1>公共邮箱管理</h1><a href="/" class="back">工作台</a></header>
+<main>
+  <div class="identity"><p id="identity">未登录</p><div class="auth-actions"><button id="login" type="button">飞书登录</button><button id="logout" type="button" hidden>退出</button></div></div>
+  <p id="message" role="status" aria-live="polite" hidden></p>
+  <section id="handoff" hidden aria-label="完成飞书登录"><a id="continue-login" target="_blank">打开飞书授权页面</a><details id="manual-login"><summary>已完成授权 但原页面未登录</summary><form id="code-form"><label for="login-code">粘贴授权成功页面提供的一次性登录码</label><p>这是返回插件的临时凭证 不是短信或飞书验证码</p><div class="input-row"><input id="login-code" autocomplete="off" maxlength="43" required><button>完成登录</button></div></form></details></section>
+  <section id="mailboxes" class="mail-grid" aria-label="公共邮箱">
+    <article class="mail-card"><p class="eyebrow">团队对外沟通</p><h2>noreply@110-lab.cn</h2><p>进入飞书后 点击切换账号 选择 noreply 写信</p><a id="open-mailbox" class="primary" href="https://www.feishu.cn/mail" target="_blank" rel="noopener noreferrer">打开飞书邮箱</a></article>
+    <article class="mail-card"><p class="eyebrow">通知与回复</p><h2>noreply@notify.110-lab.cn</h2><p>超级管理员和管理员可在飞书中收发邮件</p><p id="notify-status" class="status" role="status">请先登录</p><a id="open-notify" class="primary" href="https://www.feishu.cn/mail" target="_blank" rel="noopener noreferrer" hidden>打开通知邮箱</a><p id="notify-account-hint" hidden>在飞书切换账号中选择 110lab 通知邮箱</p></article>
+  </section>
+
+  <section id="mail-authorization" class="permission-card"><h2>邮箱授权</h2><p class="hint">根域公共邮箱按飞书中的已有授权使用。通知邮箱的收发权限继续与实验室管理员名单同步，权限同步状态显示在上方。</p><a id="organization-link" class="text-link" href="/organization">前往组织与权限</a></section>
+</main>
+
+<script type="module">/* MAIL_SCRIPT */</script>
+</body></html>

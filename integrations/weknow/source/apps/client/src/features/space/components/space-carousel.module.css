@@ -1,0 +1,65 @@
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+.card {
+  background: light-dark(#eef4ff, #1c293d);
+  border-color: light-dark(#dce6f7, #30425e);
+  text-decoration: none;
+  transition:
+    border-color 0.16s ease,
+    box-shadow 0.16s ease;
+}
+.card[data-accent="green"] {
+  background: light-dark(#eff8f4, #1d302a);
+  border-color: light-dark(#dcece4, #334b40);
+}
+.card[data-accent="violet"] {
+  background: light-dark(#f5f1fc, #2d263c);
+  border-color: light-dark(#e7def4, #473956);
+}
+.card:hover {
+  border-color: var(--mantine-primary-color-filled);
+  box-shadow: var(--mantine-shadow-xs);
+}
+.card:focus-visible {
+  outline: 2px solid var(--mantine-primary-color-filled);
+  outline-offset: 2px;
+}
+.icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  color: light-dark(#345c9c, #a8c8fa);
+  background: light-dark(#dfeafd, #30425e);
+}
+.card[data-accent="green"] .icon {
+  color: light-dark(#347359, #a9d8c4);
+  background: light-dark(#dcefe5, #334b40);
+}
+.card[data-accent="violet"] .icon {
+  color: light-dark(#73559e, #d4bcea);
+  background: light-dark(#eae0f7, #473956);
+}
+.arrow {
+  opacity: 0.5;
+}
+@media (max-width: 800px) {
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 480px) {
+  .grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .card {
+    transition: none;
+  }
+}

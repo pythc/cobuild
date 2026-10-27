@@ -1,0 +1,203 @@
+import {readFile} from 'node:fs/promises';
+import {join} from 'node:path';
+import {isIP} from 'node:net';
+import {z} from 'zod';
+import {openMailAuth,readMailConfig,parseMailConfig,bootstrapMailOwner,MailAuthError,MAIL_LOGIN_RETURNS} from './mail-auth.mjs';
+import {openMailAccessStore,MailAccessError} from './mail-access-store.mjs';
+import {ADMIN_FRAME_ANCESTORS} from './admin-http.mjs';
+import {escapeHTML} from './render.mjs';
+import {renderIdentityPage} from './identity-page.mjs';
+import {openMailOAuth,mailAuthChallenge} from './mail-oauth.mjs';
+import {createWorkspaceDirectory} from './workspace-directory.mjs';
+import {openMailMembershipState} from './mail-membership-state.mjs';
+import {createUnifiedIdentityHttp} from './unified-identity-http.mjs';
+import {openLabSso} from './lab-sso.mjs';
+
+const json=(res,status,value)=>{res.writeHead(status,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'});res.end(JSON.stringify(value));};
+const revision=z.number().int().positive(),email=z.string().email().max(254);
+const accessMessages={'forbidden':'需要超级管理员权限','revision conflict':'名单已变更 请重新加载','member must log in first':'该成员尚未通过飞书登录','administrator already exists':'该成员已经是管理员','cannot revoke super administrator':'请先转让超级管理员','target must be an active administrator':'请选择已验证的普通管理员','administrator not found':'该管理员已不存在','duplicate email':'该邮箱已绑定其他身份','email cannot be changed':'企业身份信息已变更 请联系负责人'};
+async function body(req){
+  if(req.headers['content-type']!=='application/json')throw new MailAuthError(415,'请求格式无效');
+  if(Number(req.headers['content-length']||0)>4096)throw new MailAuthError(413,'请求过长');
+  const chunks=[];let size=0;
+  await new Promise((resolve,reject)=>{let done=false;
+    const finish=error=>{if(done)return;done=true;clearTimeout(timer);req.off('data',data);req.off('end',end);req.off('error',abort);req.off('aborted',abort);if(error){req.resume();reject(error);}else resolve();};
+    const data=c=>{size+=c.length;if(size>4096)finish(new MailAuthError(413,'请求过长'));else chunks.push(c);},end=()=>finish(),abort=()=>finish(new MailAuthError(400,'请求中断'));
+    const timer=setTimeout(()=>finish(new MailAuthError(408,'请求超时')),8000);timer.unref();req.on('data',data);req.once('end',end);req.once('error',abort);req.once('aborted',abort);
+  });
+  try{return JSON.parse(Buffer.concat(chunks).toString('utf8'));}catch{throw new MailAuthError(400,'请求格式无效');}
+}
+function page(res,html,{head=false,embedded=false,status=200}={}){
+  const ancestors=embedded?"'self' "+ADMIN_FRAME_ANCESTORS.join(' '):"'none'";
+  res.writeHead(status,{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store','X-Robots-Tag':'noindex, nofollow','Referrer-Policy':'no-referrer','Content-Security-Policy':`default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors ${ancestors}; form-action 'self'`});res.end(head?undefined:html);
+}
+export async function createMailHttp({identityApplications,unifiedIdentityEnabled=process.env.PORTAL_UNIFIED_IDENTITY_ENABLED==='true',enabled=process.env.PORTAL_MAIL_ENABLED==='true',assessmentSsoEnabled=process.env.PORTAL_ASSESSMENT_SSO_ENABLED==='true',notifyEnabled=process.env.PORTAL_MAIL_NOTIFY_ENABLED==='true',directory=process.env.PORTAL_MAIL_DATA,configPath=process.env.PORTAL_MAIL_CONFIG,config,localTest=false,now=Date.now,fetchIdentity,fetchDirectory,trustedProxies=(process.env.PORTAL_RECRUITMENT_TRUSTED_PROXY_IPS||'').split(',').filter(Boolean)}={}){
+  const html=await readFile(new URL('../dist/mail.html',import.meta.url),'utf8');
+  const organizationHTML=await readFile(new URL('../dist/organization.html',import.meta.url),'utf8');
+  if(trustedProxies.some(p=>!isIP(p)))throw new Error('Invalid mail trusted proxy');
+  const proxies=new Set(trustedProxies);let auth,access,oauth,membership,applicationAccess,navigation;
+  if(notifyEnabled&&!enabled)throw new Error('Notify mailbox requires mail login');
+  if(enabled){if(!directory||(!config&&!configPath))throw new Error('Mail login requires private configuration');config=config?parseMailConfig(config):readMailConfig(configPath);auth=openMailAuth({directory,config,now,localTest,fetchIdentity});try{access=openMailAccessStore({filename:join(directory,'mail-access.sqlite'),bootstrapOwner:bootstrapMailOwner(config),now});}catch(e){auth.close();throw e;}}
+  const projectDirectory=enabled?(fetchDirectory?{list:fetchDirectory}:localTest?null:createWorkspaceDirectory({config,now})):null;
+  if(enabled){try{oauth=openMailOAuth({directory,config,auth,access,now,localTest,trustedProxies,unifiedIdentityEnabled,checkIdentity:activeSsoMember});}catch(e){auth.close();access.close();throw e;}}
+  if(notifyEnabled){try{membership=openMailMembershipState({directory,now});}catch(e){oauth.close();auth.close();access.close();throw e;}}
+  const sso=assessmentSsoEnabled&&enabled?openLabSso({directory,auth,access,now}):null;
+  let identity;try{identity=await createUnifiedIdentityHttp({enabled:enabled&&unifiedIdentityEnabled,applications:identityApplications,directory,auth,access,directoryProvider:projectDirectory,authorizeApplication:(actor,id)=>applicationAccess?.authorize(actor,id),navigation:p=>navigation?.(access.me(p.subject)),now,localTest,trustedProxies,assessmentSsoEnabled,knowledgeCallback:process.env.PORTAL_KNOWLEDGE_SSO_CALLBACK});}catch(error){sso?.close();membership?.close();oauth?.close();auth?.close();access?.close();throw error;}
+  async function activeSsoMember(subject,application){if(application)await applicationAccess?.authorize(access.me(subject),application);if(!unifiedIdentityEnabled)return;let members;try{members=await projectDirectory?.list();}catch{throw new MailAuthError(503,'暂时无法核对组织成员');}if(!members?.some(m=>m.subject===subject))throw new MailAuthError(403,'此成员已不在实验室范围内');}
+  async function administratorDirectory(subject,{fresh=false}={}){
+    access.listAdministrators(subject);
+    const known=access.listMembers(subject);
+    if(!projectDirectory){if(localTest)return known;throw new MailAuthError(503,'飞书通讯录暂时无法读取 请稍后重试');}
+    let members;try{members=await projectDirectory.list({fresh});}catch{throw new MailAuthError(503,'飞书通讯录暂时无法读取 请稍后重试');}
+    access.listAdministrators(subject);
+    const verified=new Map(known.map(m=>[m.subject,m]));
+    return members.map(m=>({...m,email:verified.get(m.subject)?.email||m.email}));
+  }
+  return {enabled,
+    setApplicationAccess(value){applicationAccess=value;},
+    setNavigation(value){navigation=value;},
+    authorizeApplication:(actor,id)=>applicationAccess?.authorize(actor,id),
+    assertApplication:(actor,id)=>{if(id)applicationAccess?.assertCached(actor,id);},
+    directorySnapshot:options=>{if(projectDirectory?.snapshot)return projectDirectory.snapshot(options);if(localTest&&fetchDirectory)return Promise.resolve(fetchDirectory(options)).then(members=>({members,departments:[],syncedAt:now()}));throw new MailAuthError(503,'飞书组织架构暂时不可用');},
+    recentIdentity(req,{embedded=false}={}){try{auth.recent(auth.session(req.headers.cookie,{embedded}));}catch(e){if(e.status===403){const error=new MailAuthError(403,'请重新确认飞书身份后再保存应用权限');error.code='REAUTH_REQUIRED';throw error;}throw e;}},
+    businessIdentity:(header,scopes)=>{if(!oauth)throw new MailAuthError(503,'飞书登录尚未配置');return oauth.businessIdentity(header,scopes);},
+    profile:subject=>{if(!access)throw new MailAuthError(503,'飞书登录尚未配置');return access.me(subject);},
+    workspaceDirectory:directory?join(directory,'workspace'):null,
+    mailboxReady(subject,address){access.assertAdministrator(subject);return address==='noreply@110-lab.cn'||address==='noreply@notify.110-lab.cn'&&membership?.status(access.membershipSnapshot().revision).state==='ready';},
+    async projectBridgeActor(subject){
+      if(!projectDirectory)throw new MailAuthError(503,'组织目录暂不可用');
+      const snapshot=await projectDirectory.snapshot();
+      const member=snapshot.members.find(m=>m.subject===subject);
+      if(!member)throw new MailAuthError(403,'此成员不在实验室范围');
+      return {...member,role:access.directoryRole(subject)};
+    },
+    roleForSubject(subject){return access?.me(subject)?.role||'member';},
+    // Trusted in-process adapter. Every request re-reads the current lab role.
+    identity(req,{embedded=false,write=false}={}) {
+      if(!enabled)throw new MailAuthError(503,'飞书登录尚未配置');
+      const session=auth.session(req.headers.cookie,{embedded});
+      if(write)auth.csrf(session,req.headers['x-csrf-token']);
+      const actor={...access.me(session.subject),csrf:session.csrf,expiresAt:session.expiresAt};if(req.applicationAccessId&&applicationAccess?.policy(req.applicationAccessId).mode!=='inherit')applicationAccess?.assertCached(actor,req.applicationAccessId);return actor;
+    },
+    members(subject){return access.listLabMembers(subject);},
+    async projectMembers(subject){
+      const known=access.listLabMembers(subject);
+      if(!projectDirectory)return {members:known,source:'registered',unavailable:false};
+      try{
+        const members=await projectDirectory.list(),verified=new Map(known.map(m=>[m.subject,m]));
+        return {members:members.map(m=>({...m,email:verified.get(m.subject)?.email||m.email})),source:'feishu',unavailable:false};
+      }catch{return {members:known,source:'registered',unavailable:true};}
+    },
+    hostAuthorized:(header,options)=>oauth?oauth.authorized(header,options):Promise.resolve(false),hostHandoff:(header,state,options)=>oauth?oauth.handoff(header,state,options):Promise.resolve(mailAuthChallenge()),close(){identity.close();sso?.close();membership?.close();oauth?.close();auth?.close();access?.close();},async handle(req,res,path,host){
+    if(await identity.handle(req,res,path,host))return true;
+    if(oauth?.handle(req,res,path,host))return true;
+    if(!['/organization','/organization/','/organization/embedded','/mail','/mail/','/mail/embedded','/mail/auth/launch','/mail/auth/callback','/sso/assessment','/sso/assessment/embedded'].includes(path)&&!path.startsWith('/api/mail/')&&!path.startsWith('/api/organization/'))return false;
+    const embedded=path.endsWith('/embedded')||path.startsWith('/api/mail/embedded/')||path.startsWith('/api/organization/embedded/');
+    // Namespace alias only: preserve the original store and every session,
+    // recent-auth, live-role, CSRF and revision check. Legacy APIs remain valid.
+    let route=path;
+    if(path.startsWith('/api/organization/')){
+      const action=path.slice((embedded?'/api/organization/embedded/':'/api/organization/').length);
+      if(['session','administrators','members','audit','administrators/grant','administrators/revoke','administrators/transfer'].includes(action))route='/api/mail/'+action;
+    }else if(embedded&&path.startsWith('/api/mail/embedded/'))route='/api/mail/'+path.slice('/api/mail/embedded/'.length);
+    try{
+      if(host!=='internal.110-lab.cn'&&!(localTest&&['127.0.0.1','localhost'].includes(host)))throw new MailAuthError(404,'Not found');
+      if(path.startsWith('/sso/assessment')&&req.method==='GET'){
+        if(!sso)throw new MailAuthError(503,'考核飞书登录尚未启用');
+        page(res,await readFile(new URL('../dist/assessment-sso.html',import.meta.url),'utf8'),{embedded});return true;
+      }
+      if(['/mail','/mail/','/mail/embedded'].includes(path)&&['GET','HEAD'].includes(req.method)){page(res,embedded?html.replace('<body>','<body class="embedded">'):html,{head:req.method==='HEAD',embedded});return true;}
+      if(['/organization','/organization/','/organization/embedded'].includes(path)&&['GET','HEAD'].includes(req.method)){page(res,embedded?organizationHTML.replace('<body class="cb-shell cb-organization">','<body class="cb-shell cb-organization embedded">'):organizationHTML,{head:req.method==='HEAD',embedded});return true;}
+      if(route==='/api/mail/config'&&req.method==='GET'){json(res,200,{loginAvailable:enabled,notifyManualSend:notifyEnabled,persistentLoginDays:30,restorePolicy:1});return true;}
+      if(!enabled)throw new MailAuthError(503,'飞书登录尚未配置');
+      if(!['GET','POST'].includes(req.method))throw new MailAuthError(405,'请求方式无效');
+      if(['/api/mail/sso/exchange','/api/mail/sso/inspect'].includes(path)&&req.method==='POST'){
+        // Back-channel only. A browser Origin is never accepted as a service credential.
+        if(!sso||req.headers.origin||req.headers['sec-fetch-site'])throw new MailAuthError(403,'请求来源无效');
+        const value=await body(req);
+        if(path.endsWith('/exchange')){const v=z.object({code:z.string(),verifier:z.string(),state:z.string(),redirectUri:z.string()}).strict().parse(value);const result=sso.exchange(v);await activeSsoMember(result.subject,'assessment');sso.inspect(result.token);json(res,200,result);}
+        else{const v=z.object({token:z.string()}).strict().parse(value);const result=sso.inspect(v.token);await activeSsoMember(result.subject,'assessment');sso.inspect(v.token);json(res,200,result);}
+        return true;
+      }
+      const originOK=req.headers.origin==='https://internal.110-lab.cn'||localTest&&req.headers.origin==='http://'+req.headers.host;
+      if(req.method==='POST'&&(!originOK||req.headers['sec-fetch-site']&&req.headers['sec-fetch-site']!=='same-origin'))throw new MailAuthError(403,'请在工作台的组织与权限或公共邮箱页面操作');
+      if(route==='/api/mail/auth/start'&&req.method==='POST'){
+        const {returnTo}=z.object({returnTo:z.enum(MAIL_LOGIN_RETURNS).optional()}).strict().parse(await body(req));let expectedSubject=null;
+        try{expectedSubject=auth.session(req.headers.cookie,{embedded}).subject;}catch(e){if(!(e instanceof MailAuthError)||e.status!==401)throw e;}
+        const remote=req.socket.remoteAddress||'unknown',forwarded=String(req.headers['x-forwarded-for']||'').split(',')[0].trim(),ip=proxies.has(remote)&&isIP(forwarded)?forwarded:remote;
+        const result=auth.start(req.headers.cookie,{embedded,ip,expectedSubject,returnTo});res.setHeader('Set-Cookie',result.cookie);json(res,200,{state:result.state,launchUrl:result.launchUrl});return true;
+      }
+      if(path==='/mail/auth/launch'&&req.method==='GET'){
+        const params=new URL(req.url,'https://internal.110-lab.cn').searchParams;
+        if(params.getAll('state').length!==1)throw new MailAuthError(400,'登录链接无效');
+        const result=auth.launch(params.get('state'));res.writeHead(303,{'Location':result.url,'Set-Cookie':result.cookie,'Cache-Control':'no-store','Referrer-Policy':'no-referrer'});res.end();return true;
+      }
+      if(path==='/mail/auth/callback'&&req.method==='GET'){
+        const params=new URL(req.url,'https://internal.110-lab.cn').searchParams;
+        if(params.getAll('state').length!==1||params.getAll('code').length!==1||params.has('error'))throw new MailAuthError(401,'飞书登录未完成 请重新登录');
+        const pending=await auth.callback(params.get('state'),params.get('code'),req.headers.cookie);
+        if(identity.finish(params.get('state'),pending,res))return true;
+        if(oauth.finishCallback(params.get('state'),pending.profile,req,res,(browserSession=false)=>{access.registerIdentity(pending.profile);if(browserSession){const result=pending.complete();res.setHeader('Set-Cookie',result.cookie);return auth.session(result.cookie);}else pending.consumeForHost();}))return true;
+        access.registerIdentity(pending.profile);const result=pending.complete();res.setHeader('Set-Cookie',result.cookie);
+        if(result.returnTo){res.writeHead(303,{'Location':result.returnTo,'Cache-Control':'no-store','Referrer-Policy':'no-referrer'});res.end();return true;}
+        const script=JSON.stringify({type:'110lab-mail-login',state:result.state,ticket:result.ticket});
+        const content=`<p class="subtitle">CoBuild 身份验证已完成</p><div class="profile"><div class="profile-mark" aria-hidden="true"></div><div><strong>${escapeHTML(pending.profile.name)}</strong><span>${escapeHTML(pending.profile.email)}</span></div></div><p>请返回发起登录的窗口继续使用</p><a class="primary" href="/workbench">返回工作台</a><details class="identity-handoff"><summary>原窗口尚未登录</summary><p>仅在原窗口未自动登录时 使用下方的一次性登录码完成交接</p><code>${result.ticket}</code></details>`;
+        page(res,renderIdentityPage('登录成功',content).replace('</body>',()=>`<script>const message=${script};if(window.opener)window.opener.postMessage(message,'https://internal.110-lab.cn');</script></body>`));return true;
+      }
+      if(route==='/api/mail/auth/redeem'&&req.method==='POST'){
+        const v=z.object({state:z.string().regex(/^[\w-]{43}$/),ticket:z.string().regex(/^[\w-]{43}$/)}).strict().parse(await body(req));
+        const result=auth.redeem(v.state,v.ticket,req.headers.cookie,{embedded});res.setHeader('Set-Cookie',result.cookie);json(res,200,{loggedIn:true});return true;
+      }
+      const session=auth.session(req.headers.cookie,{embedded}),me=access.me(session.subject);
+      if(route==='/api/mail/session'&&req.method==='GET'){json(res,200,{...me,csrf:session.csrf,expiresAt:session.expiresAt});return true;}
+      if(route==='/api/mail/notify'&&req.method==='GET'){
+        access.assertAdministrator(session.subject);
+        if(!membership){json(res,200,{state:'disabled'});return true;}
+        const state=membership.status(access.membershipSnapshot().revision);
+        json(res,200,{...state,...(state.state==='ready'?{url:'https://www.feishu.cn/mail'}:{})});return true;
+      }
+      if(req.method==='POST')auth.csrf(session,req.headers['x-csrf-token']);
+      if(route==='/api/mail/sso/authorize'&&req.method==='POST'){
+        if(!sso)throw new MailAuthError(503,'考核飞书登录尚未启用');
+        const value=z.object({state:z.string(),challenge:z.string(),embedded:z.boolean()}).strict().parse(await body(req));
+        if(value.embedded!==embedded)throw new MailAuthError(400,'登录上下文不一致');
+        await activeSsoMember(session.subject,'assessment');json(res,200,sso.authorize(session,value));return true;
+      }
+      if(route==='/api/mail/logout'&&req.method==='POST'){z.object({}).strict().parse(await body(req));res.setHeader('Set-Cookie',auth.logout(session));json(res,200,{loggedOut:true});return true;}
+      if(route==='/api/mail/administrators'&&req.method==='GET'){json(res,200,access.listAdministrators(session.subject));return true;}
+      if(route==='/api/mail/members'&&req.method==='GET'){
+        const members=await administratorDirectory(session.subject);
+        const latest=auth.session(req.headers.cookie,{embedded});if(latest.subject!==session.subject)throw new MailAuthError(403,'登录身份已改变');
+        access.listAdministrators(latest.subject);json(res,200,{members,source:'feishu'});return true;
+      }
+      if(route==='/api/mail/audit'&&req.method==='GET'){json(res,200,{events:access.audit(session.subject).entries});return true;}
+      if(['/api/mail/administrators/grant','/api/mail/administrators/revoke','/api/mail/administrators/transfer'].includes(route)&&req.method==='POST'){
+        const v=z.object({email:email.optional(),subject:z.string().min(1).max(256).optional(),revision,confirmed:z.literal(true)}).strict().refine(v=>!!v.email!==!!v.subject).parse(await body(req));auth.recent(session);
+        if(route.endsWith('/grant')){
+          const members=await administratorDirectory(session.subject,{fresh:true});
+          const latest=auth.session(req.headers.cookie,{embedded});auth.csrf(latest,req.headers['x-csrf-token']);auth.recent(latest);
+          if(latest.subject!==session.subject)throw new MailAuthError(403,'登录身份已改变');
+          const member=members.find(m=>v.subject?m.subject===v.subject:m.email===v.email.toLowerCase());
+          if(!member)throw new MailAuthError(409,'该成员已不在可用飞书通讯录中 请刷新后选择');
+          access.grantDirectoryAdministrator(latest.subject,member,v.revision);
+        }
+        else if(route.endsWith('/revoke')){if(v.subject)access.revokeAdministratorBySubject(session.subject,v.subject,v.revision);else access.revokeAdministrator(session.subject,v.email,v.revision);}
+        else if(!v.email)throw new MailAuthError(400,'转让对象需先登录并完成企业身份验证');
+        else access.transferSuperAdministrator(session.subject,v.email,v.revision);
+        json(res,200,{changed:true,...(membership?{mailbox:membership.status(access.membershipSnapshot().revision)}:{})});return true;
+      }
+      throw new MailAuthError(404,'Not found');
+    }catch(error){
+      req.resume();if(res.headersSent||res.destroyed)return true;
+      if(path==='/mail/auth/callback'&&host==='internal.110-lab.cn'){
+        const text=error instanceof MailAuthError?error.message:'暂时无法完成飞书登录 请重新登录';
+        page(res,renderIdentityPage('认证未完成',`<p class="subtitle">${escapeHTML(text)}</p><p>请从 CoBuild 重新发起登录</p><a class="primary" href="/workbench">返回工作台</a>`),{status:error instanceof MailAuthError?error.status:503});return true;
+      }
+      if(error instanceof MailAuthError)json(res,error.status,{error:error.message});
+      else if(error instanceof MailAccessError)json(res,error.status,{error:accessMessages[error.message]||'无法完成管理员操作 请检查信息后重试'});
+      else if(error instanceof z.ZodError)json(res,400,{error:'请检查邮箱和操作信息'});
+      else{console.error('Mail management failed',error.code||error.name);json(res,503,{error:'暂时无法完成操作 请稍后再试'});}
+      return true;
+    }
+  }};
+}

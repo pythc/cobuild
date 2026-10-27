@@ -1,0 +1,52 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {mkdtemp,rm} from 'node:fs/promises';import {tmpdir} from 'node:os';import {join} from 'node:path';
+import {createHttpServer} from '../server/http.mjs';import {fixtureConfig,fixtureIdentity} from './helpers/mail-fixtures.mjs';
+const member={subject:'fictional_tenant:on_fixture_member_2026',name:'虚构成员',email:'member.fixture@110-lab.cn'};
+async function harness(t){const directory=await mkdtemp(join(tmpdir(),'application-access-http-'));let time=Date.now(),failure=false,rows={members:[fixtureIdentity,member],departments:[{id:'od-dev',name:'开发',path:'开发',parentId:'0',subjects:[member.subject]}]};
+ const server=await createHttpServer({workspace:{localTest:true},mail:{enabled:true,directory,config:fixtureConfig,localTest:true,now:()=>time,fetchDirectory:async()=>rows.members,fetchIdentity:async(_,{code})=>code==='owner'?fixtureIdentity:member},applicationAccess:{fetchSnapshot:async()=>{if(failure)throw new Error('private error');return {...structuredClone(rows),syncedAt:time};}}});await new Promise(r=>server.listen(0,'127.0.0.1',r));const base='http://127.0.0.1:'+server.address().port;
+ const call=(path,{actor,data,headers={}}={})=>fetch(base+path,{method:data?'POST':'GET',redirect:'manual',headers:{Origin:base,Cookie:actor?.jar||'',...(data?{'Content-Type':'application/json','X-CSRF-Token':actor?.csrf||''}:{}),...headers},...(data?{body:JSON.stringify(data)}:{})});
+ const cookie=r=>r.headers.getSetCookie()[0]?.split(';')[0]||'';
+ const login=async(code,embedded=false)=>{const prefix='/api/mail/'+(embedded?'embedded/':''),s=await call(prefix+'auth/start',{data:{}}),flow=await s.json(),launch=await call('/mail/auth/launch?state='+flow.state),cb=await call('/mail/auth/callback?state='+flow.state+'&code='+code,{headers:{Cookie:cookie(launch)}}),ticket=(await cb.text()).match(/<code>([\w-]{43})<\/code>/)?.[1];assert.ok(ticket);const r=await call(prefix+'auth/redeem',{headers:{Cookie:cookie(s)},data:{state:flow.state,ticket}}),jar=cookie(r);assert.equal(r.status,200);return {jar,...await(await call(prefix+'session',{headers:{Cookie:jar}})).json()};};
+ t.after(async()=>{await new Promise(r=>{server.close(r);server.closeAllConnections();});await server.workflowClosed;await rm(directory,{recursive:true,force:true});});
+ return {call,login,rows,advance:ms=>time+=ms,fail:v=>failure=v,async policy(actor,id,policy,revision=0,embedded=false){return call('/api/organization/'+(embedded?'embedded/':'')+'app-access/'+id,{actor,data:{revision,policy}});}};
+}
+const restricted=(subjects=[],departmentIds=[])=>({mode:'restricted',subjects,departmentIds});
+test('configured project ACL protects direct HTML and APIs in both cookie contexts, preserving inherited access',async t=>{const h=await harness(t),owner=await h.login('owner'),a=await h.login('member'),embedded=await h.login('member',true);
+ assert.equal((await h.call('/projects')).status,200);assert.equal((await h.call('/api/workspace/projects',{actor:a})).status,200);
+ assert.equal((await h.policy(owner,'projects',restricted())).status,200);
+ for(const path of ['/projects','/projects/embedded'])assert.equal((await h.call(path)).status,401);
+ assert.equal((await h.call('/api/workspace/projects',{actor:a})).status,403);assert.equal((await h.call('/api/workspace/embedded/projects',{actor:embedded})).status,403);
+ assert.equal((await h.call('/api/workspace/session',{actor:a})).status,200,'application denial must not log a member out');assert.equal((await h.call('/api/workspace/todos',{actor:a})).status,200);
+ assert.equal((await h.policy(owner,'projects',restricted([member.subject]),1)).status,200);
+ assert.equal((await h.call('/projects',{actor:a})).status,200);assert.equal((await h.call('/api/workspace/embedded/projects',{actor:embedded})).status,200);
+ const states=await(await h.call('/api/application-access/entries',{actor:a})).json();assert.equal(states.apps.projects.allowed,true);assert.equal(states.subject,member.subject);
+});
+test('only live super administrators may configure; CSRF, Origin, CAS and canonical targets are enforced',async t=>{const h=await harness(t),owner=await h.login('owner'),a=await h.login('member');
+ assert.equal((await h.call('/api/organization/app-access',{actor:a})).status,403);
+ assert.equal((await h.policy(a,'honors',restricted())).status,403);
+ const path='/api/organization/app-access/honors',data={revision:0,policy:restricted()};
+ assert.equal((await h.call(path,{actor:owner,data,headers:{'X-CSRF-Token':'wrong'}})).status,403);
+ assert.equal((await h.call(path,{actor:owner,data,headers:{Origin:'https://evil.example'}})).status,403);
+ assert.equal((await h.policy(owner,'honors',restricted(['fictional_tenant:on_unknown_member_2026']))).status,400);
+ assert.equal((await h.policy(owner,'honors',restricted())).status,200);assert.equal((await h.policy(owner,'honors',restricted([member.subject]))).status,409);
+ const view=await(await h.call('/api/organization/app-access',{actor:owner})).json();assert.equal(view.audit.length,1);assert.equal(view.directoryAvailable,true);
+});
+test('department changes and synchronization outages revoke access while public recruitment intake stays outside member ACL',async t=>{const h=await harness(t),owner=await h.login('owner'),a=await h.login('member');
+ assert.equal((await h.policy(owner,'honors',restricted([],['od-dev']))).status,200);assert.equal((await h.call('/honors',{actor:a})).status,200);
+ h.rows.departments[0].subjects=[];h.advance(61000);assert.equal((await h.call('/honors',{actor:a})).status,403);
+ h.fail(true);h.advance(61000);assert.equal((await h.call('/api/honors/items',{actor:a})).status,503);
+ assert.equal((await h.policy(owner,'honors',{mode:'inherit',subjects:[],departmentIds:[]},1)).status,200);assert.equal((await h.call('/honors',{actor:a})).status,200);
+ assert.equal((await h.call('/workbench')).status,200);const before=(await h.call('/api/recruitment/config')).status;h.fail(false);assert.equal((await h.policy(owner,'recruitment-test',restricted())).status,200);assert.equal((await h.call('/recruitment',{actor:a})).status,403);assert.equal((await h.call('/api/recruitment/config')).status,before,'member ACL must not turn public intake into a member-only route');assert.equal((await h.call('/',{headers:{Host:'110-lab.cn'}})).status,200);
+});
+test('external launch uses the canonical catalog target and checks the current member ACL',async t=>{const h=await harness(t),owner=await h.login('owner'),a=await h.login('member');
+ const first=await h.call('/apps/enter/requirements');assert.equal(first.status,302);assert.equal(first.headers.get('location'),'https://makit.110-lab.cn');
+ assert.equal((await h.policy(owner,'requirements',restricted())).status,200);
+ assert.equal((await h.call('/apps/enter/requirements',{actor:a})).status,403);const embedded=await h.login('member',true);assert.equal((await h.call('/apps/embedded/requirements',{actor:embedded})).status,403);const launch=await h.call('/apps/embedded/honors');assert.equal(launch.headers.get('location'),'https://internal.110-lab.cn/honors/embedded');assert.equal((await h.call('/apps/embedded/assessment')).headers.get('location'),'https://exam.110-lab.cn/api/auth/feishu/start?embedded=1');assert.equal((await h.call('/api/application-access/entry/requirements',{actor:a})).status,403);
+ assert.equal((await h.call('/apps/enter/missing',{actor:a})).status,404);
+ const view=await(await h.call('/api/organization/app-access',{actor:owner})).json();assert.ok(view.apps.find(v=>v.id==='organization'));
+});
+
+test('editing after the fresh identity window requires reauthentication with an actionable code',async t=>{const h=await harness(t),owner=await h.login('owner');h.advance(6*60000);const denied=await h.policy(owner,'projects',{mode:'inherit',subjects:[],departmentIds:[]});assert.equal(denied.status,403);assert.equal((await denied.json()).code,'REAUTH_REQUIRED');const renewed=await h.login('owner');assert.equal((await h.policy(renewed,'projects',{mode:'inherit',subjects:[],departmentIds:[]})).status,200);});
+
+test('access errors stay visible in plugin frames without broadening permissions',async t=>{const h=await harness(t),owner=await h.login('owner');
+ for(const app of ['projects','honors','organization','recruitment-test','assessment','requirements']){await h.policy(owner,app,restricted());const r=await h.call('/apps/embedded/'+app);assert.equal(r.status,401);const csp=r.headers.get('content-security-policy');assert.match(csp,/https:\/\/chatgpt.com/);assert.doesNotMatch(csp,/\*/);const html=await r.text();assert.match(html,/暂时无法进入此应用/);assert.match(html,/href="\/workbench\/embedded"/);}
+});

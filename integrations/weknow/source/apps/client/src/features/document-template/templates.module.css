@@ -1,0 +1,100 @@
+.layout {
+  display: grid;
+  grid-template-columns: 145px minmax(0, 1fr);
+  gap: 20px;
+}
+.categories {
+  border-right: 1px solid var(--mantine-color-default-border);
+  padding-right: 12px;
+}
+.category {
+  display: block;
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 14px;
+  border-radius: 8px;
+  color: var(--mantine-color-dimmed);
+}
+.category[data-active] {
+  background: light-dark(#eef4ff, #243655);
+  color: light-dark(#2454bf, #9ac1ff);
+  font-weight: 600;
+}
+.gallery {
+  min-width: 0;
+}
+.card {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  width: 100%;
+  height: 185px;
+  border: 1px solid var(--mantine-color-default-border);
+  border-radius: 12px;
+  overflow: hidden;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+.card:hover,
+.card[data-active] {
+  border-color: var(--mantine-color-blue-5);
+  box-shadow: 0 3px 14px #3866aa12;
+}
+.card:focus-visible,
+.category:focus-visible {
+  outline: 2px solid var(--mantine-color-blue-5);
+  outline-offset: 2px;
+}
+.cover {
+  flex-shrink: 0;
+  height: 86px;
+  background: light-dark(linear-gradient(135deg, #edf3ff, #e1ebfb), #25374f);
+  color: light-dark(#527cbb, #98bff3);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 22px;
+}
+.cover[data-category="团队管理"] {
+  background: light-dark(linear-gradient(135deg, #eaf6f1, #d9eee7), #243c38);
+  color: light-dark(#508374, #9cd7c6);
+}
+.cover[data-category="产品策划"] {
+  background: light-dark(linear-gradient(135deg, #f4eefc, #e9e0f4), #36304b);
+  color: light-dark(#9677b4, #cfb9f4);
+}
+.cover[data-category="活动策划"] {
+  background: light-dark(linear-gradient(135deg, #fff4e9, #f6e9d8), #44382a);
+  color: light-dark(#a88555, #e8c89b);
+}
+.meta {
+  padding: 14px;
+}
+.preview {
+  margin-top: 18px;
+  border-top: 1px solid var(--mantine-color-default-border);
+  padding-top: 16px;
+}
+.preview :global(.ProseMirror) {
+  padding: 8px 16px;
+  font-size: 14px;
+}
+@media (max-width: 600px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+  .categories {
+    display: flex;
+    gap: 6px;
+    overflow: auto;
+    border: 0;
+    padding: 0;
+  }
+  .category {
+    width: auto;
+    white-space: nowrap;
+    padding: 6px 10px;
+  }
+}

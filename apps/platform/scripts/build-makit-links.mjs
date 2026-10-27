@@ -1,0 +1,77 @@
+import {readFile,mkdir,writeFile,cp,rm,readdir} from 'node:fs/promises';
+import {fileURLToPath} from 'node:url';
+import {resolve} from 'node:path';
+import {build} from 'esbuild';
+import {createHash} from 'node:crypto';
+import {renderWorkbench} from '../server/render.mjs';
+import {execFileSync} from 'node:child_process';
+const root=fileURLToPath(new URL('../',import.meta.url));
+const suiteMotionCSS=(await Promise.all(['src/cobuild-motion/tokens.css','src/cobuild-motion/portal.css'].map(p=>readFile(resolve(root,p),'utf8')))).join('\n');
+const config=JSON.parse(await readFile(resolve(root,'src/projects.json'),'utf8'));
+const ids=new Set();for(const p of config.apps){if(!p.id||ids.has(p.id))throw new Error('App ids must be unique');ids.add(p.id);}
+for(const value of [...Object.values(config.systems),...config.apps.map(p=>p.url),...config.projects.map(p=>p.url)].filter(Boolean)){
+ const u=new URL(value);if(u.protocol!=='https:'||u.username||u.password)throw new Error('Destinations must be HTTPS without embedded credentials');
+}
+const bundle=async(entry,define={})=>(await build({entryPoints:[resolve(root,entry)],bundle:true,write:false,format:'esm',platform:'browser',target:'es2022',minify:true,define,loader:{'.css':'text'}})).outputFiles[0].text.replace(/<\/script/gi,'<\\/script');
+await mkdir(resolve(root,'dist'),{recursive:true});
+await cp(resolve(root,'src/plugin-update.html'),resolve(root,'dist/plugin-update.html'));
+const confirmScript=await bundle('src/mcp-confirm.js');
+await writeFile(resolve(root,'dist/mcp-confirm.html'),(await readFile(resolve(root,'src/mcp-confirm.html'),'utf8')).replace('/* MCP_CONFIRM_SCRIPT */',()=>confirmScript));
+const monitorHTML=await readFile(resolve(root,'src/monitoring.html'),'utf8'),monitorCSS=(await readFile(resolve(root,'src/suite-brand.css'),'utf8'))+'\n'+(await readFile(resolve(root,'src/monitoring.css'),'utf8')),monitorJS=await bundle('src/monitoring.js');
+await writeFile(resolve(root,'dist/monitoring.html'),monitorHTML.replace('/* MONITORING_CSS */',()=>monitorCSS+'\n'+suiteMotionCSS).replace('/* MONITORING_JS */',()=>monitorJS));
+const readIdentityCSS=await readFile(resolve(root,'src/identity.css'),'utf8'),identityJS=await bundle('src/identity.js');
+const identityWordmark='<img src="data:image/svg+xml;base64,'+Buffer.from(await readFile(resolve(root,'src/assets/cobuild/cobuild-lockup.svg'),'utf8')).toString('base64')+'" alt="110 CoBuild">';
+const identityHTML=(await readFile(resolve(root,'src/identity.html'),'utf8')).replace('<!-- IDENTITY_WORDMARK -->',()=>identityWordmark);
+await writeFile(resolve(root,'dist/identity.html'),identityHTML.replace('/* IDENTITY_CSS */',()=>readIdentityCSS+'\n'+suiteMotionCSS).replace('/* IDENTITY_JS */',()=>identityJS));
+const ssoScript=await bundle('src/assessment-sso.js');
+await writeFile(resolve(root,'dist/assessment-sso.html'),(await readFile(resolve(root,'src/assessment-sso.html'),'utf8')).replace('<!-- IDENTITY_WORDMARK -->',()=>identityWordmark).replace('/* IDENTITY_CSS */',()=>readIdentityCSS+'\n'+suiteMotionCSS).replace('/* SSO_SCRIPT */',()=>ssoScript));
+const [template,baseCSS,motionCSS,homepageCSS,redesignCSS,polishCSS,colorCSS,refinementCSS,js]=await Promise.all(['src/index.html','src/portal.css','src/motion.css','src/homepage-v5.css','src/homepage-v6.css','src/homepage-polish.css','src/homepage-colors.css','src/homepage-refinement.css'].map(p=>readFile(resolve(root,p),'utf8')).concat(bundle('src/standalone.js')));
+const homepageMotionCSS=await readFile(resolve(root,'src/homepage-motion.css'),'utf8');
+const chaptersCSS=await readFile(resolve(root,'src/chapters.css'),'utf8');
+const recruitmentCSS=(await Promise.all(['node_modules/@uppy/core/dist/style.min.css','node_modules/@uppy/dashboard/dist/style.min.css','src/recruitment.css'].map(p=>readFile(resolve(root,p),'utf8')))).join('\n');
+await writeFile(resolve(root,'dist/index.html'),template.replaceAll('/* HERO_ASSET */','/assets/glass-loop-v2.png').replace('/* PORTAL_CSS */',()=>baseCSS+'\n'+motionCSS+'\n'+homepageCSS+'\n'+redesignCSS+'\n'+polishCSS+'\n'+colorCSS+'\n'+refinementCSS+'\n'+recruitmentCSS+'\n'+homepageMotionCSS+'\n'+chaptersCSS).replace('/* PORTAL_SCRIPT */',()=>js));
+const workbenchVersion=JSON.parse(await readFile(resolve(root,'package.json'),'utf8')).version;
+const versionDefine={__WORKBENCH_VERSION__:JSON.stringify(workbenchVersion),__WORKBENCH_BUILD__:JSON.stringify('pending')};
+const [workbenchHTML,workbenchCSS,initialWorkbenchJS,initialAppJS]=await Promise.all([
+ readFile(resolve(root,'src/workbench.html'),'utf8'),readFile(resolve(root,'src/workbench.css'),'utf8'),bundle('src/workbench-standalone.js',versionDefine),bundle('src/app.js',versionDefine)
+]);
+const [workspaceMarkup,workspaceCSS]=await Promise.all(['src/workspace-markup.html','src/workspace.css'].map(p=>readFile(resolve(root,p),'utf8')));
+const workbenchShellCSS=await readFile(resolve(root,'src/workbench-shell.css'),'utf8');
+const workbenchTemplate=renderWorkbench(workbenchHTML.replace('<!-- WORKSPACE -->',()=>workspaceMarkup),config).replace('/* WORKBENCH_CSS */',()=>workbenchCSS+'\n'+workspaceCSS+'\n'+workbenchShellCSS+'\n'+suiteMotionCSS);
+// Hash the pre-injection bundles, markup and assets so same-version releases
+// (including icon-only changes) can be detected without a self-referential hash.
+const workbenchHash=createHash('sha256').update(JSON.stringify([workbenchTemplate,initialWorkbenchJS,initialAppJS]));
+for(const folder of ['cobuild','icons'])for(const name of (await readdir(resolve(root,'src/assets',folder))).sort()){
+ workbenchHash.update(JSON.stringify(folder+'/'+name)).update(await readFile(resolve(root,'src/assets',folder,name)));
+}
+const workbenchBuild=workbenchHash.digest('hex');
+const [workbenchJS,appJS]=await Promise.all(['src/workbench-standalone.js','src/app.js'].map(entry=>bundle(entry,{...versionDefine,__WORKBENCH_BUILD__:JSON.stringify(workbenchBuild)})));
+const versionedTemplate=workbenchTemplate.replace(/\bsrc="(\/assets\/(?:cobuild|icons)\/[^"?]+)"/g,(_match,path)=>'src="'+path+'?v='+workbenchBuild+'"');
+await writeFile(resolve(root,'dist/workbench.html'),versionedTemplate.replace('/* WORKBENCH_SCRIPT */',()=>workbenchJS));
+await writeFile(resolve(root,'dist/mcp-app.html'),versionedTemplate.replace(/\bsrc="\/assets\//g,'src="https://internal.110-lab.cn/assets/').replace('/* WORKBENCH_SCRIPT */',()=>appJS));
+await writeFile(resolve(root,'dist/workbench-release.json'),JSON.stringify({version:workbenchVersion,build:workbenchBuild})+'\n');
+const [adminHTML,adminCSS,adminJS]=await Promise.all([readFile(resolve(root,'src/admin.html'),'utf8'),readFile(resolve(root,'src/admin.css'),'utf8'),bundle('src/admin.js')]);
+await writeFile(resolve(root,'dist/admin.html'),adminHTML.replace('/* ADMIN_CSS */',()=>adminCSS+'\n'+suiteMotionCSS).replace('/* ADMIN_SCRIPT */',()=>adminJS));
+const [mailHTML,mailCSS,mailJS]=await Promise.all([readFile(resolve(root,'src/mail.html'),'utf8'),readFile(resolve(root,'src/mail.css'),'utf8'),bundle('src/mail.js')]);
+await writeFile(resolve(root,'dist/mail.html'),mailHTML.replace('/* MAIL_CSS */',()=>mailCSS+'\n'+suiteMotionCSS).replace('/* MAIL_SCRIPT */',()=>mailJS));
+const organizationHTML=await readFile(resolve(root,'src/organization.html'),'utf8');
+const organizationCSS=await readFile(resolve(root,'src/organization.css'),'utf8');
+await writeFile(resolve(root,'dist/organization.html'),organizationHTML.replace('/* MAIL_CSS */',()=>mailCSS+'\n'+workbenchShellCSS+'\n'+organizationCSS+'\n'+suiteMotionCSS).replace('/* MAIL_SCRIPT */',()=>mailJS));
+const [recruitmentTestHTML,recruitmentTestCSS,recruitmentTestJS]=await Promise.all([readFile(resolve(root,'src/recruitment-test.html'),'utf8'),readFile(resolve(root,'src/recruitment-test.css'),'utf8'),bundle('src/recruitment-test.js')]);
+const uppyCSS=(await Promise.all(['node_modules/@uppy/core/dist/style.min.css','node_modules/@uppy/dashboard/dist/style.min.css'].map(p=>readFile(resolve(root,p),'utf8')))).join('\n');
+await writeFile(resolve(root,'dist/recruitment-test.html'),recruitmentTestHTML.replace('/* RECRUITMENT_TEST_CSS */',()=>uppyCSS+'\n'+recruitmentTestCSS+'\n'+suiteMotionCSS).replace('/* RECRUITMENT_TEST_SCRIPT */',()=>recruitmentTestJS));
+const [recruitmentHTML,recruitmentJS,mailEditorCSS,recruitmentWorkspaceCSS,mailAttachmentsCSS]=await Promise.all([readFile(resolve(root,'src/recruitment-admin.html'),'utf8'),bundle('src/recruitment-admin.js'),readFile(resolve(root,'src/recruitment-mail-editor.css'),'utf8'),readFile(resolve(root,'src/recruitment-workspace.css'),'utf8'),readFile(resolve(root,'src/recruitment-mail-attachments.css'),'utf8')]);
+const mailyCSS=await readFile(resolve(root,'node_modules/@maily-to/core/dist/index.css'),'utf8');
+const twentyCSS=await readFile(resolve(root,'src/hiflow-twenty.css'),'utf8');
+await writeFile(resolve(root,'dist/recruitment.html'),recruitmentHTML.replace('/* RECRUITMENT_TEST_CSS */',()=>uppyCSS+'\n'+recruitmentTestCSS+'\n'+mailEditorCSS+'\n'+recruitmentWorkspaceCSS+'\n'+mailAttachmentsCSS+'\n'+mailyCSS+'\n'+twentyCSS+'\n'+suiteMotionCSS).replace('/* RECRUITMENT_TEST_SCRIPT */',()=>recruitmentJS));
+const [honorsHTML,honorsCSS,honorsJS]=await Promise.all([readFile(resolve(root,'src/honors.html'),'utf8'),readFile(resolve(root,'src/honors.css'),'utf8'),bundle('src/honors.js')]);
+await writeFile(resolve(root,'dist/honors.html'),honorsHTML.replace('/* HONORS_CSS */',()=>honorsCSS+'\n'+suiteMotionCSS).replace('/* HONORS_SCRIPT */',()=>honorsJS));
+await rm(resolve(root,'dist/assets'),{recursive:true,force:true});
+await cp(resolve(root,'src/assets'),resolve(root,'dist/assets'),{recursive:true});
+const docxScript=await bundle('src/recruitment-docx-frame.js');
+const docxCSP="default-src 'none'; script-src 'sha256-"+createHash('sha256').update(docxScript).digest('base64')+"'; img-src data:; style-src 'unsafe-inline'; font-src 'none'; form-action 'none'; base-uri 'none'";
+await writeFile(resolve(root,'dist/assets/recruitment-pdf-preview-v1.mjs'),await bundle('src/recruitment-pdf-preview.js',{__DOCX_PREVIEW_SCRIPT__:JSON.stringify(docxScript),__DOCX_PREVIEW_CSP__:JSON.stringify(docxCSP)}));
+await cp(resolve(root,'node_modules/pdfjs-dist/build/pdf.worker.min.mjs'),resolve(root,'dist/assets/recruitment-pdf-worker-6.4.299.mjs'));
+await cp(resolve(root,'node_modules/pdfjs-dist/LICENSE'),resolve(root,'dist/assets/recruitment-pdf-LICENSE.txt'));
+
+console.log('Makit native links rebuilt; plugin package unchanged');

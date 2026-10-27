@@ -1,0 +1,84 @@
+{
+  "schemaVersion": 1,
+  "reviewedChanges": [
+    {
+      "path": "apps/platform/package-lock.json",
+      "baselineSha256": "b7e552002187a921645c6ff4e7571ca4042ecb34b4cdddddad22a1098a27e9e3",
+      "currentSha256": "7509e337e7f2cc8ccc9aa8a750786167e22db34e5cc265e0cff4c0c29b1681c4",
+      "reason": "normalize lock root metadata after source-only build separation"
+    },
+    {
+      "path": "apps/platform/package.json",
+      "baselineSha256": "4ab832a51ad9a00cd107355738826e7e69efa6870998479314893ff3c2dd39c2",
+      "currentSha256": "104d6a34ee6545092b3974a326196667a7a647d25994184904aec9055f152ce4",
+      "reason": "default to source-only suite build; remove release packaging entry"
+    },
+    {
+      "path": "apps/platform/scripts/build.mjs",
+      "baselineSha256": "483b855555ed986d74b668195cfd2e80c8ad1702955230a019539ac7c5d88be3",
+      "currentSha256": "9063b20c4b4cc462b61d45aba9a5c6e06e29f76b701ad0e6660ad636f0f6f44c",
+      "reason": "skip excluded public website and desktop plugin packaging in suite mode"
+    },
+    {
+      "path": "apps/makit/package-lock.json",
+      "baselineSha256": "8b6a2fb691d6b925688049c5f1c9c85f40097dea2de99253a9a990236bec49bc",
+      "currentSha256": "208dfaa14d531ccdb19eda81711d1ad58a07309af960ca035796114ab231af5b",
+      "reason": "remove root install-hook metadata"
+    },
+    {
+      "path": "apps/makit/package.json",
+      "baselineSha256": "3cba06bfa60e9c724e062655227b5f417e4e67f8fadb4104cd2b995a9de3d251",
+      "currentSha256": "24c29070073758689f71560531a9bd5097f09b499a836b7b5770dc4d1406de2a",
+      "reason": "remove managed initialization and hook installers; default build/start to selfhost"
+    },
+    {
+      "path": "integrations/weknow/source/apps/client/package.json",
+      "baselineSha256": "fee97eb1151f6823bc302fb422a8e46239d1da4724f439eb487d9a5c9dfc5499",
+      "currentSha256": "6bfb8c57a7db2b6ad12071475858c6276dd69dd8c62188aa9ef6afd7e54e7bf1",
+      "reason": "remove restricted base-formula workspace dependency"
+    },
+    {
+      "path": "integrations/weknow/source/apps/client/src/features/search/components/search-spotlight.tsx",
+      "baselineSha256": "4266f2e41d28d9b119627f454ab4cd6011d7733a607f66e62fa351b56c65713d",
+      "currentSha256": "d92a7f5ae352bbd7b645e8eae54da6bfb7dc78e9efa5ac5db69abba1a88b90be",
+      "reason": "remove direct enterprise AI imports and UI paths; preserve ordinary search and filters"
+    },
+    {
+      "path": "integrations/weknow/source/apps/server/package.json",
+      "baselineSha256": "af704b3e119862a5f8e7dda9563ca8112f6eee96bc2775eb4edba66f33169449",
+      "currentSha256": "e026a8afd75cecc36678e5419f39213551d07f54e38550ac2515354039e9caec",
+      "reason": "remove restricted base-formula dependency and stale enterprise test aliases"
+    },
+    {
+      "path": "integrations/weknow/source/apps/server/test/jest-e2e.json",
+      "baselineSha256": "1a7a370d66b386a2a47cde79c5c602c52f5e30aff12129c5a8f91776d53b3fdf",
+      "currentSha256": "0cc2ca75c28c28293ff4a21c2624762c6e30824adcf5089cbd901aaa61366d13",
+      "reason": "remove stale enterprise test alias"
+    },
+    {
+      "path": "integrations/weknow/source/apps/server/tsconfig.json",
+      "baselineSha256": "e55a64ef16e946f122a08d029ebc5a942bae7f9f2074243e749bf1fd1cee3497",
+      "currentSha256": "2f9ab0edf7d4508a4233316882755258c5e0808e63cab2cb9c5a0dddeebea97a",
+      "reason": "remove enterprise and base-formula type paths"
+    },
+    {
+      "path": "integrations/weknow/source/pnpm-lock.yaml",
+      "baselineSha256": "c61e470f9e387005486f55d6617a55fbec7a13b3a0304aaf09e25132c9081cd9",
+      "currentSha256": "257a8855dc8fbd1633948a8585a3fa4d5dda2673700cbb50b882954c37354ae8",
+      "reason": "regenerate frozen lock for community-only workspace"
+    },
+    {
+      "path": "apps/relay/package-lock.json",
+      "baselineSha256": "c266e0dee4eca30987d3fd26934862e479610117fa380d4fce9d5374caf9305d",
+      "currentSha256": "cdbe48c457138d67a6407cf48f709d52da6f602dce3a8b4f9971af4df579d265",
+      "reason": "rebuild an independently installable dependency graph and add required Nest bundler peers"
+    },
+    {
+      "path": "apps/relay/package.json",
+      "baselineSha256": "438a4ee5486716894fffebbcce93f5b5aa5b7e3ad4d4281b2c267e3aa025a295",
+      "currentSha256": "f0c38ede80a1365e96e98ee420eba05f6d75163784ed6d82b665faf741780379",
+      "reason": "declare class-validator/class-transformer required by the bundled Nest imports"
+    }
+  ],
+  "policy": "Unchanged imported source retains source-baselines hashes. New foundation files are tracked by Git."
+}

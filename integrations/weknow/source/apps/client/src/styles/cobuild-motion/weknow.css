@@ -1,0 +1,11 @@
+/* Keep Mantine's transition lifecycle and Tiptap's node positioning intact. */
+:is(.mantine-Button-root,.mantine-ActionIcon-root,.mantine-NavLink-root,.mantine-Menu-item,.mantine-Tabs-tab) {
+  transition-property: background-color, border-color, color, opacity;
+  transition-duration: var(--cb-motion-fast);
+  transition-timing-function: var(--cb-motion-ease);
+}
+:is(.mantine-Modal-content,.mantine-Modal-overlay,.mantine-Drawer-content,.mantine-Drawer-overlay,.mantine-Popover-dropdown,.mantine-Menu-dropdown) {
+  transition-duration: var(--cb-motion-enter) !important;
+  transition-timing-function: var(--cb-motion-ease) !important;
+}
+.mantine-Drawer-content { transition-duration: var(--cb-motion-panel) !important; }

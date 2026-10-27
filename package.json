@@ -1,0 +1,17 @@
+{
+  "name": "cobuild-suite",
+  "version": "0.1.0-dev.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "scripts": {
+    "test": "node --test tests/*.test.mjs",
+    "config:check": "node tools/config.mjs check config/cobuild.example.json",
+    "plan": "node tools/config.mjs plan config/cobuild.example.json",
+    "audit": "python3 tools/audit.py",
+    "verify": "npm test && npm run config:check && python3 tools/audit.py --check",
+    "release:check": "python3 tools/release_check.py"
+  }
+}

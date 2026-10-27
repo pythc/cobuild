@@ -1,0 +1,25 @@
+/* Application surfaces only; the public homepage keeps its scroll narrative. */
+.cb-main, body.recruitment-workspace .rw-main, body > main {
+  animation: cb-fade-in var(--cb-motion-enter) var(--cb-motion-ease);
+}
+/* Visibility changes animate once; in-place refreshes leave these nodes mounted. */
+.ws-panel:not([hidden]), #overview:not([hidden]), #servers-view:not([hidden]),
+#alerts-view:not([hidden]), #grafana-view:not([hidden]) {
+  animation: cb-fade-in var(--cb-motion-base) var(--cb-motion-ease);
+}
+:is(.cb-nav-link,.cb-quick-link,.app-card,.cb-favorite-button,.ws-btn,.rt-button,.button,.nav-item,.mail-folder,.org-tab) {
+  transition-property: background-color, border-color, color, box-shadow, opacity;
+  transition-duration: var(--cb-motion-fast);
+  transition-timing-function: var(--cb-motion-ease);
+}
+:is(dialog[open],.rt-dialog:not([hidden]),.rw-detail:not([hidden])) {
+  animation: cb-surface-in var(--cb-motion-enter) var(--cb-motion-ease);
+}
+dialog[open]::backdrop { animation: cb-fade-in var(--cb-motion-base) var(--cb-motion-ease); }
+:is(.toast,.rt-toast):not([hidden]) { animation: cb-surface-in var(--cb-motion-base) var(--cb-motion-ease); }
+@media (hover:hover) and (pointer:fine) {
+  .cb-app-item .app-card:hover { transform: none; background-color: #f6f8fc; box-shadow: none; }
+}
+@media (max-width:760px) {
+  .cb-sidebar { transition: transform var(--cb-motion-panel) var(--cb-motion-ease); }
+}

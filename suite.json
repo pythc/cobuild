@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "name": "CoBuild",
+  "version": "0.1.0-dev.0",
+  "distribution": "self-hosted",
+  "stage": "source-consolidation",
+  "modules": [
+    {"id":"platform","name":"CoBuild","tier":"core","source":"apps/platform","dependsOn":[],"owns":["identity","organization","application-access","workbench"]},
+    {"id":"kick","name":"Kick","tier":"core","source":"apps/platform","dependsOn":["platform"],"owns":["project","project-membership","milestone"]},
+    {"id":"makit","name":"Makit","tier":"core","source":"apps/makit","dependsOn":["platform","kick"],"owns":["requirement","iteration","delivery"]},
+    {"id":"weknow","name":"WeKnow","tier":"core","source":"integrations/weknow/source","dependsOn":["platform"],"owns":["space","page","attachment"]},
+    {"id":"hiflow","name":"HiFlow","tier":"optional","source":"apps/platform","dependsOn":["platform"],"owns":["candidate","interview","offer-access"]},
+    {"id":"evalab","name":"Evalab","tier":"optional","source":"apps/evalab","dependsOn":["platform"],"owns":["assessment","attempt","assessment-material"]},
+    {"id":"relay","name":"Relay","tier":"optional","source":"apps/relay","dependsOn":["platform"],"owns":["conversation","service-request"]},
+    {"id":"honors","name":"荣誉","tier":"optional","source":"apps/platform","dependsOn":["platform"],"owns":["honor"]},
+    {"id":"publishing","name":"动态发布","tier":"optional","source":"apps/platform","dependsOn":["platform"],"owns":["publication"]},
+    {"id":"mail","name":"邮箱集成","tier":"integration","source":"apps/platform","dependsOn":["platform"],"owns":["mailbox-authorization"]},
+    {"id":"pulse","name":"Pulse","tier":"operations","source":"apps/platform","dependsOn":["platform"],"owns":["service-health"]}
+  ],
+  "excludedProducts": ["110lab-plugin","cobuild-homepage","requirement-monitor","ai-homework-system"],
+  "defaultModules": ["platform","kick","makit","weknow"]
+}

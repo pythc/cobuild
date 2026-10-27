@@ -1,0 +1,30 @@
+ARG NODE_IMAGE=node:24-bookworm-slim@sha256:a5f4366e834695d5f363b920c104953a535d3a9864d1bdf74566a0ebe01daee5
+FROM ${NODE_IMAGE} AS build
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci --ignore-scripts --no-audit --no-fund
+COPY . .
+RUN npm run build:selfhost
+RUN npm pkg delete 'dependencies.@lark-apaas/fullstack-nestjs-core' 'dependencies.@lark-apaas/nestjs-common' \
+    && npm prune --omit=dev --offline --ignore-scripts --no-audit --no-fund \
+    && test ! -d node_modules/@lark-apaas/fullstack-nestjs-core \
+    && test ! -d node_modules/@lark-apaas/nestjs-common
+
+FROM ${NODE_IMAGE} AS runtime
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+ENV NODE_ENV=production SERVER_HOST=0.0.0.0 SERVER_PORT=5450
+ARG MAKIT_SOURCE_REVISION=local
+LABEL org.opencontainers.image.title="Makit" org.opencontainers.image.revision=$MAKIT_SOURCE_REVISION
+WORKDIR /app
+COPY --from=build --chown=node:node /app/node_modules ./node_modules
+COPY --from=build --chown=node:node /app/package.json /app/package-lock.json ./
+COPY --from=build --chown=node:node /app/dist/client ./dist/client
+COPY --from=build --chown=node:node /app/dist/selfhost ./dist/selfhost
+COPY --from=build --chown=node:node /app/scripts/selfhost ./scripts/selfhost
+COPY --from=build --chown=node:node /app/migrations ./migrations
+COPY --from=build --chown=node:node /app/integrations/iteration-bot ./integrations/iteration-bot
+USER node
+EXPOSE 5450
+HEALTHCHECK --interval=20s --timeout=5s --start-period=30s --retries=3 CMD node -e "fetch('http://127.0.0.1:5450/readyz',{signal:AbortSignal.timeout(4000)}).then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"
+CMD ["node", "dist/selfhost/server.cjs"]

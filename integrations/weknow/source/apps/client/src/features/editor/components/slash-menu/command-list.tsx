@@ -1,0 +1,206 @@
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  SlashMenuGroupedItemsType,
+  SlashMenuItemType,
+} from "@/features/editor/components/slash-menu/types";
+import {
+  ActionIcon,
+  Badge,
+  Group,
+  Paper,
+  ScrollArea,
+  Text,
+  Tooltip,
+  UnstyledButton,
+  VisuallyHidden,
+} from "@mantine/core";
+import classes from "./slash-menu.module.css";
+import clsx from "clsx";
+import { useTranslation } from "react-i18next";
+import { useHasFeature } from "@/platform/core-only";
+import { Feature } from "@/platform/core-only";
+
+const CommandList = ({
+  items,
+  command,
+  editor,
+  range,
+}: {
+  items: SlashMenuGroupedItemsType;
+  command: any;
+  editor: any;
+  range: any;
+}) => {
+  const { t } = useTranslation();
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const viewportRef = useRef<HTMLDivElement>(null);
+  const [countAnnouncement, setCountAnnouncement] = useState("");
+  const [selectionAnnouncement, setSelectionAnnouncement] = useState("");
+
+  const hasBases = useHasFeature(Feature.BASES);
+  const visibleItems = useMemo(
+    () =>
+      Object.fromEntries(
+        Object.entries(items)
+          .map(([key, values]) => [
+            key,
+            values.filter((item) => hasBases || !item.requiresBases),
+          ])
+          .filter(([, values]) => (values as any[]).length),
+      ) as SlashMenuGroupedItemsType,
+    [items, hasBases],
+  );
+  const flatItems = useMemo(
+    () => Object.values(visibleItems).flat(),
+    [visibleItems],
+  );
+
+  const selectItem = useCallback(
+    (index: number) => {
+      const item = flatItems[index];
+      if (item) {
+        command(item);
+      }
+    },
+    [command, flatItems, hasBases],
+  );
+
+  useEffect(() => {
+    const navigationKeys = ["ArrowUp", "ArrowDown", "Enter"];
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.isComposing || e.keyCode === 229 || !flatItems.length) return;
+      if (navigationKeys.includes(e.key)) {
+        e.preventDefault();
+
+        if (e.key === "ArrowUp") {
+          setSelectedIndex(
+            (selectedIndex + flatItems.length - 1) % flatItems.length,
+          );
+          return true;
+        }
+
+        if (e.key === "ArrowDown") {
+          setSelectedIndex((selectedIndex + 1) % flatItems.length);
+          return true;
+        }
+
+        if (e.key === "Enter") {
+          selectItem(selectedIndex);
+          return true;
+        }
+        return false;
+      }
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [flatItems, selectedIndex, setSelectedIndex, selectItem]);
+
+  useEffect(() => {
+    setSelectedIndex(0);
+  }, [flatItems]);
+
+  useEffect(() => {
+    if (flatItems.length === 0) {
+      setCountAnnouncement("");
+      return;
+    }
+    setCountAnnouncement(
+      t("{{count}} command available", { count: flatItems.length }),
+    );
+  }, [flatItems.length, t]);
+
+  useEffect(() => {
+    const item = flatItems[selectedIndex];
+    if (!item) {
+      setSelectionAnnouncement("");
+      return;
+    }
+    setSelectionAnnouncement(`${t(item.title)}, ${t(item.description)}`);
+  }, [selectedIndex, flatItems, t]);
+
+  useEffect(() => {
+    viewportRef.current
+      ?.querySelector(`[data-item-index="${selectedIndex}"]`)
+      ?.scrollIntoView({ block: "nearest" });
+  }, [selectedIndex]);
+
+  return flatItems.length > 0 ? (
+    <Paper
+      id="slash-command"
+      shadow="md"
+      p="xs"
+      withBorder
+      role="listbox"
+      aria-label={t("Slash commands")}
+      aria-activedescendant={`slash-command-option-${selectedIndex}`}
+    >
+      <VisuallyHidden role="status" aria-live="polite" aria-atomic="true">
+        {countAnnouncement}
+      </VisuallyHidden>
+      <VisuallyHidden role="status" aria-live="polite" aria-atomic="true">
+        {selectionAnnouncement}
+      </VisuallyHidden>
+      <ScrollArea
+        viewportRef={viewportRef}
+        h={350}
+        w={270}
+        scrollbarSize={8}
+        overscrollBehavior="contain"
+      >
+        {(() => {
+          let flatIndex = -1;
+          return Object.entries(visibleItems).map(
+            ([category, categoryItems]) => (
+              <div key={category} role="group" aria-label={category}>
+                <Text c="dimmed" mb={4} fw={500} tt="capitalize">
+                  {category}
+                </Text>
+                {categoryItems.map((item: SlashMenuItemType) => {
+                  flatIndex += 1;
+                  const itemIndex = flatIndex;
+                  return (
+                    <UnstyledButton
+                      key={itemIndex}
+                      data-item-index={itemIndex}
+                      id={`slash-command-option-${itemIndex}`}
+                      role="option"
+                      aria-selected={itemIndex === selectedIndex}
+                      onClick={() => selectItem(itemIndex)}
+                      className={clsx(classes.menuBtn, {
+                        [classes.selectedItem]: itemIndex === selectedIndex,
+                      })}
+                    >
+                      <Group wrap="nowrap">
+                        <ActionIcon
+                          variant="default"
+                          component="div"
+                          aria-hidden="true"
+                        >
+                          <item.icon size={18} />
+                        </ActionIcon>
+
+                        <div style={{ flex: 1 }}>
+                          <Text size="sm" fw={500}>
+                            {t(item.title)}
+                          </Text>
+
+                          <Text c="dimmed" size="xs">
+                            {t(item.description)}
+                          </Text>
+                        </div>
+                      </Group>
+                    </UnstyledButton>
+                  );
+                })}
+              </div>
+            ),
+          );
+        })()}
+      </ScrollArea>
+    </Paper>
+  ) : null;
+};
+
+export default CommandList;

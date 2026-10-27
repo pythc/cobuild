@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "organization": { "name": "Example Team", "slug": "example-team" },
+  "origins": {
+    "platform": "https://cobuild.example.com",
+    "makit": "https://makit.example.com",
+    "weknow": "https://knowledge.example.com"
+  },
+  "modules": ["platform", "kick", "makit", "weknow"],
+  "identity": { "providers": ["local"], "sessionDays": 30, "selfRegistration": false },
+  "integrations": { "feishu": false, "github": false, "mail": false, "ai": false },
+  "delivery": { "externalMessages": false }
+}

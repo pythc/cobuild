@@ -1,0 +1,19 @@
+[data-slot="dialog-overlay"][data-state], [data-slot="sheet-overlay"][data-state], [data-slot="alert-dialog-overlay"][data-state] {
+  animation-duration: var(--cb-motion-base);
+  animation-timing-function: var(--cb-motion-ease);
+}
+[data-slot="dialog-content"][data-state], [data-slot="alert-dialog-content"][data-state] {
+  --tw-enter-scale: 0.99;
+  --tw-exit-scale: 0.99;
+  animation-duration: var(--cb-motion-enter);
+  animation-timing-function: var(--cb-motion-ease);
+}
+[data-slot="sheet-content"][data-state] {
+  animation-duration: var(--cb-motion-panel);
+  animation-timing-function: var(--cb-motion-ease);
+}
+[data-slot="dropdown-menu-content"][data-state], [data-slot="popover-content"][data-state], [data-slot="select-content"][data-state], [data-slot="context-menu-content"][data-state] {
+  animation-duration: var(--cb-motion-base);
+  animation-timing-function: var(--cb-motion-ease);
+}
+[data-slot][data-state="closed"] { animation-duration: var(--cb-motion-exit); }

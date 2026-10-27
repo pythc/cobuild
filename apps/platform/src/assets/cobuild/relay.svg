@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96" role="img" aria-labelledby="title">
+  <title id="title">Relay — 客服与工单图标概念</title>
+  <path fill="#BCEEE8" d="M35 10h36c10 0 18 8 18 18v25c0 10-8 18-18 18h-5L51 82V71H35c-10 0-18-8-18-18V28c0-10 8-18 18-18Z"/>
+  <path fill="#119A9A" d="M24 23h36c10 0 18 8 18 18v22c0 10-8 18-18 18H37L16 92V79C10 76 7 70 7 63V41c0-10 7-18 17-18Z"/>
+  <path fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" d="M27 47h32m-9-9 9 9-9 9M27 65h17"/>
+</svg>

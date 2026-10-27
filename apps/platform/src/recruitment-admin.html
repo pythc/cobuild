@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>HiFlow · 招新管理</title><style>/* RECRUITMENT_TEST_CSS */</style></head>
+<body class="recruitment-workspace">
+<a class="rw-skip" href="#rt-main">跳到主要内容</a>
+<div class="rw-shell rt-app" id="rw-shell">
+  <aside class="rw-sidebar" id="rw-sidebar" aria-label="招新导航">
+    <div class="rw-brand-row">
+      <div class="hf-brand-identity">
+        <div class="hf-brand-slot"><a class="hf-brand-link" href="/workbench" aria-label="CoBuild 首页"><span class="hf-brand-initial" aria-hidden="true"></span><span class="hf-brand-tail" aria-hidden="true"></span></a></div>
+        <span class="hf-brand-divider" aria-hidden="true"></span>
+        <a class="hf-brand-application" href="/recruitment" aria-label="HiFlow 招新管理"><img src="/assets/cobuild/hiflow.png" alt=""><strong>HiFlow</strong></a>
+      </div>
+      <button id="rw-collapse" class="rw-icon-button" type="button" aria-label="收起侧栏" aria-expanded="true" aria-controls="rw-sidebar"><img src="/assets/icons/layout-sidebar-left-collapse.svg" alt=""></button>
+    </div>
+    <a id="rt-back" class="rw-back" href="/workbench" aria-label="返回工作台"><img src="/assets/icons/arrow-right.svg" alt=""><span>返回工作台</span></a>
+    <span id="rt-mode" class="hf-sidebar-mode">连接中</span>
+    <p class="hf-nav-label">工作区</p>
+    <nav id="rw-nav" class="rw-nav" aria-label="招新工作区" hidden>
+      <button type="button" data-view="candidates" aria-label="候选人"><img src="/assets/icons/user.svg" alt=""><span>候选人</span></button>
+      <button type="button" data-view="interviews" aria-label="面试"><img src="/assets/icons/calendar.svg" alt=""><span>面试</span></button>
+      <button type="button" data-view="admission" aria-label="录取"><img src="/assets/icons/file-check.svg" alt=""><span>录取</span></button>
+      <button type="button" data-view="notifications" data-mail-view="compose" aria-label="邮件"><img src="/assets/icons/send.svg" alt=""><span>邮件</span></button>
+      <button type="button" data-view="notifications" data-mail-view="templates" aria-label="邮件模板"><img src="/assets/icons/list-details.svg" alt=""><span>邮件模板</span></button>
+    </nav>
+    <div class="rw-sidebar-settings" id="rw-sidebar-settings">
+      <button type="button" data-view="settings" aria-label="设置" hidden><img src="/assets/icons/settings.svg" alt=""><span>设置</span></button>
+    </div>
+    <div class="rw-sidebar-foot">
+      <div class="rw-user">
+        <span class="rw-avatar" id="rt-avatar" aria-hidden="true"></span>
+        <span class="rw-user-copy"><span id="rt-person">未登录</span></span>
+        <button id="rt-logout" class="rw-icon-button" type="button" hidden aria-label="退出"><img src="/assets/icons/logout.svg" alt=""></button>
+      </div>
+      <button id="rt-login" class="rt-button rt-primary" type="button" hidden>飞书登录</button>
+    </div>
+  </aside>
+  <main class="rw-main" id="rt-main">
+    <header class="hf-topbar"><span>HiFlow</span><span class="hf-topbar-divider">›</span><span id="hf-current-page">候选人</span></header>
+    <div id="rt-status" class="rt-status" role="status" aria-live="polite" hidden></div>
+    <section id="rt-locked" class="rt-locked"><div class="rt-lock-mark" aria-hidden="true">Hi</div><h2 id="rt-locked-title">登录招新工作台</h2><p id="rt-locked-description">管理员处理招新，面试官查看分配给自己的面试</p><button id="rt-login-main" class="rt-button rt-primary" type="button">飞书登录</button></section>
+    <section id="rt-content" class="rw-view" hidden>
+      <header class="rw-page-head">
+        <h2>候选人</h2>
+
+        <button id="rt-new" class="rt-button rt-primary" type="button">新建候选人</button>
+      </header>
+      <div class="rw-scope" role="group" aria-label="候选人范围">
+        <button id="rw-tab-all" type="button" aria-pressed="true">全部 <span id="rw-count-all"></span></button>
+        <button id="rw-tab-pending" type="button" aria-pressed="false">待处理 <span id="rw-count-pending"></span></button>
+        <button id="rw-filter-toggle" class="rw-filter-toggle" type="button" aria-expanded="false" aria-controls="rw-candidate-filters"><img src="/assets/icons/list-details.svg" alt=""><span id="rw-filter-summary">筛选</span></button>
+      </div>
+      <div class="rw-filters" id="rw-candidate-filters" hidden>
+        <label>当前任务 <select id="rt-task" aria-label="按当前任务筛选"></select></label>
+        <label>阶段 <select id="rt-stage" aria-label="筛选阶段"><option value="">所有阶段</option></select></label>
+        <label>组别 <select id="rt-group" aria-label="筛选组别"><option value="">所有组别</option></select></label>
+        <div class="rt-tabs" role="group" aria-label="档案范围"><button id="rt-active" class="rt-tab" type="button" aria-pressed="true">未归档</button><button id="rt-archived" class="rt-tab" type="button" aria-pressed="false">已归档</button></div>
+      </div>
+      <div class="hf-list-tools"><div class="hf-view-switch" role="group" aria-label="候选人展示方式"><button id="hf-table-view" type="button" aria-pressed="true">列表</button><button id="hf-board-view" type="button" aria-pressed="false">看板</button></div>        <form id="rw-search-form" class="rw-search" role="search">
+          <label for="rt-search"><img src="/assets/icons/search.svg" alt=""><span class="rt-sr-only">搜索候选人</span></label>
+          <input id="rt-search" type="search" placeholder="搜索候选人" maxlength="254" autocomplete="off">
+        </form><div id="hf-bulk" hidden><span id="hf-selected-count"></span><button id="hf-bulk-mail" class="rt-button" type="button">发送邮件</button><button id="hf-bulk-clear" class="rt-button" type="button">取消选择</button></div></div><div class="rw-workspace">
+        <aside class="rw-queue" aria-label="候选人队列">
+          <div id="rt-empty" class="rt-empty" hidden><h3>还没有候选人</h3><p>官网收到投递后会出现在这里，也可以手工建立档案</p><button id="rt-new-empty" class="rt-button" type="button">新建候选人</button></div>
+          <div id="rw-queue-scroll" class="rw-queue-scroll">
+            <div id="rt-rows" aria-label="候选人列表"></div>
+          </div>
+          <footer class="rt-list-footer"><span id="rt-count" aria-live="polite"></span><div class="hf-pages"><button id="hf-page-prev" type="button" class="rt-button">上一页</button><span id="hf-page-index"></span><button id="hf-page-next" type="button" class="rt-button">下一页</button></div><button id="rt-refresh" class="rw-icon-button" type="button" aria-label="刷新候选人"><img src="/assets/icons/refresh.svg" alt=""></button></footer>
+        </aside>
+        <div id="hf-detail-backdrop" hidden></div><dialog id="rt-detail" class="rw-detail" aria-labelledby="rt-detail-title" role="dialog" aria-modal="true" tabindex="-1" hidden>
+          <div class="rw-detail-heading">
+            <button id="rt-detail-close" class="rt-button" type="button" aria-label="返回候选人列表">返回列表</button>
+            <div class="rw-candidate-title"><h2 id="rt-detail-title"></h2><p id="rt-detail-info"></p></div>
+            <span id="rt-detail-updated"></span>
+            <div class="rw-detail-pager"><button id="rw-previous" class="rt-button" type="button">上一位</button><button id="rw-next" class="rt-button" type="button">下一位</button></div>
+          </div>
+          <div class="rw-detail-tabs" role="group" aria-label="候选人信息">
+            <button type="button" data-detail-tab="workflow" aria-pressed="false">招新流程</button><button type="button" data-detail-tab="resume" aria-pressed="true">简历</button>
+            <button type="button" data-detail-tab="records" aria-pressed="false">记录</button>
+            <button type="button" data-detail-tab="notifications" aria-pressed="false">通知</button>
+            <div class="rw-resume-tab-actions"><button id="rw-resume-expand" class="rt-button" type="button" hidden>放大</button><button id="rw-resume-download" class="rw-icon-button" type="button" aria-label="下载简历" title="下载简历" hidden><img src="/assets/icons/download.svg" alt=""></button></div>
+          </div>
+          <div data-detail-panel="resume">
+            <div id="rw-resume-preview" class="rw-inline-resume"></div>
+            <details id="rw-upload-disclosure"><summary>上传或替换简历</summary><div id="rt-upload"></div><div id="rt-upload-actions" class="rt-inline-actions"><button id="rt-upload-submit" class="rt-button" type="button">保存简历</button><span>PDF / DOCX · 10MB</span></div><p id="rt-upload-status" class="rt-help" aria-live="polite"></p></details>
+          </div>
+          <div data-detail-panel="records" hidden><section class="rw-record-profile"><h3>补充资料</h3><p id="rw-summary"></p><div id="rt-resume-info"></div></section><div id="rw-record-facts"></div><h3>操作记录</h3><ol id="rt-events" class="rt-timeline"></ol></div>
+          <div data-detail-panel="notifications" hidden>
+            <section id="rt-notice-section" class="rw-panel" hidden><div class="rw-section-heading"><h3>面试邀请</h3><span id="rt-notice-state" class="rt-pill"></span></div><p id="rt-notice-subject"></p><pre id="rt-notice-body" class="rt-notice-body"></pre></section>
+            <section class="rw-panel"><h3>通知记录</h3><div id="rt-deliveries"></div></section>
+          </div>
+        <aside id="rw-task" class="rw-task" data-detail-panel="workflow" aria-label="当前任务" hidden>
+          <p class="rw-eyebrow">当前任务</p>
+          <h3 id="rw-task-title"></h3>
+          <p class="rw-kicker">当前阶段</p>
+          <p id="rt-detail-stage"></p>
+          <div id="rw-screen-panel" hidden>
+            <label class="rt-field" for="rw-screen-note">初筛记录<textarea id="rw-screen-note" maxlength="2000"></textarea></label>
+            <p id="rw-screen-count" class="rt-help"></p>
+            <fieldset class="rw-next-choice"><legend>下一步</legend><label><input id="rw-next-interview" type="radio" name="rw-next" value="interview" checked>直接面试</label><label><input id="rw-next-assessment" type="radio" name="rw-next" value="assessment">先考核</label></fieldset>
+            <p id="rw-screen-error" class="rt-form-error" role="alert" hidden></p>
+          </div>
+          <div id="rt-current"></div>
+          <div id="rt-detail-actions" class="rw-task-actions"></div>
+          <div id="rw-feedback"></div>
+          <div id="rw-task-log"></div>
+        </aside>
+          <button id="rt-detail-done" type="button" hidden>关闭</button>
+        </dialog>
+
+        <div id="rw-unselected" class="rw-unselected" hidden><p>选择一位候选人</p></div>
+      </div>
+    </section>
+    <section id="rw-interviews" class="rw-view rw-page" hidden><div class="rw-page-heading"><div><h2>面试</h2></div><button id="rw-interviews-refresh" class="rt-button" type="button">刷新</button></div><div id="rw-interview-list"></div></section>
+    <section id="rw-admission" class="rw-view rw-page" hidden>
+      <div class="rw-page-heading"><div><h2>录取</h2></div></div>
+      <div class="rw-subnav" role="group" aria-label="录取内容"><button type="button" data-admission-tab="decisions" aria-pressed="true">结果记录</button><button type="button" data-admission-tab="offers" aria-pressed="false">Offer 访问</button></div>
+      <div id="rw-decisions"></div>
+      <div id="rw-offers" hidden></div>
+    </section>
+    <section id="rw-notifications" class="rw-view rw-page" hidden>
+      <div class="rw-page-heading"><div><h2>邮件</h2></div></div>
+      <div class="rw-subnav" role="group" aria-label="通知内容"><button type="button" data-mail-tab="compose" aria-pressed="true">写邮件</button><button type="button" data-mail-tab="templates" aria-pressed="false" hidden>邮件模板</button><button type="button" data-mail-tab="history" aria-pressed="false">发送记录</button></div>
+      <div id="rw-compose"></div>
+      <div id="rw-templates" hidden></div>
+      <div id="rw-mail-history" hidden></div>
+    </section>
+    <section id="rw-settings" class="rw-view rw-page" hidden>
+      <div class="rw-page-heading"><div><h2>设置</h2></div></div>
+      <div class="rw-subnav" role="group" aria-label="设置内容"><button id="rw-settings-people" type="button" data-settings-tab="people" aria-pressed="true" hidden>人员与权限</button><button id="rw-settings-mail" type="button" data-settings-tab="mail" aria-pressed="false" hidden>发信配置</button></div>
+      <div id="rw-hr"></div>
+      <div id="rw-mail-settings" hidden><section class="rw-panel"><h3>发信配置</h3><p class="rt-help">可用邮箱、默认发件邮箱、官网收件与默认回复邮箱、自动回执模板。SMTP 凭据不在此页修改。</p><button id="rt-settings" class="rt-button rt-primary" type="button">编辑发信配置</button></section></div>
+    </section>
+  </main>
+</div>
+<dialog id="rt-form-dialog" class="rt-dialog rt-form-dialog" aria-labelledby="rt-form-title"><form id="rt-form"><header class="rt-dialog-head"><div><p id="rw-form-step" class="rw-eyebrow"></p><h2 id="rt-form-title"></h2></div><button id="rt-form-close" type="button" class="rt-close" aria-label="关闭表单">×</button></header><div class="rt-form-scroll"><div id="rt-form-fields" class="rt-form-fields"></div><p id="rt-form-error" class="rt-form-error" role="alert" hidden></p></div><footer class="rt-dialog-footer"><button id="rt-form-cancel" type="button" class="rt-button">取消</button><button id="rt-form-submit" type="submit" class="rt-button rt-primary">确认</button></footer></form></dialog>
+<script type="module">/* RECRUITMENT_TEST_SCRIPT */</script>
+</body></html>

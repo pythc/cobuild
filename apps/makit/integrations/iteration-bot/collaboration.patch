@@ -1,0 +1,45 @@
+--- a/src/collaboration.js
++++ b/src/collaboration.js
+@@ -26,15 +26,11 @@
+   ["foOwners", "FO"],
+   ["followers", "关注人"],
+   ["releaseOwners", "发布负责人"],
+-  ["startDate", "开始时间"],
+   ["deadline", "截止时间"],
+-  ["developmentStart", "开发预计启动时间"],
+-  ["developmentEnd", "开发预计结束时间"],
+-  ["testDate", "预计提测时间"],
+   ["actualStart", "实际开始时间"],
+   ["actualTest", "实际提测时间"],
+   ["actualRelease", "实际发布时间"],
+-  ["effort", "工作量"],
++  ["effort", "开发工作量"],
+   ["blocked", "是否阻塞"],
+   ["blocker", "阻塞原因"],
+   ["latestProgress", "最新进展"]
+@@ -195,7 +191,7 @@
+ 
+ export function requirementFingerprint(snapshot) {
+   const businessFields = Object.fromEntries(
+-    IMPORTANT_FIELDS.map(([key]) => [key, snapshot?.[key]])
++    IMPORTANT_FIELDS.filter(([key])=>key!=="deadline"||snapshot?.type==="工单").map(([key]) => [key, snapshot?.[key]])
+   );
+   return createHash("sha256").update(JSON.stringify(businessFields)).digest("hex");
+ }
+@@ -224,7 +220,7 @@
+ export function diffRequirementSnapshots(previous, next) {
+   if (!previous) {
+     return IMPORTANT_FIELDS
+-      .filter(([key]) => hasMeaningfulValue(next[key]))
++      .filter(([key]) => (key!=="deadline"||next.type==="工单")&&hasMeaningfulValue(next[key]))
+       .map(([key, label]) => ({
+         key,
+         label,
+@@ -234,6 +230,7 @@
+   }
+   const changes = [];
+   for (const [key, label] of IMPORTANT_FIELDS) {
++    if(key==="deadline"&&next.type!=="工单")continue;
+     // A missing key means the field did not exist in the persisted snapshot
+     // schema. It is not evidence that the Base field changed. The next full
+     // snapshot will establish the baseline for that field.

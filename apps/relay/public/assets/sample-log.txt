@@ -1,0 +1,3 @@
+2026-10-15 09:41:12 Export started
+2026-10-15 09:41:13 Image resource unavailable
+2026-10-15 09:41:13 Export completed with missing images

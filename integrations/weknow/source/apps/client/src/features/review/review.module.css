@@ -1,0 +1,27 @@
+.panel {
+  min-width: 0;
+  padding-bottom: 24px;
+}
+.original {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  margin: 6px 0 14px;
+  padding-left: 10px;
+  border-left: 2px solid var(--mantine-color-gray-4);
+}
+.diff {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 14px;
+  line-height: 1.75;
+  margin: 14px 0;
+}
+.diff ins {
+  color: light-dark(#16604d, #a3e9cd);
+  background: light-dark(#e7f5ee, #173e32);
+  text-decoration: none;
+}
+.diff del {
+  color: light-dark(#9d3434, #ffb3b3);
+  background: light-dark(#fff0f0, #4d2727);
+}

@@ -1,0 +1,34 @@
+--- a/src/index.js
++++ b/src/index.js
+@@ -1,3 +1,4 @@
++import {createDevelopmentOverdue} from './development-overdue.js';
+ import { readFile } from "node:fs/promises";
+ import path from "node:path";
+ import { fileURLToPath } from "node:url";
+@@ -12,7 +13,7 @@
+ import { createManagedDeliveryConsumer } from "./managed-deliveries.js";
+ import { createStateStore } from "./state.js";
+ import { formatReport } from "./reporter.js";
+-import { enforceResponsePolicy, isRequirementRelated } from "./response-policy.js";
++import { enforceResponsePolicy, isRequirementRelated, requirementRecordUrl } from "./response-policy.js";
+ 
+ const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+ const configPath = process.env.FEISHU_ITERATION_BOT_CONFIG || path.join(projectRoot, "config.json");
+@@ -70,6 +71,7 @@
+ const { sendMarkdown, sendCard, sendPost } = createNotificationGateway({ config, cli, log,
+   enqueueDelivery: (input) => managedDeliveries.ingest(input) });
+ const managedDeliveries = createManagedDeliveryConsumer({ config, sendCard, sendPost, log });
++const developmentOverdue = createDevelopmentOverdue({rootDir:projectRoot,config,base,sendPost,log,requirementUrl:r=>requirementRecordUrl(config,r.recordId)});
+ 
+ const management = createManagementController({
+   config,
+@@ -113,6 +115,9 @@
+   if (managedDeliveries.enabled()) {
+     try { await managedDeliveries.runOnce(); }
+     catch (error) { log("error", "[deliveries] poll failed", error.message); }
++  } else {
++    try { await developmentOverdue.runOnce(); }
++    catch { log("error", "[development-overdue] scan failed; retry later"); }
+   }
+ }
+ 

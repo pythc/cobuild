@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "components": {
+    "platform": {"baseline":"embed-login-20261025-v1","verification":"local source overlay and previous release receipt; no new live source comparison","licenseStatus":"original-code-and-third-party-review-pending","upstreamRepository":"https://github.com/pythc/110lab-website"},
+    "makit": {"baseline":"embed-login-20261025-v1","verification":"local source overlay and previous release receipt; no new live source comparison","licenseStatus":"original-code-and-managed-sdk-review-pending","upstreamRepository":null},
+    "weknow": {"baseline":"quality-20261025-v1","sourceRevision":"242f3f4fc92c269ca9f97f8e0d50e4c9232a3cb4","upstreamVersion":"0.96.0","upstreamRepository":"https://github.com/docmost/docmost","licenseStatus":"AGPL-3.0-core; restricted directories omitted; complete derivative audit pending","omitted":["apps/client/src/ee","apps/server/src/ee","packages/ee","packages/base-formula"]},
+    "evalab": {"baseline":"local-source-snapshot","verification":"not verified as latest deployed version","licenseStatus":"original-code-and-third-party-review-pending","upstreamRepository":null},
+    "relay": {"baseline":"relay-ai-inbox-20261017","verification":"local source snapshot; not verified as latest deployed version","licenseStatus":"original-code-and-third-party-review-pending","upstreamRepository":null}
+  }
+}

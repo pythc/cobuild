@@ -1,0 +1,2329 @@
+{
+  "schemaVersion": 1,
+  "scope": "imported-source-only",
+  "secretScan": "limited-pattern-screening-not-a-complete-security-review",
+  "importedFiles": 2776,
+  "changes": [
+    {
+      "path": "apps/platform/package-lock.json",
+      "baselineSha256": "b7e552002187a921645c6ff4e7571ca4042ecb34b4cdddddad22a1098a27e9e3",
+      "currentSha256": "7509e337e7f2cc8ccc9aa8a750786167e22db34e5cc265e0cff4c0c29b1681c4"
+    },
+    {
+      "path": "apps/platform/package.json",
+      "baselineSha256": "4ab832a51ad9a00cd107355738826e7e69efa6870998479314893ff3c2dd39c2",
+      "currentSha256": "104d6a34ee6545092b3974a326196667a7a647d25994184904aec9055f152ce4"
+    },
+    {
+      "path": "apps/platform/scripts/build.mjs",
+      "baselineSha256": "483b855555ed986d74b668195cfd2e80c8ad1702955230a019539ac7c5d88be3",
+      "currentSha256": "9063b20c4b4cc462b61d45aba9a5c6e06e29f76b701ad0e6660ad636f0f6f44c"
+    },
+    {
+      "path": "apps/makit/package-lock.json",
+      "baselineSha256": "8b6a2fb691d6b925688049c5f1c9c85f40097dea2de99253a9a990236bec49bc",
+      "currentSha256": "208dfaa14d531ccdb19eda81711d1ad58a07309af960ca035796114ab231af5b"
+    },
+    {
+      "path": "apps/makit/package.json",
+      "baselineSha256": "3cba06bfa60e9c724e062655227b5f417e4e67f8fadb4104cd2b995a9de3d251",
+      "currentSha256": "24c29070073758689f71560531a9bd5097f09b499a836b7b5770dc4d1406de2a"
+    },
+    {
+      "path": "integrations/weknow/source/apps/client/package.json",
+      "baselineSha256": "fee97eb1151f6823bc302fb422a8e46239d1da4724f439eb487d9a5c9dfc5499",
+      "currentSha256": "6bfb8c57a7db2b6ad12071475858c6276dd69dd8c62188aa9ef6afd7e54e7bf1"
+    },
+    {
+      "path": "integrations/weknow/source/apps/client/src/features/search/components/search-spotlight.tsx",
+      "baselineSha256": "4266f2e41d28d9b119627f454ab4cd6011d7733a607f66e62fa351b56c65713d",
+      "currentSha256": "d92a7f5ae352bbd7b645e8eae54da6bfb7dc78e9efa5ac5db69abba1a88b90be"
+    },
+    {
+      "path": "integrations/weknow/source/apps/server/package.json",
+      "baselineSha256": "af704b3e119862a5f8e7dda9563ca8112f6eee96bc2775eb4edba66f33169449",
+      "currentSha256": "e026a8afd75cecc36678e5419f39213551d07f54e38550ac2515354039e9caec"
+    },
+    {
+      "path": "integrations/weknow/source/apps/server/test/jest-e2e.json",
+      "baselineSha256": "1a7a370d66b386a2a47cde79c5c602c52f5e30aff12129c5a8f91776d53b3fdf",
+      "currentSha256": "0cc2ca75c28c28293ff4a21c2624762c6e30824adcf5089cbd901aaa61366d13"
+    },
+    {
+      "path": "integrations/weknow/source/apps/server/tsconfig.json",
+      "baselineSha256": "e55a64ef16e946f122a08d029ebc5a942bae7f9f2074243e749bf1fd1cee3497",
+      "currentSha256": "2f9ab0edf7d4508a4233316882755258c5e0808e63cab2cb9c5a0dddeebea97a"
+    },
+    {
+      "path": "integrations/weknow/source/pnpm-lock.yaml",
+      "baselineSha256": "c61e470f9e387005486f55d6617a55fbec7a13b3a0304aaf09e25132c9081cd9",
+      "currentSha256": "257a8855dc8fbd1633948a8585a3fa4d5dda2673700cbb50b882954c37354ae8"
+    },
+    {
+      "path": "apps/relay/package-lock.json",
+      "baselineSha256": "c266e0dee4eca30987d3fd26934862e479610117fa380d4fce9d5374caf9305d",
+      "currentSha256": "cdbe48c457138d67a6407cf48f709d52da6f602dce3a8b4f9971af4df579d265"
+    },
+    {
+      "path": "apps/relay/package.json",
+      "baselineSha256": "438a4ee5486716894fffebbcce93f5b5aa5b7e3ad4d4281b2c267e3aa025a295",
+      "currentSha256": "f0c38ede80a1365e96e98ee420eba05f6d75163784ed6d82b665faf741780379"
+    }
+  ],
+  "missing": [],
+  "violations": [],
+  "reviewedSyntheticFixtures": [
+    {
+      "rule": "private-key",
+      "path": "apps/evalab/context-bridge/test/discover.test.ts",
+      "line": 116
+    },
+    {
+      "rule": "github-token",
+      "path": "apps/evalab/context-bridge/test/helpers.ts",
+      "line": 69
+    },
+    {
+      "rule": "private-key",
+      "path": "apps/evalab/context-bridge/test/redact.test.ts",
+      "line": 6
+    },
+    {
+      "rule": "github-token",
+      "path": "apps/evalab/context-bridge/test/redact.test.ts",
+      "line": 11
+    },
+    {
+      "rule": "aws-access-id",
+      "path": "apps/evalab/context-bridge/test/redact.test.ts",
+      "line": 12
+    },
+    {
+      "rule": "github-token",
+      "path": "apps/evalab/context-bridge/test/redact.test.ts",
+      "line": 37
+    },
+    {
+      "rule": "aws-access-id",
+      "path": "apps/evalab/context-bridge/test/redact.test.ts",
+      "line": 38
+    },
+    {
+      "rule": "private-key",
+      "path": "apps/evalab/server/src/security.test.ts",
+      "line": 39
+    },
+    {
+      "rule": "aws-access-id",
+      "path": "apps/evalab/server/src/security.test.ts",
+      "line": 42
+    },
+    {
+      "rule": "private-key",
+      "path": "apps/evalab/server/src/security.test.ts",
+      "line": 136
+    },
+    {
+      "rule": "private-key",
+      "path": "apps/evalab/server/src/security.test.ts",
+      "line": 141
+    },
+    {
+      "rule": "private-key",
+      "path": "apps/evalab/server/src/security.test.ts",
+      "line": 142
+    },
+    {
+      "rule": "private-key",
+      "path": "apps/evalab/tests/review-regressions.test.ts",
+      "line": 73
+    }
+  ],
+  "portabilityFindings": [
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/README.md",
+      "line": 3
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/README.md",
+      "line": 5
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/README.md",
+      "line": 30
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/README.md",
+      "line": 63
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/scripts/admin-init.mjs",
+      "line": 16
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/scripts/build-makit-links.mjs",
+      "line": 51
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/scripts/build.mjs",
+      "line": 55
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/scripts/preview-business.mjs",
+      "line": 10
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/scripts/preview-workbench.mjs",
+      "line": 10
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/scripts/verify-admin-release.mjs",
+      "line": 13
+    },
+    {
+      "rule": "feishu-app-identifier",
+      "path": "apps/platform/scripts/verify-admin-release.mjs",
+      "line": 15
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/scripts/verify-admin-release.mjs",
+      "line": 18
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/scripts/verify-admin-release.mjs",
+      "line": 33
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/scripts/verify-mail-release.mjs",
+      "line": 12
+    },
+    {
+      "rule": "feishu-app-identifier",
+      "path": "apps/platform/scripts/verify-mail-release.mjs",
+      "line": 17
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/scripts/verify-mail-release.mjs",
+      "line": 19
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/scripts/verify-mail-release.mjs",
+      "line": 43
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/scripts/verify-mail-release.mjs",
+      "line": 56
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/scripts/verify-mail-release.mjs",
+      "line": 58
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/scripts/verify-mail-release.mjs",
+      "line": 76
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/scripts/verify-mail-release.mjs",
+      "line": 94
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/scripts/verify-mail-release.mjs",
+      "line": 96
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/scripts/verify-mail-release.mjs",
+      "line": 97
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/server/admin-http.mjs",
+      "line": 34
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/server/admin-http.mjs",
+      "line": 50
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/server/admin-init-runtime.mjs",
+      "line": 67
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/server/application-access-http.mjs",
+      "line": 22
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/server/application-access-http.mjs",
+      "line": 45
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/server/application-access-http.mjs",
+      "line": 51
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/server/assessment-entry.mjs",
+      "line": 4
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/server/business-http.mjs",
+      "line": 29
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/server/business-http.mjs",
+      "line": 34
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/server/business-mail-provider.mjs",
+      "line": 10
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/server/business-mail-provider.mjs",
+      "line": 58
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/server/business-service.mjs",
+      "line": 37
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/server/business-service.mjs",
+      "line": 56
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/server/business-service.mjs",
+      "line": 63
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/server/business-service.mjs",
+      "line": 74
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/server/business-service.mjs",
+      "line": 76
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/server/business-state.mjs",
+      "line": 26
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/server/honors-http.mjs",
+      "line": 114
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/server/honors-http.mjs",
+      "line": 125
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/server/http.mjs",
+      "line": 33
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/server/http.mjs",
+      "line": 55
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/server/http.mjs",
+      "line": 78
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/server/http.mjs",
+      "line": 150
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/server/http.mjs",
+      "line": 151
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/server/http.mjs",
+      "line": 153
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/server/identity-applications.mjs",
+      "line": 14
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/server/identity-applications.mjs",
+      "line": 16
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/server/identity-applications.mjs",
+      "line": 65
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/server/identity-client.mjs",
+      "line": 3
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/server/lab-sso.mjs",
+      "line": 7
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/server/lab-sso.mjs",
+      "line": 8
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/server/local-portal-bridge.mjs",
+      "line": 30
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/server/mail-access-store.mjs",
+      "line": 17
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/server/mail-auth.mjs",
+      "line": 12
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/server/mail-auth.mjs",
+      "line": 91
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/server/mail-http.mjs",
+      "line": 66
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/server/mail-http.mjs",
+      "line": 104
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/server/mail-http.mjs",
+      "line": 122
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/server/mail-http.mjs",
+      "line": 131
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/server/mail-http.mjs",
+      "line": 136
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/server/mail-http.mjs",
+      "line": 145
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/server/mail-http.mjs",
+      "line": 192
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/server/mail-membership-provider.mjs",
+      "line": 5
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/server/mail-membership-provider.mjs",
+      "line": 23
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/server/mail-membership-provider.mjs",
+      "line": 24
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/server/mail-membership-worker-runtime.mjs",
+      "line": 66
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/server/mail-membership-worker-runtime.mjs",
+      "line": 207
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/server/mail-oauth.mjs",
+      "line": 17
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/server/mail-oauth.mjs",
+      "line": 167
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/server/monitoring-http.mjs",
+      "line": 15
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/server/monitoring-http.mjs",
+      "line": 38
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/server/offer-integration.mjs",
+      "line": 7
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/server/portal-constants.mjs",
+      "line": 1
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/server/portal.mjs",
+      "line": 19
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/server/portal.mjs",
+      "line": 22
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/server/portal.mjs",
+      "line": 23
+    },
+    {
+      "rule": "fixed-private-network",
+      "path": "apps/platform/server/portal.mjs",
+      "line": 23
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/server/portal.mjs",
+      "line": 25
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/server/portal.mjs",
+      "line": 26
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/server/portal.mjs",
+      "line": 37
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/server/project-knowledge-client.mjs",
+      "line": 4
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/server/project-knowledge-transport.mjs",
+      "line": 3
+    },
+    {
+      "rule": "fixed-private-network",
+      "path": "apps/platform/server/project-knowledge-transport.mjs",
+      "line": 8
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/server/project-knowledge-transport.mjs",
+      "line": 14
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/server/project-knowledge-transport.mjs",
+      "line": 15
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/server/recruitment-feishu-provider.mjs",
+      "line": 27
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/server/recruitment-http.mjs",
+      "line": 24
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/server/recruitment-http.mjs",
+      "line": 41
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/server/recruitment-lifecycle.mjs",
+      "line": 64
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/server/recruitment-lifecycle.mjs",
+      "line": 72
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/server/recruitment-mail.mjs",
+      "line": 16
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/server/recruitment-notifications.mjs",
+      "line": 39
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/server/recruitment-templates.mjs",
+      "line": 6
+    },
+    {
+      "rule": "feishu-app-identifier",
+      "path": "apps/platform/server/recruitment-templates.mjs",
+      "line": 7
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/server/recruitment-test-http.mjs",
+      "line": 29
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/server/recruitment-test-http.mjs",
+      "line": 33
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/server/recruitment-worker-runtime.mjs",
+      "line": 115
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/server/recruitment-workflow-http.mjs",
+      "line": 31
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/server/recruitment-workflow-http.mjs",
+      "line": 48
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/server/recruitment-workflow-http.mjs",
+      "line": 82
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/server/recruitment-workflow-store.mjs",
+      "line": 130
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/server/recruitment-workflow-worker-runtime.mjs",
+      "line": 116
+    },
+    {
+      "rule": "feishu-app-identifier",
+      "path": "apps/platform/server/recruitment-workflow-worker-runtime.mjs",
+      "line": 116
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/server/recruitment-workflow-worker-runtime.mjs",
+      "line": 117
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/server/recruitment-workflow-worker-runtime.mjs",
+      "line": 154
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/server/recruitment-workflow-worker-runtime.mjs",
+      "line": 178
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/server/recruitment-workflow-worker.mjs",
+      "line": 14
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/server/recruitment-workspace.mjs",
+      "line": 53
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/server/relay-widget-http.mjs",
+      "line": 7
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/server/relay-widget-http.mjs",
+      "line": 14
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/server/requirements-endpoint.mjs",
+      "line": 2
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/server/requirements-identity-bridge.mjs",
+      "line": 12
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/server/unified-identity-http.mjs",
+      "line": 27
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/server/unified-identity.mjs",
+      "line": 8
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/server/workbench-navigation.mjs",
+      "line": 9
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/server/workspace-http.mjs",
+      "line": 60
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/server/workspace-http.mjs",
+      "line": 70
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/server/workspace-store.mjs",
+      "line": 164
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/src/admin.html",
+      "line": 4
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/src/app.js",
+      "line": 8
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/src/assessment-sso.js",
+      "line": 18
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/src/embedded-workspace.js",
+      "line": 7
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/src/embedded-workspace.js",
+      "line": 8
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/src/embedded-workspace.js",
+      "line": 9
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/src/embedded-workspace.js",
+      "line": 10
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/src/embedded-workspace.js",
+      "line": 11
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/src/embedded-workspace.js",
+      "line": 12
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/src/embedded-workspace.js",
+      "line": 13
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/src/embedded-workspace.js",
+      "line": 14
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/src/embedded-workspace.js",
+      "line": 17
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/src/embedded-workspace.js",
+      "line": 18
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/src/embedded-workspace.js",
+      "line": 26
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/src/embedded-workspace.js",
+      "line": 37
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/src/embedded-workspace.js",
+      "line": 39
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/src/embedded-workspace.js",
+      "line": 51
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/src/embedded-workspace.js",
+      "line": 55
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/src/embedded-workspace.js",
+      "line": 58
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/src/embedded-workspace.js",
+      "line": 64
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/src/embedded-workspace.js",
+      "line": 72
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/src/embedded-workspace.js",
+      "line": 75
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/src/embedded-workspace.js",
+      "line": 90
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/src/embedded-workspace.js",
+      "line": 108
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/src/embedded-workspace.js",
+      "line": 120
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/src/embedded-workspace.js",
+      "line": 122
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/src/embedded-workspace.js",
+      "line": 141
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/src/embedded-workspace.js",
+      "line": 142
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/src/embedded-workspace.js",
+      "line": 155
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/src/embedded-workspace.js",
+      "line": 156
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/src/embedded-workspace.js",
+      "line": 159
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/src/embedded-workspace.js",
+      "line": 160
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/src/embedded-workspace.js",
+      "line": 162
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/src/embedded-workspace.js",
+      "line": 195
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/src/embedded-workspace.js",
+      "line": 199
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/src/embedded-workspace.js",
+      "line": 213
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/src/identity.js",
+      "line": 22
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/src/identity.js",
+      "line": 23
+    },
+    {
+      "rule": "fixed-private-network",
+      "path": "apps/platform/src/index.html",
+      "line": 23
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/src/index.html",
+      "line": 79
+    },
+    {
+      "rule": "fixed-private-network",
+      "path": "apps/platform/src/index.html",
+      "line": 134
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/src/index.html",
+      "line": 138
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/src/index.html",
+      "line": 153
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/src/lab-session.js",
+      "line": 61
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/src/lab-session.js",
+      "line": 80
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/src/mail-attachment-download.js",
+      "line": 19
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/src/mail.html",
+      "line": 11
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/src/mail.html",
+      "line": 12
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/src/monitoring.html",
+      "line": 6
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/src/plugin-release.js",
+      "line": 2
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/src/projects.json",
+      "line": 3
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/src/projects.json",
+      "line": 4
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/src/projects.json",
+      "line": 15
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/src/projects.json",
+      "line": 26
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/src/projects.json",
+      "line": 37
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/src/projects.json",
+      "line": 48
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/src/projects.json",
+      "line": 57
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/src/projects.json",
+      "line": 66
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/src/projects.json",
+      "line": 75
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/src/projects.json",
+      "line": 84
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/src/projects.json",
+      "line": 93
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/src/projects.json",
+      "line": 102
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/src/projects.json",
+      "line": 111
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/src/projects.json",
+      "line": 120
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/src/projects.json",
+      "line": 129
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/src/projects.json",
+      "line": 138
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/src/projects.json",
+      "line": 147
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/src/projects.json",
+      "line": 156
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/src/projects.json",
+      "line": 165
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/src/projects.json",
+      "line": 174
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/src/recruitment-mail-presets.js",
+      "line": 63
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/src/recruitment-mail-presets.js",
+      "line": 75
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/src/relay-widget.js",
+      "line": 1
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/src/resume-download.js",
+      "line": 43
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/src/suite-brand.js",
+      "line": 15
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/src/workbench.html",
+      "line": 52
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/src/workbench.js",
+      "line": 160
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/src/workspace-markup.html",
+      "line": 111
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/src/workspace.js",
+      "line": 119
+    },
+    {
+      "rule": "fixed-private-network",
+      "path": "apps/platform/src/workspace.js",
+      "line": 119
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/src/workspace.js",
+      "line": 1062
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/admin.test.mjs",
+      "line": 38
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/admin.test.mjs",
+      "line": 39
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/admin.test.mjs",
+      "line": 44
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/admin.test.mjs",
+      "line": 45
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/admin.test.mjs",
+      "line": 55
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/admin.test.mjs",
+      "line": 58
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/admin.test.mjs",
+      "line": 100
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/admin.test.mjs",
+      "line": 101
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/admin.test.mjs",
+      "line": 107
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/admin.test.mjs",
+      "line": 108
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/application-access-host.test.mjs",
+      "line": 11
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/application-access-host.test.mjs",
+      "line": 19
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/application-access-host.test.mjs",
+      "line": 20
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/application-access-http.test.mjs",
+      "line": 3
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/application-access-http.test.mjs",
+      "line": 38
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/application-access-http.test.mjs",
+      "line": 41
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/application-access-http.test.mjs",
+      "line": 43
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/business-http.test.mjs",
+      "line": 26
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/business-mail.test.mjs",
+      "line": 9
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/business-mail.test.mjs",
+      "line": 42
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/business-mcp-matrix.test.mjs",
+      "line": 28
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/business-mcp-matrix.test.mjs",
+      "line": 120
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/business-mcp-matrix.test.mjs",
+      "line": 210
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/business-mcp-matrix.test.mjs",
+      "line": 716
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/business-mcp-matrix.test.mjs",
+      "line": 718
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/business-mcp-matrix.test.mjs",
+      "line": 721
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/business-mcp-matrix.test.mjs",
+      "line": 738
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/business-service.test.mjs",
+      "line": 24
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/business-service.test.mjs",
+      "line": 94
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/business-service.test.mjs",
+      "line": 104
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/embedded-identity-ui.test.mjs",
+      "line": 6
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/embedded-identity-ui.test.mjs",
+      "line": 13
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/embedded-identity.test.mjs",
+      "line": 34
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/embedded-identity.test.mjs",
+      "line": 37
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/embedded-identity.test.mjs",
+      "line": 47
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/grunteon.test.mjs",
+      "line": 44
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/helpers/mail-fixtures.mjs",
+      "line": 1
+    },
+    {
+      "rule": "feishu-app-identifier",
+      "path": "apps/platform/tests/helpers/mail-fixtures.mjs",
+      "line": 1
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/honors.test.mjs",
+      "line": 246
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/http.test.mjs",
+      "line": 22
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/http.test.mjs",
+      "line": 48
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/http.test.mjs",
+      "line": 54
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/identity-applications.test.mjs",
+      "line": 7
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/identity-applications.test.mjs",
+      "line": 10
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/identity-applications.test.mjs",
+      "line": 12
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/identity-applications.test.mjs",
+      "line": 16
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/identity-client.test.mjs",
+      "line": 4
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/identity-client.test.mjs",
+      "line": 14
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/lab-session.test.mjs",
+      "line": 13
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/local-requirement-todos.test.mjs",
+      "line": 44
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/mail-access-store.test.mjs",
+      "line": 7
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/mail-access-store.test.mjs",
+      "line": 19
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/mail-access-store.test.mjs",
+      "line": 53
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/mail-access-store.test.mjs",
+      "line": 63
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/mail-http.test.mjs",
+      "line": 11
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/mail-http.test.mjs",
+      "line": 17
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/mail-http.test.mjs",
+      "line": 42
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/mail-http.test.mjs",
+      "line": 54
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/mail-http.test.mjs",
+      "line": 62
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/mail-http.test.mjs",
+      "line": 63
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/mail-local-client.test.mjs",
+      "line": 26
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/mail-login-ui.test.mjs",
+      "line": 6
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/mail-login-ui.test.mjs",
+      "line": 11
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/mail-login-ui.test.mjs",
+      "line": 43
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/mail-login-ui.test.mjs",
+      "line": 56
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/mail-login-ui.test.mjs",
+      "line": 57
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/mail-login-ui.test.mjs",
+      "line": 65
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/mail-login-ui.test.mjs",
+      "line": 66
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/mail-login-ui.test.mjs",
+      "line": 68
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/mail-login-ui.test.mjs",
+      "line": 73
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/mail-membership-provider.test.mjs",
+      "line": 15
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/mail-membership-worker.test.mjs",
+      "line": 11
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/mail-membership-worker.test.mjs",
+      "line": 12
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/mail-membership-worker.test.mjs",
+      "line": 83
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/mail-oauth.test.mjs",
+      "line": 26
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/mail-oauth.test.mjs",
+      "line": 68
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/mail-oauth.test.mjs",
+      "line": 77
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/makit-native-migration.test.mjs",
+      "line": 21
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/persistent-login.test.mjs",
+      "line": 34
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/protocol.test.mjs",
+      "line": 20
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/protocol.test.mjs",
+      "line": 48
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/protocol.test.mjs",
+      "line": 52
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/protocol.test.mjs",
+      "line": 55
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/protocol.test.mjs",
+      "line": 57
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/protocol.test.mjs",
+      "line": 58
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/protocol.test.mjs",
+      "line": 59
+    },
+    {
+      "rule": "fixed-private-network",
+      "path": "apps/platform/tests/protocol.test.mjs",
+      "line": 59
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/protocol.test.mjs",
+      "line": 61
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/protocol.test.mjs",
+      "line": 92
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/recruitment-direct-mail.test.mjs",
+      "line": 18
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/recruitment-direct-mail.test.mjs",
+      "line": 26
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/recruitment-direct-mail.test.mjs",
+      "line": 31
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/recruitment-direct-mail.test.mjs",
+      "line": 66
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/recruitment-direct-mail.test.mjs",
+      "line": 73
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/recruitment-hr.test.mjs",
+      "line": 16
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/recruitment-hr.test.mjs",
+      "line": 62
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/recruitment-lifecycle.test.mjs",
+      "line": 17
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/recruitment-offers.test.mjs",
+      "line": 58
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/recruitment-offers.test.mjs",
+      "line": 70
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/recruitment-test-http.test.mjs",
+      "line": 13
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/recruitment-test-http.test.mjs",
+      "line": 18
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/recruitment-test-http.test.mjs",
+      "line": 30
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/recruitment-test-integration.test.mjs",
+      "line": 13
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/recruitment-test-integration.test.mjs",
+      "line": 22
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/recruitment-test-integration.test.mjs",
+      "line": 43
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/recruitment-test-upload.test.mjs",
+      "line": 31
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/recruitment-test-upload.test.mjs",
+      "line": 54
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/recruitment-workflow.test.mjs",
+      "line": 58
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/recruitment-workflow.test.mjs",
+      "line": 79
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/recruitment-workflow.test.mjs",
+      "line": 85
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/recruitment-workflow.test.mjs",
+      "line": 95
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/recruitment.test.mjs",
+      "line": 48
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/recruitment.test.mjs",
+      "line": 202
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/relay-access-http.test.mjs",
+      "line": 5
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/relay-access-http.test.mjs",
+      "line": 7
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/requirements-unified-bridge.test.mjs",
+      "line": 16
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/requirements-unified-bridge.test.mjs",
+      "line": 26
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/requirements-unified-bridge.test.mjs",
+      "line": 27
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/requirements-unified-bridge.test.mjs",
+      "line": 28
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/resume-download.test.mjs",
+      "line": 10
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/resume-download.test.mjs",
+      "line": 28
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/shared-admin.test.mjs",
+      "line": 18
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/shared-admin.test.mjs",
+      "line": 21
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/shared-admin.test.mjs",
+      "line": 36
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/shared-admin.test.mjs",
+      "line": 37
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/shared-admin.test.mjs",
+      "line": 39
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/unified-identity-http.test.mjs",
+      "line": 13
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/unified-identity-http.test.mjs",
+      "line": 31
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/unified-identity-http.test.mjs",
+      "line": 32
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/unified-identity.test.mjs",
+      "line": 11
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/unified-identity.test.mjs",
+      "line": 20
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/unified-identity.test.mjs",
+      "line": 23
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/workbench-favorites.test.mjs",
+      "line": 36
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/workspace-directory.test.mjs",
+      "line": 6
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/workspace-http.test.mjs",
+      "line": 13
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/workspace-http.test.mjs",
+      "line": 22
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/workspace-http.test.mjs",
+      "line": 35
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/workspace-http.test.mjs",
+      "line": 51
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/workspace-ui.test.mjs",
+      "line": 24
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/workspace-ui.test.mjs",
+      "line": 72
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/workspace-ui.test.mjs",
+      "line": 76
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/makit/client/src/components/CoBuildBrand.tsx",
+      "line": 19
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/makit/client/src/components/relay/relay-widget.js",
+      "line": 1
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/makit/client/src/pages/ProjectsPage/ProjectActionsDialog.tsx",
+      "line": 140
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/makit/client/src/pages/ProjectsPage/ProjectsPage.tsx",
+      "line": 94
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/makit/client/src/pages/RelayPage/RelayPage.tsx",
+      "line": 8
+    },
+    {
+      "rule": "absolute-developer-path",
+      "path": "apps/makit/integrations/iteration-bot/src/agent.js",
+      "line": 40
+    },
+    {
+      "rule": "absolute-developer-path",
+      "path": "apps/makit/integrations/iteration-bot/src/agent.js",
+      "line": 42
+    },
+    {
+      "rule": "absolute-developer-path",
+      "path": "apps/makit/integrations/iteration-bot/src/agent.js",
+      "line": 50
+    },
+    {
+      "rule": "absolute-developer-path",
+      "path": "apps/makit/integrations/iteration-bot/src/agent.js",
+      "line": 51
+    },
+    {
+      "rule": "absolute-developer-path",
+      "path": "apps/makit/integrations/iteration-bot/src/agent.js",
+      "line": 52
+    },
+    {
+      "rule": "fixed-administrator-name",
+      "path": "apps/makit/integrations/iteration-bot/src/requirement-notifications.js",
+      "line": 322
+    },
+    {
+      "rule": "fixed-administrator-name",
+      "path": "apps/makit/integrations/iteration-bot/test/requirement-notifications.test.js",
+      "line": 16
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/makit/server/common/selfhost/session.service.ts",
+      "line": 8
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/makit/server/managed-retirement.ts",
+      "line": 6
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/makit/server/modules/relay/relay-native.controller.ts",
+      "line": 56
+    },
+    {
+      "rule": "fixed-administrator-name",
+      "path": "apps/makit/server/modules/requirements/feishu.service.ts",
+      "line": 704
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/makit/server/modules/requirements/lab-identity.service.ts",
+      "line": 20
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/makit/server/modules/requirements/portal-project.service.ts",
+      "line": 134
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/makit/server/modules/requirements/project-action.service.ts",
+      "line": 41
+    },
+    {
+      "rule": "fixed-administrator-name",
+      "path": "apps/makit/server/modules/requirements/requirements-command.service.ts",
+      "line": 1477
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/makit/test/unit/lab-identity.service.spec.ts",
+      "line": 46
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/makit/test/unit/managed-retirement.spec.ts",
+      "line": 28
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/makit/test/unit/managed-retirement.spec.ts",
+      "line": 36
+    },
+    {
+      "rule": "fixed-administrator-name",
+      "path": "apps/makit/test/unit/notifications.service.spec.ts",
+      "line": 26
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/makit/test/unit/portal-project.service.spec.ts",
+      "line": 66
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/makit/test/unit/project-action.spec.ts",
+      "line": 32
+    },
+    {
+      "rule": "fixed-administrator-name",
+      "path": "apps/makit/test/unit/pull-requests.service.spec.ts",
+      "line": 168
+    },
+    {
+      "rule": "fixed-administrator-name",
+      "path": "apps/makit/test/unit/pull-requests.service.spec.ts",
+      "line": 232
+    },
+    {
+      "rule": "fixed-administrator-name",
+      "path": "apps/makit/test/unit/pull-requests.service.spec.ts",
+      "line": 276
+    },
+    {
+      "rule": "fixed-administrator-name",
+      "path": "apps/makit/test/unit/pull-requests.service.spec.ts",
+      "line": 314
+    },
+    {
+      "rule": "fixed-administrator-name",
+      "path": "apps/makit/test/unit/pull-requests.service.spec.ts",
+      "line": 433
+    },
+    {
+      "rule": "fixed-administrator-name",
+      "path": "apps/makit/test/unit/pull-requests.service.spec.ts",
+      "line": 454
+    },
+    {
+      "rule": "fixed-administrator-name",
+      "path": "apps/makit/test/unit/pull-requests.service.spec.ts",
+      "line": 464
+    },
+    {
+      "rule": "fixed-administrator-name",
+      "path": "apps/makit/test/unit/pull-requests.service.spec.ts",
+      "line": 530
+    },
+    {
+      "rule": "fixed-administrator-name",
+      "path": "apps/makit/test/unit/requirement-ai-review.service.spec.ts",
+      "line": 110
+    },
+    {
+      "rule": "fixed-administrator-name",
+      "path": "apps/makit/test/unit/requirement-ai-review.service.spec.ts",
+      "line": 148
+    },
+    {
+      "rule": "fixed-administrator-name",
+      "path": "apps/makit/test/unit/requirement-ai-review.service.spec.ts",
+      "line": 182
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/makit/test/unit/selfhost-session.spec.ts",
+      "line": 43
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/makit/test/unit/selfhost-session.spec.ts",
+      "line": 51
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/makit/test/unit/selfhost-session.spec.ts",
+      "line": 70
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/makit/test/unit/selfhost-session.spec.ts",
+      "line": 85
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/makit/test/unit/selfhost-session.spec.ts",
+      "line": 93
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/makit/test/unit/selfhost-session.spec.ts",
+      "line": 94
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/makit/test/unit/selfhost-session.spec.ts",
+      "line": 102
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/makit/test/unit/selfhost-session.spec.ts",
+      "line": 108
+    },
+    {
+      "rule": "fixed-private-network",
+      "path": "apps/evalab/context-bridge/test/config.test.ts",
+      "line": 42
+    },
+    {
+      "rule": "fixed-private-network",
+      "path": "apps/evalab/context-bridge/test/config.test.ts",
+      "line": 51
+    },
+    {
+      "rule": "fixed-private-network",
+      "path": "apps/evalab/context-bridge/test/config.test.ts",
+      "line": 56
+    },
+    {
+      "rule": "fixed-private-network",
+      "path": "apps/evalab/tests/admin-deletion-live.mjs",
+      "line": 6
+    },
+    {
+      "rule": "fixed-private-network",
+      "path": "apps/evalab/tests/direct-upload-live.mjs",
+      "line": 13
+    },
+    {
+      "rule": "fixed-private-network",
+      "path": "apps/evalab/tests/downloaded-bridge.mjs",
+      "line": 10
+    },
+    {
+      "rule": "fixed-private-network",
+      "path": "apps/evalab/tests/mcp-live.mjs",
+      "line": 11
+    },
+    {
+      "rule": "fixed-private-network",
+      "path": "apps/evalab/tests/oauth-live.mjs",
+      "line": 8
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/relay/integrations/relay-widget.js",
+      "line": 1
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/relay/server/identity-client.mjs",
+      "line": 3
+    },
+    {
+      "rule": "absolute-developer-path",
+      "path": "apps/relay/server/main.mjs",
+      "line": 29
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/relay/server/main.mjs",
+      "line": 182
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/relay/server/main.mjs",
+      "line": 637
+    },
+    {
+      "rule": "fixed-administrator-name",
+      "path": "apps/relay/server/modules/requirements/feishu.service.ts",
+      "line": 568
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/relay/src/api.js",
+      "line": 14
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/relay/src/read-observer.js",
+      "line": 55
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/relay/src/read-observer.js",
+      "line": 56
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/relay/src/read-observer.js",
+      "line": 57
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/relay/src/read-observer.js",
+      "line": 58
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/relay/src/unread-entry.js",
+      "line": 34
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/relay/src/unread-entry.js",
+      "line": 35
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/relay/src/unread-entry.js",
+      "line": 36
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/relay/src/unread-entry.js",
+      "line": 37
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/relay/test/attention.test.mjs",
+      "line": 20
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/relay/test/http.test.mjs",
+      "line": 18
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/relay/test/http.test.mjs",
+      "line": 19
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/relay/test/http.test.mjs",
+      "line": 21
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/relay/test/http.test.mjs",
+      "line": 27
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/relay/test/http.test.mjs",
+      "line": 39
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/relay/test/http.test.mjs",
+      "line": 56
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/relay/test/http.test.mjs",
+      "line": 70
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/relay/test/http.test.mjs",
+      "line": 71
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/relay/test/http.test.mjs",
+      "line": 78
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/relay/test/http.test.mjs",
+      "line": 90
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/relay/test/http.test.mjs",
+      "line": 92
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/relay/test/read-observer.test.mjs",
+      "line": 15
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/relay/test/reminders.test.mjs",
+      "line": 3
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/relay/test/widget-grants.test.mjs",
+      "line": 8
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/relay/test/widget-grants.test.mjs",
+      "line": 9
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/relay/test/widget-launcher.test.mjs",
+      "line": 28
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/relay/test/widget-launcher.test.mjs",
+      "line": 29
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/relay/test/widget-launcher.test.mjs",
+      "line": 30
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/relay/test/widget-launcher.test.mjs",
+      "line": 33
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/relay/test/widget-launcher.test.mjs",
+      "line": 35
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/relay/test/widget-launcher.test.mjs",
+      "line": 36
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/relay/test/widget-launcher.test.mjs",
+      "line": 37
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/relay/test/widget-launcher.test.mjs",
+      "line": 38
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "integrations/weknow/source/apps/client/src/platform/cobuild-brand.tsx",
+      "line": 19
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "integrations/weknow/source/apps/server/src/core/auth/feishu/lab-identity-policy.ts",
+      "line": 13
+    }
+  ]
+}

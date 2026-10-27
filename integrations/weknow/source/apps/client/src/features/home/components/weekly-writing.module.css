@@ -1,0 +1,61 @@
+.card {
+  position: sticky;
+  top: 88px;
+  min-width: 0;
+}
+.pen {
+  color: var(--mantine-color-teal-6);
+}
+.info {
+  display: flex;
+  align-items: center;
+  color: var(--mantine-color-dimmed);
+  border-radius: 4px;
+}
+.info:focus-visible {
+  outline: 2px solid var(--mantine-color-blue-5);
+  outline-offset: 3px;
+}
+.list {
+  list-style: none;
+  padding: 0;
+  margin: 14px 0 0;
+  max-height: min(520px, 60vh);
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+.row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 62px;
+  padding: 8px 0;
+}
+.row + .row {
+  border-top: 1px solid var(--mantine-color-default-border);
+}
+.rank {
+  width: 20px;
+  flex-shrink: 0;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--mantine-color-dimmed);
+}
+.rank[data-leading] {
+  color: var(--mantine-color-teal-7);
+  font-weight: 650;
+}
+.name {
+  flex: 1;
+  min-width: 0;
+}
+.value {
+  flex-shrink: 0;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+@container knowledge-home (max-width: 600px) {
+  .card {
+    position: static;
+  }
+}

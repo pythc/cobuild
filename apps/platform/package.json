@@ -1,0 +1,50 @@
+{
+  "name": "110lab-portal",
+  "version": "0.23.2",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "build": "node scripts/build-suite.mjs",
+    "preview": "node scripts/preview.mjs",
+    "preview:workbench": "node scripts/preview-workbench.mjs",
+    "preview:recruitment": "node scripts/preview-recruitment-test.mjs",
+    "mcp": "node server/stdio.mjs",
+    "test": "node --test --test-timeout=30000 tests/*.test.mjs",
+    "serve": "node server/http.mjs"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/ext-apps": "1.7.5",
+    "@modelcontextprotocol/sdk": "1.30.0",
+    "@openai/mcp-extensions": "0.1.0",
+    "@uppy/core": "6.2.0",
+    "@uppy/dashboard": "6.0.1",
+    "@uppy/locales": "5.3.0",
+    "@uppy/xhr-upload": "6.0.1",
+    "busboy": "1.6.0",
+    "docx-preview": "0.3.7",
+    "express": "5.2.1",
+    "fast-xml-parser": "5.11.2",
+    "imapflow": "2.2.5",
+    "mailparser": "3.9.35",
+    "nodemailer": "10.0.13",
+    "pdfjs-dist": "6.4.299",
+    "sanitize-html": "2.18.0",
+    "xstate": "5.33.2",
+    "yauzl": "3.4.0",
+    "zod": "4.4.3",
+    "echarts": "6.0.0",
+    "@maily-to/core": "0.3.7",
+    "@maily-to/render": "0.2.3",
+    "@tiptap/react": "2.27.3",
+    "react": "19.2.0",
+    "react-dom": "19.2.0"
+  },
+  "devDependencies": {
+    "@tabler/icons": "3.49.0",
+    "esbuild": "0.25.12",
+    "smtp-server": "3.19.16"
+  }
+}

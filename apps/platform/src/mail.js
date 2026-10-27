@@ -1,0 +1,104 @@
+import './organization-access.js';
+import {restoreLabSession} from './persistent-login.js';
+// Both apps share the established login flow and cookie context. Only the
+// organization page loads member directories or administrator controls.
+const organization=['/organization','/organization/','/organization/embedded'].includes(location.pathname);
+const embedded=location.pathname.endsWith('/embedded'),prefix='/api/mail/'+(embedded?'embedded/':'');
+const managementPrefix='/api/organization/'+(embedded?'embedded/':'');
+let csrf='',revision=null,profile=null,flow=null,busy=false,generation=0,action=null,hostPending=false,lastHostRequest=0,hostTimer;
+let directoryMembers=[];
+const $=id=>document.getElementById(id),labels={super_admin:'超级管理员',admin:'实验室管理员',member:'普通成员'};
+function message(text=''){ $('message').textContent=text;$('message').hidden=!text; }
+function resetNotify(text='请先登录'){if(organization)return;$('open-notify').hidden=true;$('notify-account-hint').hidden=true;$('notify-status').textContent=text;}
+async function loadNotify(epoch){
+  if(organization)return;
+  if(!profile||!['super_admin','admin'].includes(profile.role)){resetNotify(profile?'仅超级管理员和管理员可使用':'请先登录');return;}
+  try{const status=await api('notify');if(epoch!==generation)return;
+    const ready=status.state==='ready';$('open-notify').hidden=!ready;$('notify-account-hint').hidden=!ready;
+    $('notify-status').textContent=({ready:'已开通收发',pending:'权限正在同步',error:'权限同步暂未完成 将自动重试',disabled:'邮箱正在配置'})[status.state]||'邮箱暂不可用';
+  }catch(e){if(epoch===generation)resetNotify(e.status===403?'管理员权限已变更':'暂时无法确认邮箱权限');}
+}
+async function api(path,{method='GET',data}={}){
+  const res=await fetch((organization&&/^(administrators(?:\/|$)|members$|audit$)/.test(path)?managementPrefix:prefix)+path,{method,credentials:'same-origin',headers:{...(data===undefined?{}:{'Content-Type':'application/json'}),...(method==='POST'&&csrf?{'X-CSRF-Token':csrf}:{})},body:data===undefined?undefined:JSON.stringify(data),signal:AbortSignal.timeout(15000)});
+  const value=await res.json();if(!res.ok)throw Object.assign(new Error(value.error||'操作失败'),{status:res.status});return value;
+}
+function tab(id){for(const name of ['administrators','audit','access'])if($(name))$(name).hidden=name!==id;document.querySelectorAll('[data-tab]').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.tab===id)));}
+function clearManagement(){if(!organization)return;directoryMembers=[];revision=null;action=null;$('member-search').value='';$('member-status').textContent='';$('grant-submit').disabled=true;$('admin-list').replaceChildren();$('audit-list').replaceChildren();$('member').replaceChildren(new Option('选择成员',''));$('organization-management').hidden=true;if($('confirmation').open)$('confirmation').close('cancel');}
+function clearIdentity(){clearManagement();profile=null;document.dispatchEvent(new CustomEvent('110lab:organization-identity',{detail:null}));csrf='';revision=null;resetNotify();$('identity').textContent='未登录';$('login').hidden=false;$('logout').hidden=true;if(organization)$('organization-access').hidden=true;}
+function ask(kind,target){action={kind,...target,revision};$('confirm-title').textContent={grant:'添加实验室管理员',revoke:'移除实验室管理员',transfer:'转让超级管理员'}[kind];$('confirm-text').textContent=(target.name||target.email)+(target.email?' · '+target.email:'')+(kind==='grant'?' 将可处理项目立项、奖项荣誉、招新、动态管理并收发通知邮箱':kind==='revoke'?' 将失去实验室管理员权限及通知邮箱权限':'');$('transfer-warning').hidden=kind!=='transfer';$('confirmation').showModal();}
+function renderMembers(){
+  const previous=$('member').value,q=$('member-search').value.trim().toLowerCase();
+  const visible=directoryMembers.filter(m=>(m.name+' '+m.email).toLowerCase().includes(q));
+  $('member').replaceChildren(new Option(visible.length?'选择飞书成员':'没有匹配的成员',''),...visible.map(m=>new Option(m.name+(m.email?' · '+m.email:''),m.subject)));
+  if(visible.some(m=>m.subject===previous))$('member').value=previous;
+  $('grant-submit').disabled=!$('member').value;
+}
+function renderAdministrators(list,members){
+  revision=list.revision;$('admin-list').replaceChildren();
+  for(const a of list.administrators){const row=document.createElement('li'),info=document.createElement('div'),name=document.createElement('strong'),detail=document.createElement('small');info.className='admin-info';name.textContent=a.name||a.email;detail.textContent=a.email||'飞书身份已授权';info.append(name,detail);row.append(info);
+    if(a.role==='super_admin'){const tag=document.createElement('span');tag.className='owner-badge';tag.textContent='超级管理员';row.append(tag);}
+    else{const actions=document.createElement('div');actions.className='row-actions';for(const [kind,title] of [['transfer','转让'],['revoke','移除']]){const button=document.createElement('button');button.type='button';button.textContent=title;button.setAttribute('aria-label',title+' '+(a.name||a.email));button.disabled=kind==='transfer'&&(!a.active||a.identityVerified===false);if(button.disabled)button.title='对方首次登录并验证企业身份后可转让';button.onclick=()=>ask(kind,a);actions.append(button);}row.append(actions);}
+    $('admin-list').append(row);
+  }
+  const existing=new Set(list.administrators.map(a=>a.subject));directoryMembers=members.filter(m=>!existing.has(m.subject));renderMembers();
+}
+function renderAudit(events){$('audit-list').replaceChildren();for(const e of events){const row=document.createElement('li'),info=document.createElement('div'),text=document.createElement('p'),time=document.createElement('small');info.className='audit-info';text.textContent=({grant:'添加实验室管理员',revoke:'移除实验室管理员',transfer:'转让超级管理员',bootstrap:'初始化超级管理员'}[e.action]||e.action)+' · '+(e.targetName||e.targetEmail||e.targetSubject||'');const date=e.at;time.textContent=(date?new Date(date).toLocaleString('zh-CN'):'')+' · '+(e.actorEmail||'');info.append(text,time);row.append(info);$('audit-list').append(row);}}
+async function load(){
+  const epoch=++generation;
+  try{const me=await api('session');if(epoch!==generation)return;profile=me;csrf=me.csrf;document.dispatchEvent(new CustomEvent('110lab:organization-identity',{detail:me}));$('identity').textContent=me.name+' · '+labels[me.role];$('login').hidden=true;$('logout').hidden=false;$('handoff').hidden=true;
+    if(!organization){void loadNotify(epoch);return;}
+    const superAdmin=me.role==='super_admin';$('organization-access').hidden=superAdmin;
+    if(!superAdmin){clearManagement();return;}
+    const [admins,members,audit]=await Promise.all([api('administrators'),api('members').catch(error=>({members:[],error})),api('audit')]);
+    if(epoch!==generation)return;
+    renderAdministrators(admins,members.members);renderAudit(audit.events);$('member-status').textContent=members.error?members.error.message:'可选择 '+directoryMembers.length+' 位飞书成员';
+    $('organization-management').hidden=false;
+    // Keep the selected management tab when refreshing.
+    const selected=document.querySelector('[data-tab][aria-selected="true"]');tab(selected?.dataset.tab||'administrators');
+  }catch(e){if(epoch!==generation)return;if(e.status===401){clearIdentity();return;}if(e.status===403){clearIdentity();message('管理员权限已变更 请重新加载');return;}message(e.message);}
+}
+async function login(){
+  if(busy||hostPending)return;busy=true;message('');$('login').disabled=true;if($('reauth'))$('reauth').disabled=true;
+  try{flow=await api('auth/start',{method:'POST',data:embedded?{}:{returnTo:organization?'/organization':'/mail'}});flow.fresh=!!profile;flow.started=Date.now();$('continue-login').href=flow.launchUrl;$('handoff').hidden=embedded;$('manual-login').open=false;$('login-code').value='';
+    if(embedded&&window.parent!==window)requestHostLogin();else location.assign(flow.launchUrl);
+  }catch(e){flow=null;$('handoff').hidden=true;message(e.message);}finally{busy=false;$('login').disabled=hostPending;if($('reauth'))$('reauth').disabled=hostPending;}
+}
+function loginTimeout(ms){clearTimeout(hostTimer);const state=flow?.state;hostTimer=setTimeout(()=>{if(flow?.state!==state)return;hostPending=false;flow=null;$('login').disabled=false;if($('reauth'))$('reauth').disabled=false;message('登录未完成 请重新打开 110lab 后再试');},ms);}
+function requestHostLogin(){if(!flow||hostPending||Date.now()-lastHostRequest<1500)return;if(Date.now()-flow.started>5*60000){flow=null;message('登录已超时 请重新登录');return;}hostPending=true;lastHostRequest=Date.now();message('正在打开飞书登录');loginTimeout(90000);window.parent.postMessage({type:'110lab-mail-host-login',state:flow.state,fresh:flow.fresh},'*');}
+$('continue-login').onclick=e=>{if(embedded&&window.parent!==window){e.preventDefault();login();}};
+for(const id of ['open-mailbox','open-notify'])if($(id))$(id).onclick=e=>{if(embedded&&window.parent!==window){e.preventDefault();window.parent.postMessage({type:'110lab-mail-open-mailbox',url:'https://www.feishu.cn/mail'},'*');}};
+async function redeem(ticket){if(busy||!flow)return;busy=true;try{await api('auth/redeem',{method:'POST',data:{state:flow.state,ticket}});flow=null;$('login-code').value='';message('');await load();}catch(e){message(e.message);}finally{busy=false;}}
+$('login').onclick=login;if($('reauth'))$('reauth').onclick=login;
+$('code-form').onsubmit=e=>{e.preventDefault();redeem($('login-code').value.trim());};
+window.addEventListener('message',e=>{const m=e.data;if(!embedded||e.source!==window.parent)return;
+  if(m?.type==='110lab-mail-host-opened'&&flow&&m.state===flow.state){message('请在打开的飞书页面完成授权');loginTimeout(270000);return;}
+  if(m?.type==='110lab-mail-host-result'&&flow&&m.state===flow.state){clearTimeout(hostTimer);hostPending=false;$('login').disabled=false;if($('reauth'))$('reauth').disabled=false;if(/^[\w-]{43}$/.test(m.ticket||'')){void redeem(m.ticket);}else{flow=null;message(m.updateRequired?'请更新并重新打开 110lab 后登录':'连接未完成 请重新点击飞书登录');}return;}
+  if(m?.type==='110lab-mail-mailbox-result'){if(!m.opened)message('飞书邮箱未打开 请使用独立窗口');return;}
+  if(!flow||m?.type!=='110lab-mail-open-result'||m.state!==flow.state)return;message(m.opened?'请在打开的飞书页面完成授权':'授权窗口未打开 请点击上方链接重试');
+});
+$('logout').onclick=async()=>{if(busy)return;busy=true;try{await api('logout',{method:'POST',data:{}});generation++;flow=null;hostPending=false;clearTimeout(hostTimer);clearIdentity();message('');}catch(e){message(e.message);}finally{busy=false;}};
+document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>tab(b.dataset.tab));
+if(organization){
+for(const link of document.querySelectorAll('.cb-sidebar a,.org-back')){
+  const href=link.getAttribute('href'),route={'/workbench':{id:'workbench',view:'home'},'/workbench#apps':{id:'workbench',view:'apps'},'/projects':{id:'projects'},'/organization':{id:'organization'}}[href];
+  if(embedded&&window.parent!==window&&route)link.addEventListener('click',event=>{if(event.button!==0||event.metaKey||event.ctrlKey||event.shiftKey||event.altKey)return;event.preventDefault();window.parent.postMessage({type:'110lab-workspace-open-app',...route},'*');});
+}
+if($('org-collapse'))$('org-collapse').onclick=()=>{const collapsed=document.body.classList.toggle('is-sidebar-collapsed');$('org-collapse').setAttribute('aria-expanded',String(!collapsed));$('org-collapse').setAttribute('aria-label',collapsed?'展开侧栏':'收起侧栏');$('org-collapse').querySelector('img').src='/assets/icons/layout-sidebar-left-'+(collapsed?'expand':'collapse')+'.svg';};
+if(location.hash==='#audit')tab('audit');
+$('member-search').oninput=renderMembers;
+$('member').onchange=()=>{$('grant-submit').disabled=!$('member').value;};
+$('member-refresh').onclick=()=>{if(!busy&&!flow){$('member-status').textContent='正在读取飞书通讯录';void load();}};
+$('grant-form').onsubmit=e=>{e.preventDefault();const member=directoryMembers.find(m=>m.subject===$('member').value);if(member)ask('grant',member);};
+$('confirmation').addEventListener('close',async()=>{const pending=action;action=null;if($('confirmation').returnValue!=='confirm'||!pending||busy)return;busy=true;$('confirm-action').disabled=true;try{const result=await api('administrators/'+pending.kind,{method:'POST',data:{...(pending.kind==='transfer'?{email:pending.email}:{subject:pending.subject}),revision:pending.revision,confirmed:true}});message(result.mailbox&&result.mailbox.state!=='ready'?'管理员名单已更新 飞书邮箱权限待同步':'已更新');await load();}catch(e){message(e.message);if([401,403,409].includes(e.status))await load();}finally{busy=false;$('confirm-action').disabled=false;}});
+}
+window.addEventListener('focus',()=>{if(!busy&&!flow)load();});
+setInterval(()=>{if(!document.hidden&&!busy&&!flow&&profile)load();},60000);
+let notifyPolling=false;
+setInterval(async()=>{if(document.hidden||busy||flow||!profile||notifyPolling)return;notifyPolling=true;try{await loadNotify(generation);}finally{notifyPolling=false;}},10000);
+try{const config=await api('config');$('login').disabled=!config.loginAvailable;if(config.loginAvailable){await restoreLabSession();await load();}else message('飞书登录尚未配置');}catch(e){$('login').disabled=true;message(e.message);}
+
+if(!organization){
+  const destination='/organization'+(embedded?'/embedded':'');
+  if($('organization-link'))$('organization-link').href=destination;
+  if(['#administrators','#audit'].includes(location.hash||''))location.replace(destination+location.hash);
+}

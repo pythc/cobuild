@@ -1,0 +1,53 @@
+@import './styles/makit-theme-layer.css';
+@import './styles/makit-platform-palette.css';
+@import './styles/makit-override.css';
+@import './styles/makit-font-family.css';
+@import 'tw-animate-css';
+@import './tailwind-theme.css';
+@import './typography.css';
+@import './styles/cobuild-motion/tokens.css';
+@import './styles/cobuild-motion/makit.css';
+
+@source "../../node_modules/streamdown/dist/*.js";
+@config "../../tailwind.config.ts";
+
+html {
+  background: var(--background);
+}
+
+body {
+  min-height: 100dvh;
+  background:
+    radial-gradient(
+      circle at 8% -8%,
+      hsl(221 83% 53% / 0.075),
+      transparent 30rem
+    ),
+    radial-gradient(
+      circle at 94% 2%,
+      hsl(190 84% 48% / 0.055),
+      transparent 34rem
+    ),
+    var(--background);
+  background-attachment: fixed;
+}
+
+::selection {
+  background: hsl(221 83% 53% / 0.16);
+}
+
+* {
+  scrollbar-color: hsl(220 14% 74%) transparent;
+  scrollbar-width: thin;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

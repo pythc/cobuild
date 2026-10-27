@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "files": [
+    {
+      "path": "apps/evalab/context-bridge/test/discover.test.ts",
+      "sha256": "f662de11b39e235e6e0bf73759287e051e1e74b28a97210c1199601c77b05776",
+      "reason": "Existing redaction/security test with synthetic token or incomplete private-key markers; manually reviewed without printing values"
+    },
+    {
+      "path": "apps/evalab/context-bridge/test/helpers.ts",
+      "sha256": "8ca6072637f5b263f08d0ec6917ab441d33a7dc0ebe9e2c5453894875327c2a3",
+      "reason": "Existing redaction/security test with synthetic token or incomplete private-key markers; manually reviewed without printing values"
+    },
+    {
+      "path": "apps/evalab/context-bridge/test/redact.test.ts",
+      "sha256": "9df20b7f6e3129cb0743624a52769a5a71ed6e3637ff0008749f523873d7d2dd",
+      "reason": "Existing redaction/security test with synthetic token or incomplete private-key markers; manually reviewed without printing values"
+    },
+    {
+      "path": "apps/evalab/server/src/security.test.ts",
+      "sha256": "ec94fdf8f6ff597015aac3eaa4a711499dfd1f3ff718817c07690fc5fe2e7da4",
+      "reason": "Existing redaction/security test with synthetic token or incomplete private-key markers; manually reviewed without printing values"
+    },
+    {
+      "path": "apps/evalab/tests/review-regressions.test.ts",
+      "sha256": "55da2dc672a2bdf3a2a662040e483ad77348accfbf32f2cb6d08982e38a5cff5",
+      "reason": "Existing redaction/security test with synthetic token or incomplete private-key markers; manually reviewed without printing values"
+    }
+  ]
+}

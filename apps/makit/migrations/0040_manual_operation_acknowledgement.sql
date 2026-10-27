@@ -1,0 +1,72 @@
+BEGIN;
+-- Manual, audited acknowledgement may unblock later operations; no replay or
+-- inferred success of the original uncertain write is performed.
+CREATE OR REPLACE FUNCTION requirement_update_job_enqueue_v2(
+ p_requirement_id varchar,p_input jsonb,p_actor_user_id varchar,
+ p_actor_name varchar,p_mutation_id varchar,p_hash varchar,p_source varchar)
+RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE j requirement_update_job%ROWTYPE;
+BEGIN
+ IF current_setting('role',TRUE) !~ '^service_role(_|$)' THEN RAISE insufficient_privilege; END IF;
+ IF p_requirement_id !~ '^rec[a-zA-Z0-9]+$' OR NULLIF(p_actor_user_id,'') IS NULL
+  OR p_mutation_id !~ '^[a-zA-Z0-9_-]{8,128}$' OR p_hash !~ '^[a-f0-9]{64}$'
+  OR p_source NOT IN ('web','mcp','bulk') OR jsonb_typeof(p_input) <> 'object'
+  OR octet_length(p_input::text)>262144 THEN
+  RAISE EXCEPTION 'invalid operation input' USING ERRCODE='22023';
+ END IF;
+ PERFORM pg_advisory_xact_lock(hashtextextended('requirement_mutation:'||p_requirement_id,0));
+ PERFORM pg_advisory_xact_lock(hashtextextended('requirement_update_job:'||p_actor_user_id,0));
+ SELECT * INTO j FROM requirement_update_job WHERE actor_user_id=p_actor_user_id AND client_mutation_id=p_mutation_id;
+ IF FOUND THEN
+  IF j.request_hash<>p_hash OR j.requirement_id<>p_requirement_id THEN
+   RAISE EXCEPTION 'idempotency key input mismatch' USING ERRCODE='22023';
+  END IF;
+  RETURN to_jsonb(j);
+ END IF;
+ IF EXISTS(SELECT 1 FROM requirement_archive WHERE requirement_id=p_requirement_id AND restored_at IS NULL AND deleted_at IS NULL)
+ THEN RAISE EXCEPTION 'requirement is archived' USING ERRCODE='55000'; END IF;
+ IF (SELECT count(*) FROM requirement_update_job WHERE actor_user_id=p_actor_user_id AND status IN('queued','running','unknown') AND COALESCE(execution_stage,'')<>'reviewed_unknown')>=50
+ THEN RAISE EXCEPTION 'too many active requirement update jobs' USING ERRCODE='54000'; END IF;
+ INSERT INTO requirement_update_job(requirement_id,expected_updated_at,input_json,actor_user_id,actor_user_name,
+  client_mutation_id,request_hash,source,execution_stage,trace_id)
+ VALUES(p_requirement_id,p_input->>'expectedUpdatedAt',jsonb_build_object('input',p_input)::text,
+  p_actor_user_id,p_actor_name,p_mutation_id,p_hash,p_source,'accepted',gen_random_uuid()::text)
+ RETURNING * INTO j;
+ RETURN to_jsonb(j);
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION requirement_update_job_claim_v2(p_id uuid,p_token varchar)
+RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE j requirement_update_job%ROWTYPE;
+BEGIN
+ IF current_setting('role',TRUE) !~ '^service_role(_|$)' THEN RAISE insufficient_privilege; END IF;
+ SELECT * INTO j FROM requirement_update_job WHERE id=p_id;
+ IF NOT FOUND THEN RETURN NULL; END IF;
+ PERFORM pg_advisory_xact_lock(hashtextextended('requirement_mutation:'||j.requirement_id,0));
+ -- An expired in-flight external write is not evidence of rejection.
+ UPDATE requirement_update_job SET status='unknown',execution_stage='reconcile',error_code='WRITE_OUTCOME_UNKNOWN',
+  error_message='写入结果待核实，请查看最新值；为避免覆盖或重复通知，未自动重试',
+  lock_token=NULL,lock_expires_at=NULL,_updated_at=CURRENT_TIMESTAMP
+ WHERE requirement_id=j.requirement_id AND status='running' AND lock_expires_at<=CURRENT_TIMESTAMP
+  AND (execution_stage='writing' OR execution_stage IS NULL);
+ IF EXISTS(SELECT 1 FROM requirement_update_job b WHERE b.requirement_id=j.requirement_id
+  AND b.id<>p_id AND ((b.status='unknown' AND COALESCE(b.execution_stage,'')<>'reviewed_unknown') OR b.status='running' OR (b.status='queued' AND (b._created_at,b.id)<(j._created_at,j.id))))
+ THEN RETURN NULL; END IF;
+ UPDATE requirement_update_job SET status='running',execution_stage='validating',
+  lock_token=p_token,lock_expires_at=CURRENT_TIMESTAMP+interval '15 minutes',
+  started_at=CURRENT_TIMESTAMP,attempts=attempts+1,_updated_at=CURRENT_TIMESTAMP
+ WHERE id=p_id AND ((status='queued' AND available_at<=CURRENT_TIMESTAMP)
+  OR (status='running' AND lock_expires_at<=CURRENT_TIMESTAMP AND execution_stage<>'writing'))
+ RETURNING * INTO j;
+ IF NOT FOUND THEN RETURN NULL; END IF;
+ RETURN to_jsonb(j);
+END;
+$$;
+
+
+DO $$ DECLARE s text:=current_schema(); BEGIN
+EXECUTE format('ALTER FUNCTION %I.requirement_update_job_enqueue_v2(varchar,jsonb,varchar,varchar,varchar,varchar,varchar) SET search_path=pg_catalog,%I,pg_temp',s,s);
+EXECUTE format('ALTER FUNCTION %I.requirement_update_job_claim_v2(uuid,varchar) SET search_path=pg_catalog,%I,pg_temp',s,s);
+END; $$;
+COMMIT;

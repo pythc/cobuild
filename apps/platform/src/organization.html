@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>组织与权限 · CoBuild</title><style>/* MAIL_CSS */</style></head>
+<body class="cb-shell cb-organization">
+<a class="org-skip" href="#organization-main">跳到主要内容</a>
+<aside class="cb-sidebar" aria-label="主导航">
+  <div class="cb-brand-row"><a href="/workbench" class="brand" aria-label="CoBuild 工作台"><img src="/assets/cobuild/cobuild-wordmark.svg" alt="CoBuild"></a><button id="org-collapse" class="cb-icon-button" type="button" aria-label="收起侧栏" aria-expanded="true"><img src="/assets/icons/layout-sidebar-left-collapse.svg" alt=""></button></div>
+  <nav class="cb-primary-nav" aria-label="页面"><a class="cb-nav-link" href="/workbench" aria-label="工作台"><img src="/assets/icons/home.svg" alt=""><span>工作台</span></a><a class="cb-nav-link" href="/projects" aria-label="项目"><img src="/assets/cobuild/kick.png" alt=""><span>项目</span></a><a class="cb-nav-link" href="/workbench#apps" aria-label="应用"><img src="/assets/icons/apps.svg" alt=""><span>应用</span></a></nav>
+  <div class="org-nav-group"><p>管理</p><a class="cb-nav-link" href="/organization" aria-current="page" aria-label="组织与权限"><img src="/assets/icons/user.svg" alt=""><span>组织与权限</span></a></div>
+  <div class="cb-sidebar-bottom identity"><p id="identity">未登录</p><div class="auth-actions"><button id="login" type="button">飞书登录</button><button id="logout" type="button" hidden>退出</button></div></div>
+</aside>
+<main class="shell cb-main" id="organization-main">
+  <header class="masthead cb-header"><div class="masthead-inner"><h1>组织与权限</h1><a href="/workbench#apps" class="org-back">返回应用</a></div></header>
+  <p id="message" role="status" aria-live="polite" hidden></p>
+  <section id="handoff" hidden aria-label="完成飞书登录"><a id="continue-login" target="_blank">打开飞书授权页面</a><details id="manual-login"><summary>已完成授权 但原页面未登录</summary><form id="code-form"><label for="login-code">粘贴授权成功页面提供的一次性登录码</label><p>这是返回插件的临时凭证 不是短信或飞书验证码</p><div class="input-row"><input id="login-code" autocomplete="off" maxlength="43" required><button>完成登录</button></div></form></details></section>
+  <section id="organization-access" class="permission-card" hidden><h2>实验室管理权限</h2><p class="hint">仅超级管理员可添加、移除实验室管理员或转让超级管理员。你在其他应用中的现有权限保持不变。</p></section>
+  <div id="organization-management" hidden>
+  <nav class="org-tabs" aria-label="组织与权限"><button type="button" data-tab="administrators" aria-selected="true">实验室管理员</button><button type="button" data-tab="access">应用权限</button><button type="button" data-tab="audit">操作记录</button></nav>
+  <section id="administrators" aria-labelledby="admins-title"><div class="section-heading"><h2 id="admins-title">实验室管理员</h2><button id="reauth" type="button">重新确认身份</button></div><p class="hint">从飞书通讯录直接添加实验室管理员 无需对方先登录</p><form id="grant-form" class="org-invite-panel"><label for="member">添加实验室管理员</label><div class="input-row"><input id="member-search" type="search" placeholder="搜索姓名或邮箱" aria-label="搜索飞书成员"><button id="member-refresh" type="button">刷新通讯录</button></div><p id="member-status" class="hint" role="status"></p><div class="input-row"><select id="member" required><option value="">选择成员</option></select><button id="grant-submit" disabled>添加</button></div></form><div class="org-list-heading"><span>成员</span><span>角色与操作</span></div><ul id="admin-list" aria-label="管理员列表"></ul></section>
+  <section id="access" hidden aria-labelledby="access-title">
+    <div class="section-heading"><h2 id="access-title">应用访问权限</h2><div class="access-heading-actions"><button id="access-reauth" type="button" hidden>重新确认身份</button><button id="access-reload" type="button">重新读取</button><button id="access-sync" type="button">同步飞书通讯录</button></div></div>
+    <p class="hint">未配置的应用沿用现有权限 进入权限不改变管理员 HR 或面试官角色</p>
+    <p id="access-status" role="status" aria-live="polite"></p>
+    <form id="access-form">
+      <label for="access-app">选择应用</label><select id="access-app" required></select>
+      <p id="access-boundary" class="hint"></p>
+      <fieldset class="access-modes"><legend>可进入的成员</legend>
+        <label><input type="radio" name="access-mode" value="inherit" checked>沿用现有权限</label>
+        <label><input type="radio" name="access-mode" value="everyone">全体飞书成员</label>
+        <label><input type="radio" name="access-mode" value="restricted">指定成员或部门</label>
+      </fieldset>
+      <div id="access-targets" class="access-targets" hidden>
+        <section><label for="access-member-search">个人</label><input id="access-member-search" type="search" placeholder="搜索姓名或邮箱"><div id="access-members" class="access-options" role="group" aria-label="可访问的个人"></div></section>
+        <section><label for="access-department-search">飞书组织架构</label><input id="access-department-search" type="search" placeholder="搜索部门"><div id="access-departments" class="access-options" role="group" aria-label="可访问的部门"></div><p class="hint">包含下级部门 成员随飞书自动同步</p></section>
+      </div>
+      <p id="access-summary" class="hint"></p><div class="access-footer"><p id="access-sync-time" class="hint"></p><button id="access-reset" type="button">放弃修改</button><button id="access-save" type="submit" disabled>保存权限</button></div>
+    </form>
+    <details class="access-history"><summary>权限变更记录</summary><ul id="access-history"></ul></details>
+  </section>
+  <section id="audit" hidden aria-labelledby="audit-title"><h2 id="audit-title">操作记录</h2><ul id="audit-list"></ul></section>
+  </div>
+</main>
+<dialog id="confirmation" aria-labelledby="confirm-title"><form method="dialog"><h2 id="confirm-title">确认操作</h2><p id="confirm-text"></p><p id="transfer-warning" hidden>转让后，你将成为实验室管理员</p><div class="dialog-actions"><button value="cancel">取消</button><button id="confirm-action" value="confirm">确认</button></div></form></dialog>
+<script type="module">/* MAIL_SCRIPT */</script>
+</body></html>

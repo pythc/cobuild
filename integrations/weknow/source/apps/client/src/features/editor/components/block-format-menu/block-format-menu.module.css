@@ -1,0 +1,68 @@
+.panel {
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+}
+.panel > :not(.insertPanel) {
+  flex-shrink: 0;
+}
+.icons {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 4px;
+}
+.row {
+  width: 100%;
+  min-height: 36px;
+  padding: 7px 8px;
+  border-radius: 5px;
+}
+.row:hover {
+  background: light-dark(
+    var(--mantine-color-gray-0),
+    var(--mantine-color-dark-5)
+  );
+}
+.back {
+  width: 100%;
+  padding: 4px 0 10px;
+}
+.settings {
+  padding: 4px 4px 8px;
+}
+
+.insertPanel {
+  min-width: 0;
+  min-height: 116px;
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+}
+.insertList {
+  max-height: min(620px, calc(100dvh - 240px));
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow-y: auto;
+  margin-top: 0;
+  overscroll-behavior: contain;
+}
+.row:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.sidebar {
+  position: fixed;
+  z-index: 250;
+  border: 1px solid var(--mantine-color-default-border);
+  border-radius: var(--mantine-radius-md);
+  background: var(--mantine-color-body);
+  box-shadow: var(--mantine-shadow-sm);
+  overflow-y: auto;
+}
+.sidebar > .insertPanel {
+  min-height: 80px;
+}
+.sidebar .insertList {
+  max-height: none;
+}

@@ -1,0 +1,98 @@
+.directory {
+  width: min(100%, 1020px);
+  margin: 0 auto;
+  padding: 28px 24px;
+}
+.list {
+  border: 1px solid var(--mantine-color-default-border);
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--mantine-color-body);
+}
+.row {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  padding: 16px 20px;
+  text-decoration: none;
+  color: inherit;
+  border-bottom: 1px solid var(--mantine-color-default-border);
+  transition: background 0.15s;
+}
+.row:last-child {
+  border-bottom: 0;
+}
+.row:hover {
+  background: var(--mantine-color-default-hover);
+}
+.icon {
+  width: 46px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  background: light-dark(#f5f7fa, #252b35);
+  border-radius: 12px;
+  flex-shrink: 0;
+}
+.name {
+  flex: 1;
+  min-width: 0;
+}
+.empty {
+  padding: 56px 24px;
+  background: light-dark(#f9fafc, #20232a);
+  border-style: dashed;
+}
+.fileRoot {
+  padding-top: var(--page-header-height, 45px);
+  height: calc(100dvh - var(--app-shell-header-offset, 0px));
+  /* Cancel AppShell's content gutter: the editor is the page, not an inset card. */
+  margin: calc(-1 * var(--app-shell-padding, 16px));
+  width: calc(100% + 2 * var(--app-shell-padding, 16px));
+  box-sizing: border-box;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.fileHeader {
+  padding: 6px 20px;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--mantine-color-default-border);
+}
+.editor {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  overflow: hidden;
+}
+.editorLoading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--mantine-color-body);
+  z-index: 1;
+}
+.preview {
+  width: 100%;
+  overflow: auto;
+  padding: 36px 24px;
+  max-width: 840px;
+  margin: 0 auto;
+}
+@media (max-width: 600px) {
+  .directory {
+    padding: 20px 16px;
+  }
+  .row {
+    padding: 12px;
+    gap: 10px;
+  }
+  .date {
+    display: none;
+  }
+  .fileHeader {
+    padding: 6px 12px;
+  }
+}

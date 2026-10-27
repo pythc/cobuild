@@ -1,0 +1,7 @@
+# Preserve imported source and license bytes so provenance hashes survive checkout.
+* -text
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.woff binary
+*.woff2 binary

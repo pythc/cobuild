@@ -1,0 +1,16 @@
+{
+  "name": "110lab-assessment",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "server",
+    "client",
+    "context-bridge"
+  ],
+  "scripts": {
+    "build": "npm run build -w server && npm run build -w client && npm run build -w context-bridge",
+    "test": "npm run test -w client && npm run test -w server && npm run test -w context-bridge",
+    "dev": "npm run dev -w server"
+  }
+}

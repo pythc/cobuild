@@ -1,0 +1,162 @@
+.identity {
+  --cobuild-collapsed: 36px;
+  --cobuild-expanded: 144px;
+  --cobuild-active: light-dark(#1b37bc, #99aeff);
+
+  min-width: var(--cobuild-expanded);
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.slot {
+  position: relative;
+  width: var(--cobuild-collapsed);
+  height: 36px;
+  flex-shrink: 0;
+}
+
+.link {
+  position: absolute;
+  inset: 0 auto auto 0;
+  z-index: 5;
+  display: block;
+  width: var(--cobuild-collapsed);
+  height: 36px;
+  overflow: hidden;
+  border-radius: 8px;
+  color: light-dark(#858a94, #a0a5af);
+  background: transparent;
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    width 260ms cubic-bezier(0.22, 1, 0.36, 1),
+    color 180ms ease,
+    background-color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.initial,
+.wordmark {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: var(--cobuild-expanded);
+  background: currentColor;
+  mask: url("/cobuild-initial.svg") left center / var(--cobuild-expanded) auto
+    no-repeat;
+  -webkit-mask: url("/cobuild-initial.svg") left center /
+    var(--cobuild-expanded) auto no-repeat;
+}
+
+.wordmark {
+  opacity: 0;
+  mask-image: url("/cobuild-tail.svg");
+  -webkit-mask-image: url("/cobuild-tail.svg");
+  transition: opacity 160ms ease;
+}
+
+.divider {
+  height: 16px;
+  width: 1px;
+  flex-shrink: 0;
+  background: light-dark(#dfe2e8, #454950);
+}
+
+.application,
+.divider {
+  transition: opacity 120ms ease;
+}
+
+.link:focus-visible {
+  width: var(--cobuild-expanded);
+  color: var(--cobuild-active);
+  background: light-dark(#f6f7f9, var(--mantine-color-dark-8));
+  box-shadow: 0 2px 10px rgb(20 35 65 / 8%);
+  outline: 2px solid light-dark(#8c9df0, #aebcff);
+  outline-offset: 2px;
+}
+
+.identity:has(.link:focus-visible) :is(.application, .divider) {
+  opacity: 0;
+}
+
+.link:focus-visible .wordmark {
+  opacity: 1;
+}
+
+@media (hover: hover) {
+  .link:hover {
+    width: var(--cobuild-expanded);
+    color: var(--cobuild-active);
+    background: light-dark(#f6f7f9, var(--mantine-color-dark-8));
+    box-shadow: 0 2px 10px rgb(20 35 65 / 8%);
+  }
+
+  .identity:has(.link:hover) :is(.application, .divider) {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .link:hover .wordmark {
+    opacity: 1;
+  }
+}
+
+/* Preserve keyboard focus under a parked pointer, until the pointer moves again. */
+.identity[data-preserve-app-focus]:has(.application :focus-visible) .link {
+  width: var(--cobuild-collapsed);
+  color: light-dark(#858a94, #a0a5af);
+  background: transparent;
+  box-shadow: none;
+}
+
+.identity[data-preserve-app-focus]:has(.application :focus-visible) .wordmark {
+  opacity: 0;
+}
+
+.identity[data-preserve-app-focus]:has(.application :focus-visible)
+  :is(.application, .divider) {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+@media (max-width: 48em) {
+  .identity {
+    --cobuild-collapsed: 32px;
+    --cobuild-expanded: 128px;
+    gap: 4px;
+  }
+}
+
+@media (max-width: 22.5em) {
+  .identity {
+    --cobuild-expanded: 112px;
+  }
+}
+
+@media (hover: none) {
+  /* Touch input keeps a direct link; narrow windows with a mouse still expand. */
+  .link:is(:hover, :focus-visible) {
+    width: var(--cobuild-collapsed);
+  }
+
+  .link:is(:hover, :focus-visible) .wordmark {
+    opacity: 0;
+  }
+
+  .identity:has(.link:is(:hover, :focus-visible)) :is(.application, .divider) {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .link,
+  .wordmark,
+  .application,
+  .divider {
+    transition: none;
+  }
+}

@@ -1,0 +1,48 @@
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.reading {
+  grid-column: 1 / -1;
+}
+.readingGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px 20px;
+}
+.pageLink {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 8px;
+  border-radius: 8px;
+}
+.pageLink:hover {
+  background: light-dark(
+    var(--mantine-color-gray-0),
+    var(--mantine-color-dark-6)
+  );
+}
+.pageLink:focus-visible {
+  outline: 2px solid var(--mantine-primary-color-filled);
+  outline-offset: 2px;
+}
+.pageText {
+  min-width: 0;
+  flex: 1;
+}
+@media (max-width: 600px) {
+  .grid,
+  .readingGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@container knowledge-home-main (max-width: 560px) {
+  .grid,
+  .readingGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

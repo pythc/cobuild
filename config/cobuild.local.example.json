@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "organization": { "name": "Local Team", "slug": "local-team" },
+  "origins": {
+    "platform": "http://127.0.0.1:8080",
+    "makit": "http://127.0.0.1:8081",
+    "weknow": "http://127.0.0.1:8082"
+  },
+  "modules": ["platform", "kick", "makit", "weknow"],
+  "identity": { "providers": ["local"], "sessionDays": 30, "selfRegistration": false },
+  "integrations": { "feishu": false, "github": false, "mail": false, "ai": false },
+  "delivery": { "externalMessages": false }
+}

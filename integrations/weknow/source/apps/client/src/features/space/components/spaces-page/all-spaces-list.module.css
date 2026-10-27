@@ -1,0 +1,104 @@
+.list {
+  container-type: inline-size;
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--mantine-spacing-lg);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: rem(190px);
+  padding: rem(20px);
+  border: 1px solid
+    light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4));
+  border-radius: rem(12px);
+  background: var(--mantine-color-body);
+  transition:
+    border-color 120ms ease,
+    background-color 120ms ease;
+  &:hover,
+  &:focus-within {
+    border-color: light-dark(
+      var(--mantine-color-blue-4),
+      var(--mantine-color-blue-6)
+    );
+    background: light-dark(
+      var(--mantine-color-blue-0),
+      var(--mantine-color-dark-6)
+    );
+  }
+}
+.cardLink {
+  display: grid;
+  grid-template-columns: rem(60px) minmax(0, 1fr);
+  align-items: start;
+  gap: var(--mantine-spacing-md);
+  color: inherit;
+  text-decoration: none;
+  flex: 1;
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+  }
+  &:hover {
+    color: inherit;
+    text-decoration: none;
+  }
+  &:focus-visible {
+    outline: none;
+  }
+  &:focus-visible::after {
+    outline: 2px solid var(--mantine-primary-color-filled);
+    outline-offset: 3px;
+  }
+}
+.details {
+  min-width: 0;
+}
+.name {
+  margin: rem(3px) 0 rem(8px);
+  font-size: rem(18px);
+  font-weight: 600;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+.description {
+  color: var(--mantine-color-dimmed);
+  font-size: rem(15px);
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.footer {
+  margin-top: var(--mantine-spacing-md);
+  padding-top: rem(12px);
+  border-top: 1px solid
+    light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4));
+}
+.members {
+  color: var(--mantine-color-dimmed);
+  white-space: nowrap;
+}
+.actions {
+  position: relative;
+  z-index: 1;
+  flex-shrink: 0;
+}
+@container (max-width: 40rem) {
+  .grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .card {
+    transition: none;
+  }
+}

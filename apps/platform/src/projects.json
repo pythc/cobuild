@@ -1,0 +1,180 @@
+{
+  "systems": {
+    "assessment": "https://exam.110-lab.cn",
+    "requirements": "https://makit.110-lab.cn"
+  },
+  "projects": [
+    {
+      "id": "assessment",
+      "category": "systems",
+      "label": "RECRUITMENT",
+      "title": "110 实验室考核系统",
+      "description": "从真实项目实践出发，连接报名、作答、提交与评审。",
+      "tags": "产品方向 / 开发与测试",
+      "art": "assessment",
+      "url": "https://exam.110-lab.cn",
+      "span": 2
+    },
+    {
+      "id": "requirements",
+      "category": "systems",
+      "label": "COLLABORATION",
+      "title": "110 需求协作平台",
+      "description": "让每一个想法，都有清晰的负责人、进展与交付记录。",
+      "tags": "需求流转 / 迭代协作",
+      "art": "requirements",
+      "url": "https://makit.110-lab.cn",
+      "span": 1
+    },
+    {
+      "id": "teaching",
+      "category": "ai",
+      "label": "项目介绍",
+      "title": "智评学堂",
+      "description": "连接作业布置、学生提交、AI 辅助批改与学情分析的教学平台。",
+      "tags": "教育应用 / AI 实践",
+      "art": "teaching",
+      "url": "https://ai-grading.110-lab.cn/login",
+      "span": 1
+    },
+    {
+      "id": "grunteon",
+      "category": "tools",
+      "label": "项目介绍",
+      "title": "Grunteon JVM字节码混淆框架",
+      "description": "面向 JVM 字节码的混淆框架，将代码保护融入构建与发布流程。",
+      "tags": "JVM / 字节码 / 功能展示",
+      "art": "grunteon",
+      "url": "https://110-lab.cn/#grunteon",
+      "span": 1
+    }
+  ],
+  "apps": [
+    {
+      "id": "projects",
+      "title": "项目立项",
+      "description": "发起自由探索项目 组建团队并申请实验室共同立项",
+      "url": "https://internal.110-lab.cn/projects",
+      "status": "available",
+      "icon": "projects",
+      "edition": "项目协作"
+    },
+    {
+      "id": "knowledge",
+      "title": "知识库",
+      "description": "文档、资料与团队协作。",
+      "url": "https://knowledge.110-lab.cn/home",
+      "status": "intranet",
+      "icon": "knowledge",
+      "edition": "内部知识库"
+    },
+    {
+      "id": "honors",
+      "title": "奖项荣誉",
+      "description": "登记获奖成果 关联项目与成员 提交管理员审核",
+      "url": "https://internal.110-lab.cn/honors",
+      "status": "available",
+      "icon": "honors",
+      "edition": "成果登记"
+    },
+    {
+      "id": "recruitment-test",
+      "title": "招新管理",
+      "description": "官网简历、初筛、面试安排与模板邮件",
+      "url": "https://internal.110-lab.cn/recruitment",
+      "status": "available",
+      "icon": "recruitment",
+      "edition": "招新工作流"
+    },
+    {
+      "id": "grading-internal",
+      "title": "批改系统内网版",
+      "description": "校园教学与作业批改，使用已有内网账号登录。",
+      "url": "https://aigrading.110-lab.cn/login",
+      "status": "intranet",
+      "icon": "grading",
+      "edition": "内网版"
+    },
+    {
+      "id": "grading-public",
+      "title": "批改系统",
+      "description": "外网版已启用，连接作业布置、智能批改与学情分析。",
+      "url": "https://ai-grading.110-lab.cn/login",
+      "status": "available",
+      "icon": "grading",
+      "edition": "外网版"
+    },
+    {
+      "id": "assessment",
+      "title": "考核系统",
+      "description": "招新报名、项目作答、提交与评审。",
+      "url": "https://exam.110-lab.cn/api/auth/feishu/start",
+      "status": "available",
+      "icon": "assessment",
+      "edition": "招新考核"
+    },
+    {
+      "id": "requirements",
+      "title": "需求平台",
+      "description": "集中提交需求，协作推进项目与迭代。",
+      "url": "https://makit.110-lab.cn",
+      "status": "available",
+      "icon": "requirements",
+      "edition": "团队协作"
+    },
+    {
+      "id": "lab-home",
+      "title": "实验室首页",
+      "description": "打开 110 实验室公开首页。",
+      "url": "https://110-lab.cn",
+      "status": "available",
+      "icon": "home",
+      "edition": "公开站点"
+    },
+    {
+      "id": "updates-admin",
+      "title": "动态管理",
+      "description": "发布和维护实验室动态。",
+      "url": "https://internal.110-lab.cn/admin",
+      "status": "available",
+      "icon": "updates",
+      "edition": "内部管理"
+    },
+    {
+      "id": "public-mail",
+      "title": "公共邮箱管理",
+      "description": "团队公共邮箱入口与邮箱授权状态。",
+      "url": "https://internal.110-lab.cn/mail",
+      "status": "available",
+      "icon": "mail",
+      "edition": "团队邮箱"
+    },
+    {
+      "id": "organization",
+      "title": "组织与权限",
+      "description": "实验室管理员、超级管理员转让与权限操作记录。",
+      "url": "https://internal.110-lab.cn/organization",
+      "status": "available",
+      "icon": "organization",
+      "edition": "组织管理"
+    },
+    {
+      "id": "monitoring",
+      "title": "Pulse",
+      "description": "服务器资源与 Grafana 监控面板",
+      "url": "https://internal.110-lab.cn/monitoring",
+      "status": "available",
+      "icon": "monitoring",
+      "edition": "运行监控"
+    },
+    {
+      "id": "relay",
+      "title": "Relay",
+      "description": "用户咨询与客服接待。",
+      "url": "https://cobuild.110-lab.cn/relay/",
+      "status": "available",
+      "icon": "requirements",
+      "edition": "客服工作台"
+    }
+  ]
+}

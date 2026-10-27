@@ -1,0 +1,2 @@
+import{tool}from'@opencode-ai/plugin';import{call}from'../lib/call';
+export default tool({description:'只读查询当前已登录人的批改系统账号、上传与拒绝原因、整卷任务、有效提交或名单导入。自动绑定当前登录账号，不需要再次询问学号或姓名。不能查询他人、成绩、答案或密码。',args:{resource:tool.schema.enum(['accounts','uploads','submission_jobs','submissions','imports']),start:tool.schema.string().nullable(),end:tool.schema.string().nullable(),assignment:tool.schema.string().nullable(),purpose:tool.schema.enum(['ASSIGNMENT','ADMIN_IMPORT']).nullable()},async execute(args){return call('query_database',args);}});

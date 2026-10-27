@@ -1,0 +1,146 @@
+/* Responsive layouts share the same conversations and actions as desktop. */
+.mobile-navigation-toggle,.context-toggle{display:none}
+.chat-actions{display:contents}
+.chat-person strong{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.context-dialog .context-panel{display:block;border:0;overflow:visible}
+.context-dialog{max-height:calc(var(--app-height,100dvh) - 24px)}
+.context-dialog>header{position:sticky;top:0;background:#fff;z-index:1}
+.mobile-navigation{padding:0;border:0;margin:0;inset:0 auto 0 0;width:min(300px,calc(100vw - 48px));height:100dvh;max-height:100dvh;max-width:none;background:var(--soft);color:var(--ink)}
+.mobile-navigation::backdrop{background:#15203966}
+.mobile-navigation .sidebar{position:static;width:100%!important;height:100%;padding:24px 18px!important;border:0}
+.mobile-navigation .brand>a,.mobile-navigation nav>a>span,.mobile-navigation .favorites>a>span,.mobile-navigation .sidebar-user>span:not(.avatar){display:block}
+.mobile-navigation nav>a,.mobile-navigation .favorites>a{justify-content:flex-start;padding:10px 13px}
+.mobile-navigation .brand{justify-content:space-between;gap:12px}
+.mobile-navigation .favorites h2{text-align:left;margin:0 13px 10px}
+.mobile-navigation .sidebar-user{justify-content:flex-start}
+.field,.chat-person,.detail-section,.ticket-detail-title>div{min-width:0}
+.ticket-detail-title h2,.detail-section p,.timeline p,.ticket-properties dd,.source-chip{overflow-wrap:anywhere}
+.select-options{max-height:220px;overflow-y:auto;overscroll-behavior:contain}
+.connection-error{flex-wrap:wrap}
+.widget-mode,.customer-mode>main{height:var(--app-height,100dvh)}
+.widget-mode .chat-head{padding-top:max(12px,env(safe-area-inset-top))}
+.widget-mode .composer,.customer-mode .composer{padding-bottom:max(12px,env(safe-area-inset-bottom))}
+@media(max-width:1180px){
+  .operator-workspace{grid-template-columns:230px minmax(0,1fr)}
+  .operator-workspace>.context-panel{display:none}
+  .context-toggle{display:inline-flex}
+}
+@media(min-width:901px) and (max-width:960px){
+  .operator-mode{--sidebar:76px}
+  .operator-mode>.sidebar{width:76px;padding:24px 12px}
+  .operator-mode>.sidebar .suite-brand,.operator-mode>.sidebar nav>a>span,.operator-mode>.sidebar .favorites>a>span,.operator-mode>.sidebar .sidebar-user>span:not(.avatar),.operator-mode>.sidebar .favorites-hint{display:none}
+  .operator-mode>.sidebar .brand,.operator-mode>.sidebar nav>a,.operator-mode>.sidebar .favorites>a,.operator-mode>.sidebar .sidebar-user{justify-content:center}
+  .operator-mode>.sidebar .favorites h2{margin-inline:0;text-align:center}
+}
+@media(max-width:900px){
+  .operator-mode,.operator-mode.sidebar-small{--sidebar:0px}
+  .operator-mode>.sidebar{display:none}
+  .operator-mode>main{margin:0;height:var(--app-height,100dvh);display:flex;flex-direction:column;padding:12px 12px max(12px,env(safe-area-inset-bottom));overflow:hidden}
+  .operator-mode .page-header{flex:none;justify-content:flex-start;gap:10px;margin-bottom:12px;min-height:40px}
+  .mobile-navigation-toggle{display:inline-flex}
+  .page-brand{min-width:0;gap:8px}
+  .operator-mode .page-brand h1{font-size:20px}
+  .operator-mode .page-brand h1>span{display:inline;font-size:12px;margin-left:9px}
+  .page-tabs{flex:none;gap:24px;margin-bottom:12px}
+  .page-tabs>button{min-height:40px;font-size:13px;padding:4px 0 10px}
+  .operator-mode .operator-workspace{flex:1;min-height:0;height:auto;width:100%;grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr)}
+  .operator-mode .operator-workspace>.conversation-list{display:none}
+  .operator-workspace.mobile-list-open>.conversation-list{display:flex;border:0}
+  .operator-workspace.mobile-list-open>.chat,.operator-workspace.mobile-list-open>.operator-empty{display:none}
+  .operator-workspace .mobile-back{display:inline-flex}
+  .operator-workspace .operator-empty{grid-column:1}
+  .operator-mode .conversation-list,.operator-mode .chat{min-width:0;min-height:0}
+  .operator-workspace .search{min-height:44px}
+  .search input{font-size:16px}
+  .queue-tabs{gap:6px}
+  .queue-tabs>button{min-height:40px;font-size:13px;padding:6px 12px}
+  .conversation-row{padding:16px}
+  .operator-workspace .row-top strong{font-size:15px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .row-top time{flex-shrink:0}
+  .row-bottom{font-size:11px}
+  .chat-head{flex-wrap:wrap;gap:8px;padding:10px 12px;min-height:0}
+  .chat-head .icon-button{min-height:40px;min-width:40px}
+  .chat-head>.avatar{width:32px;height:32px}
+  .chat-head>.chat-person{flex:1;min-width:0}
+  .chat-head strong{font-size:15px}
+  .chat-head p{max-width:none;font-size:11px;display:block;text-overflow:ellipsis}
+  .chat-head p .app-mark{margin-right:4px;vertical-align:middle}
+  .chat-head>.chat-actions{display:flex;flex:0 0 100%;gap:8px;justify-content:flex-end;border-top:1px solid var(--line);padding-top:8px}
+  .chat-head .chat-actions>.small-button{min-height:40px;padding:6px 8px;font-size:12px}
+  .chat-head .ticket-action>span{display:inline}
+  .messages{padding:14px 12px;overscroll-behavior:contain}
+  .message{max-width:94%}
+  .message-bubble{font-size:14px;padding:10px 12px}
+  .message-meta{font-size:11px}
+  .composer{padding:10px 12px;min-width:0}
+  .composer>textarea{font-size:16px;min-height:54px;max-height:90px;resize:none}
+  .composer-tools>.icon-button,.send-button{min-height:40px;min-width:40px}
+  .reply-tabs{gap:20px;align-items:center;margin-bottom:4px}
+  .reply-tabs button{min-height:32px;font-size:12px}
+  .reply-tabs span{font-size:10px}
+  .customer-mode .chat-head,.widget-mode .chat-head{flex-wrap:nowrap}
+  .widget-mode .chat-head .chat-person,.customer-mode .chat-head .chat-person{min-width:0}
+  .chat-head>.new-conversation-button{min-height:40px;flex:none;font-size:12px}
+  .widget-mode .chat-head p,.customer-mode .chat-head p{display:flex;flex-wrap:wrap;white-space:normal}
+  .ticket-list{min-height:0;overflow-y:auto;overscroll-behavior:contain}
+  .ticket-toolbar{position:sticky;top:0;background:#fff;z-index:1}
+  .ticket-filters{gap:5px;padding-bottom:3px;overscroll-behavior:contain}
+  .ticket-filters>button{min-height:40px;font-size:12px;padding:6px 10px}
+  .ticket-filters>button>span{font-size:11px}
+  .table-scroll{overflow:visible}
+  .ticket-list table{display:block;white-space:normal}
+  .ticket-list thead{display:none}
+  .ticket-list tbody{display:block}
+  .ticket-list tr{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px 16px;position:relative;padding:16px;border-bottom:1px solid var(--line)}
+  .ticket-list td{display:block;min-width:0;border:0;padding:0;overflow-wrap:anywhere;font-size:12px}
+  .ticket-list td[data-label]:not(:first-child)::before{content:attr(data-label);display:block;font-size:11px;color:var(--muted);margin-bottom:4px}
+  .ticket-list td:first-child{grid-column:1/-1;padding-right:34px}
+  .ticket-title{max-width:none;width:100%}
+  .ticket-title>strong{min-width:0;font-size:14px;overflow-wrap:anywhere}
+  .ticket-title>span{font-size:11px}
+  .ticket-list td:last-child{position:absolute;right:8px;top:12px}
+  .ticket-list td:last-child .icon-button{width:40px;height:40px}
+  .ticket-list .badge,.ticket-list .priority{font-size:12px}
+  .modal{width:calc(100% - 20px);max-height:calc(var(--app-height,100dvh) - 20px);margin:auto;padding:0}
+  .modal header,.modal footer{padding:14px 16px}
+  .modal header h2{font-size:18px}
+  .modal-body{padding:16px}
+  .modal footer{position:sticky;bottom:0;padding-bottom:max(14px,env(safe-area-inset-bottom));background:#fff}
+  .modal footer .button{min-height:42px;font-size:14px}
+  .form-row{grid-template-columns:minmax(0,1fr);gap:0}
+  .field>input,.field>textarea,.select-trigger{font-size:16px;min-height:44px}
+  .people-multi label{min-height:42px}
+  .source-chip{flex-wrap:wrap}
+  .context-dialog{margin:auto}
+  .context-dialog .context-panel>section{padding:18px}
+  .context-dialog dl,.context-dialog dd,.context-dialog .context-source,.context-dialog .linked-ticket>strong{font-size:13px}
+  .context-dialog .button{min-height:42px;font-size:13px}
+  .toast{left:50%;width:max-content;max-width:calc(100% - 24px);bottom:max(16px,env(safe-area-inset-bottom));font-size:13px;overflow-wrap:anywhere}
+  .pending-conversions{flex:none;max-height:90px;overflow-y:auto}
+  .connection-error{flex:none;font-size:13px}
+}
+
+@media(max-width:900px) and (max-height:540px){
+  .operator-mode>main{padding-block:6px}
+  .operator-mode .page-header{min-height:32px;margin-bottom:4px}
+  .operator-mode .page-brand h1{font-size:18px}
+  .operator-mode .page-header .icon-button{padding:4px}
+  .operator-mode .page-tabs{margin-bottom:6px}
+  .operator-mode .page-tabs>button{min-height:32px;padding-bottom:6px}
+  .operator-mode .chat-head{flex-shrink:0;padding:6px 10px;gap:4px}
+  .operator-mode .chat-head .icon-button{min-height:32px;min-width:32px}
+  .operator-mode .chat-actions{padding-top:4px}
+  .operator-mode .chat-actions>.small-button{min-height:32px}
+  .operator-mode .composer{padding:5px 10px}
+  .operator-mode .composer>textarea{min-height:34px;max-height:55px}
+  .operator-mode .reply-tabs button{min-height:26px}
+  .operator-mode .composer-tools>.icon-button,.operator-mode .send-button{min-height:32px}
+}
+/* Base tablet padding must not leak into the iframe's chat viewport. */
+.widget-mode>main{padding:0;margin:0}
+@media(max-width:900px){
+  .customer-mode>main{padding:0}
+  .customer-mode .customer-workspace{border:0;border-radius:0}
+  .operator-mode .keyboard-hint{display:none}
+  .chat-head p>span{margin-inline:4px}
+}

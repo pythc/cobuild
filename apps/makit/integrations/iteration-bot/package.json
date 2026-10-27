@@ -1,0 +1,16 @@
+{
+  "name": "feishu-iteration-bot",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "本地运行的飞书迭代群机器人",
+  "scripts": {
+    "start": "node src/index.js",
+    "manage": "node src/manager-action.js",
+    "check": "node --check src/index.js && node --check src/agent.js && node --check src/agent-lark-cli.js && node --check src/authorization.js && node --check src/base.js && node --check src/collaboration.js && node --check src/group-action.js && node --check src/llm.js && node --check src/management.js && node --check src/manager-action.js && node --check src/milestone-reminder.js && node --check src/notification-gate.js && node --check src/reporter.js && node --check src/requirement-notifications.js && node --check src/response-policy.js && node --check src/state.js",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

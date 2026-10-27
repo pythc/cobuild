@@ -1,0 +1,12 @@
+/* Do not animate message rows or queues: polling must not replay an entrance. */
+:is(.button,.icon-button,.sidebar nav button,.favorites a,.queue-tabs button,.conversation-row,.select-menu button) {
+  transition: background-color var(--cb-motion-fast) var(--cb-motion-ease), color var(--cb-motion-fast) var(--cb-motion-ease), border-color var(--cb-motion-fast) var(--cb-motion-ease);
+}
+:is(dialog[open],.select-menu,.toast) { animation: cb-surface-in var(--cb-motion-enter) var(--cb-motion-ease); }
+dialog[open]::backdrop { animation: cb-fade-in var(--cb-motion-base) var(--cb-motion-ease); }
+.mobile-navigation-dialog[open] { animation: cb-fade-in var(--cb-motion-panel) var(--cb-motion-ease); }
+.sidebar { transition-timing-function: var(--cb-motion-ease); transition-duration: var(--cb-motion-base); }
+@media(max-width:900px) {
+  .operator-workspace.mobile-list-open .conversation-list,
+  .operator-workspace:not(.mobile-list-open) .chat { animation: cb-fade-in var(--cb-motion-base) var(--cb-motion-ease); }
+}

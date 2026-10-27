@@ -1,0 +1,39 @@
+/* CoBuild motion contract. Keep business state, scrolling and dragging synchronous. */
+:root {
+  --cb-motion-fast: 100ms;
+  --cb-motion-base: 160ms;
+  --cb-motion-enter: 180ms;
+  --cb-motion-panel: 220ms;
+  --cb-motion-exit: 120ms;
+  --cb-motion-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@keyframes cb-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Individual translate does not replace a dialog's existing centering transform. */
+@keyframes cb-surface-in {
+  from { opacity: 0; translate: 0 6px; }
+  to { opacity: 1; translate: 0 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --cb-motion-fast: 0ms;
+    --cb-motion-base: 0ms;
+    --cb-motion-enter: 0ms;
+    --cb-motion-panel: 0ms;
+    --cb-motion-exit: 0ms;
+  }
+
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    animation-delay: 0ms !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0ms !important;
+  }
+}

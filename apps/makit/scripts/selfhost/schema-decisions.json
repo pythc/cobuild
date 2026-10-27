@@ -1,0 +1,69 @@
+{
+  "version": 1,
+  "functions": [
+    {
+      "id": ":pull_request_reviewer_actor_authorized:p_actor_user_id text, p_credential_id uuid, p_token_version integer, p_subject_hash character varying",
+      "sourceSha256": "3772362bc5e2ce9de6bc019887d9d6ee8fe86bc3c3528195a38e9645fc3204e8",
+      "targetSha256": "5ad38304b535c2987dbd24657c1a11b884984ff600d9f389deb0d4e634fee792",
+      "reason": "retired legacy reviewer RPC; current services use fenced reconciliation and event RPCs"
+    },
+    {
+      "id": ":pull_request_reviewer_notification_enqueue:p_repository text, p_pull_number integer, p_events jsonb, p_assigned_by_name text, p_credential_id uuid, p_token_version integer, p_subject_hash character varying",
+      "sourceSha256": "978869f07e1741735e50b486b7887fcfd9d9505506ee52dcf887a3d2f08555dd",
+      "targetSha256": "5ad38304b535c2987dbd24657c1a11b884984ff600d9f389deb0d4e634fee792",
+      "reason": "retired legacy reviewer RPC; current services use fenced reconciliation and event RPCs"
+    },
+    {
+      "id": ":pull_request_reviewer_notification_result:p_assignment_id uuid, p_claim_token uuid, p_success boolean, p_error_message text, p_credential_id uuid, p_token_version integer, p_subject_hash character varying",
+      "sourceSha256": "0e2de800f0934dac7f1823e9e0b1a4c6d9683f41551653ee8a183343848b6d9e",
+      "targetSha256": "5ad38304b535c2987dbd24657c1a11b884984ff600d9f389deb0d4e634fee792",
+      "reason": "retired legacy reviewer RPC; current services use fenced reconciliation and event RPCs"
+    },
+    {
+      "id": ":pull_request_reviewer_notifications_claim:p_repository text, p_assignment_ids jsonb, p_max_attempts integer, p_limit integer, p_lease_seconds integer, p_credential_id uuid, p_token_version integer, p_subject_hash character varying",
+      "sourceSha256": "1a948aa8dc6c25dae9eabecd627c4f9bc4a2ef56ab20e82213f0487a6259066c",
+      "targetSha256": "5ad38304b535c2987dbd24657c1a11b884984ff600d9f389deb0d4e634fee792",
+      "reason": "retired legacy reviewer RPC; current services use fenced reconciliation and event RPCs"
+    },
+    {
+      "id": ":requirement_archive_upsert:p_requirement_id character varying, p_requirement_code character varying, p_requirement_title text, p_actor_user_id character varying, p_actor_name character varying",
+      "sourceSha256": "7f54e391d6506a73dd19337df8ffce07c664bb56080655a052de45b1a78cc4ff",
+      "targetSha256": "9556f5c3f3b64f4cdcd29871a20d49144b49136902d47fdfb528b2d86fc1c2b2",
+      "reason": "retain repository active-job lock before archiving; fixed search_path"
+    },
+    {
+      "id": ":makit_cell_values:cell jsonb",
+      "sourceSha256": "5ad38304b535c2987dbd24657c1a11b884984ff600d9f389deb0d4e634fee792",
+      "targetSha256": "9c58eac64c80b9d05ac0a1ccd652ad91d38b2649c540a449d89153b86cc375a9",
+      "reason": "native record storage helper reviewed with its migration"
+    },
+    {
+      "id": ":makit_sync_reverse_links:",
+      "sourceSha256": "5ad38304b535c2987dbd24657c1a11b884984ff600d9f389deb0d4e634fee792",
+      "targetSha256": "b3644919cb3e7dc76280775c3cd5fe18d0ed761f74de907e755d72e848567e29",
+      "reason": "native record storage helper reviewed with its migration"
+    }
+  ],
+  "constraints": [
+    {
+      "id": "mcp_personal_credential:mcp_personal_credential_subject_hash_key:",
+      "sourceSha256": "5ad38304b535c2987dbd24657c1a11b884984ff600d9f389deb0d4e634fee792",
+      "targetSha256": "e0d8e02973956fc14f69316602f1225065f237c586838f7d869024377ee423f8",
+      "reason": "Enforce one credential per subject; imported subject hashes have no duplicates"
+    },
+    {
+      "id": "requirement_archive:requirement_archive_deletion_state_check:",
+      "sourceSha256": "5ad38304b535c2987dbd24657c1a11b884984ff600d9f389deb0d4e634fee792",
+      "targetSha256": "03e1c4dad8cd78b61fda34a6f6d0f3a7075aefdeba6049303add921bb9876af0",
+      "reason": "Retain repository deletion lease/state invariant; imported rows satisfy it"
+    }
+  ],
+  "indexes": [
+    {
+      "id": "mcp_personal_credential:mcp_personal_credential_subject_hash_key:",
+      "sourceSha256": "5ad38304b535c2987dbd24657c1a11b884984ff600d9f389deb0d4e634fee792",
+      "targetSha256": "86f1921d97ece645c8a9f30452b476abd4fc980777456c6e3c95774d85ddf4a4",
+      "reason": "Enforce one credential per subject; imported subject hashes have no duplicates"
+    }
+  ]
+}
