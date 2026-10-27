@@ -1,3 +1,4 @@
+import {suiteConfig,moduleEnabled} from '../../../packages/config/runtime.mjs';
 import {applicationScope} from './application-access.mjs';
 import {existsSync} from 'node:fs';
 import {join} from 'node:path';
@@ -113,7 +114,7 @@ export function createBusinessService({mail,workspace,honors,recruitment,updates
       else{check(a,'mail:send');const result=await mailProvider.send(job.payload.fields.mailbox,job.payload.fields,files,job.id);state.finishMail(job.id,result.rejected.length?'PARTIAL':'SMTP_ACCEPTED',{...result,message:'SMTP 已返回结果 不代表收件人已收到或阅读'});}
     }catch(e){state.finishMail(job.id,e.status||['EAUTH','ECONNECTION','ETIMEDOUT'].includes(e.code)&&['CONN','AUTH'].includes(e.command)?'FAILED':'UNKNOWN',{code:e.code||'DELIVERY_UNCONFIRMED',message:e.status?'权限或配置检查失败 未外发':'投递结果需要核实 不自动重发'});}
   }finally{busy=false;}}
-  const timer=setInterval(()=>{if(!busy){activeJob=tick();activeJob.catch(()=>{});}},1000);timer.unref();
+  const timer=(!suiteConfig||moduleEnabled('mail')&&suiteConfig.delivery.externalMessages)?setInterval(()=>{if(!busy){activeJob=tick();activeJob.catch(()=>{});}},1000):null;timer?.unref();
   return {
     state,mailProvider,
     async call(name,input,actor){const def=BUSINESS_TOOL_MAP.get(name);if(!def)fail('NOT_FOUND','工具不存在',404);const args=def.inputSchema.parse(input||{});let a=latest(actor);let app=applicationScope(def.scope);if(name==='lab_file_upload')app=args.purpose==='honor_certificate'?'honors':'public-mail';if(name==='lab_attachment_read'){try{app=({honor:'honors',resume:'recruitment-test',mail:'public-mail'})[parseBusinessReference(args.reference).hostname];}catch{}}if(name==='lab_operation_get'){try{app=applicationScope(state.operation(a,args.operationId).scope);}catch(e){if(e.code!=='NOT_FOUND')throw e;app='recruitment-test';}}if(app)await mail.authorizeApplication?.(a,app);if(!def.annotations.readOnlyHint&&existsSync(freezeFile))fail('MAINTENANCE','业务操作暂时维护中 请稍后重试',503);if(def.scope)a=check(a,def.scope);const time=now(),k=a.subject+':'+(def.annotations.readOnlyHint?'r':'w'),old=throttle.get(k);const count=old&&time-old.at<60000?old:{at:time,n:0};if(++count.n>(def.annotations.readOnlyHint?180:60))fail('RATE_LIMITED','操作频繁 请稍后再试',429);throttle.set(k,count);if(throttle.size>2000)for(const [key,row]of throttle)if(time-row.at>60000)throttle.delete(key);

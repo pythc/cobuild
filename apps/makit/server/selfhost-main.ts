@@ -35,6 +35,8 @@ import { gatewayAllowed } from './common/selfhost/gateway';
 class MakitSelfhostModule {}
 
 export async function startSelfhost() {
+  if(process.env.COBUILD_IDENTITY_MODE==='local'&&process.env.COBUILD_MODULE_ENABLED!=='true')throw new Error('Makit module is disabled');
+  if(process.env.COBUILD_IDENTITY_MODE==='local'&&(process.env.MAKIT_WORKERS_ENABLED!=='false'||process.env.MAKIT_EXTERNAL_WRITES_ENABLED!=='false'))throw new Error('Suite external workers and delivery are not configured');
   if (process.env.MAKIT_STORAGE !== 'postgres' || !['true', 'false'].includes(process.env.MAKIT_WORKERS_ENABLED || '')) {
     throw new Error('Explicit PostgreSQL and worker configuration required');
   }
@@ -52,7 +54,7 @@ export async function startSelfhost() {
       // Drop inherited/forged platform fields. Only our HttpOnly session may
       // establish browser identity. Machine endpoints perform their own checks.
       delete req.userContext;
-      const publicAsset = /^\/(assets|brand)\//.test(req.path) || ['/healthz', '/readyz', '/auth/start', '/callback/110lab_requirements', '/callback/110lab_requirements/embedded'].includes(req.path);
+      const publicAsset = /^\/(assets|brand)\//.test(req.path) || ['/healthz', '/readyz', '/api/selfhost/config', '/auth/start', '/callback/110lab_requirements', '/callback/110lab_requirements/embedded'].includes(req.path);
       const user = !publicAsset && (req.path.startsWith('/api/') || !req.path.startsWith('/openapi/'))
         ? await sessions.authenticate(req) : null;
       const identity = user ? { userId: user.user_id, userName: user.name.zh_cn,

@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import classes from './cobuild-brand.module.css';
+import {suiteRuntime} from '@/lib/suite-runtime';
 
 /** A shared suite entry; the application keeps its own identity beside it. */
 export function CoBuildBrand({ children }: { children: ReactNode }) {
@@ -16,7 +17,7 @@ export function CoBuildBrand({ children }: { children: ReactNode }) {
     >
       <div className={classes.slot}>
         <a
-          href="https://cobuild.110-lab.cn/"
+          href={suiteRuntime()?.native ? suiteRuntime()!.platform+'/workbench' : 'https://cobuild.110-lab.cn/'}
           aria-label="CoBuild 首页"
           className={classes.link}
           data-cobuild-brand

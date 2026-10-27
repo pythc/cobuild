@@ -21,8 +21,9 @@ export class LabIdentityController {
     private service: LabIdentityService,
     private env: EnvironmentService,
   ) {}
+  @Get('home') home(@Res() res: FastifyReply) { return res.redirect(this.service.issuer+'/workbench',302); }
   @Get('status') status() {
-    return { enabled: this.service.enabled };
+    return { enabled: this.service.enabled, provider: process.env.COBUILD_IDENTITY_MODE === 'local' ? 'local' : 'feishu' };
   }
   @Get('login') async login(
     @Query('redirect') redirect: unknown,
@@ -59,7 +60,7 @@ export class LabIdentityController {
     res.header('X-Request-Id', requestId);
     try {
       if (
-        q.iss !== LAB_ISSUER ||
+        q.iss !== this.service.issuer ||
         Object.keys(q).some((k) => !['state', 'code', 'iss'].includes(k))
       )
         throw new IdentityLoginError('callback_parameters');

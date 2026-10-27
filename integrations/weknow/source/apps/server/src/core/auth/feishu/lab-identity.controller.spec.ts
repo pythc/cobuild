@@ -17,6 +17,7 @@ describe('identity callback diagnostics', () => {
         redirect: '/home',
       });
     const service: any = {
+      issuer: LAB_ISSUER,
       cookieName: () => 'binding',
       complete,
       secure: true,

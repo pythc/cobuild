@@ -1,3 +1,4 @@
+import {provisionSuiteMember} from './suite-identity';
 import { Injectable, UnauthorizedException, ServiceUnavailableException } from '@nestjs/common';
 import { createCipheriv, createDecipheriv, createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 import type { Request, Response, CookieOptions } from 'express';
@@ -5,12 +6,13 @@ import { DrizzleDatabaseManager } from './database';
 import type { MakitSessionProfile } from '../../../shared/selfhost-api';
 import { FeishuService } from '../../modules/requirements/feishu.service';
 
-const ISSUER = 'https://internal.110-lab.cn';
+const ISSUER = process.env.COBUILD_IDENTITY_ORIGIN || 'https://internal.110-lab.cn';
+const nativeIdentity=()=>process.env.COBUILD_IDENTITY_MODE==='local';
 const hash = (value: string) => createHash('sha256').update(value).digest('hex');
 const opaque = (value: unknown): value is string => typeof value === 'string' && /^[\w-]{43}$/.test(value);
 interface CentralProfile {
   issuer: string; audience: string; tenantKey: string; unionId: string;
-  subject: string; name: string; expiresAt: string; token?: string;
+  subject: string; name: string; expiresAt: string; token?: string; provider?:string;role?:string;email?:string;
 }
 interface SessionRow {
   user_id: string; name: string; employee_id: string; open_id: string; avatar_url: string;
@@ -34,6 +36,8 @@ export class MakitSessionService {
     if (url.origin !== process.env.MAKIT_PUBLIC_URL || (url.protocol !== 'https:' &&
       !(url.protocol === 'http:' && ['127.0.0.1', 'localhost'].includes(url.hostname)))) throw new Error('Invalid public origin');
     this.origin = url.origin;
+    const issuer=new URL(ISSUER);if(issuer.origin!==ISSUER||issuer.username||issuer.password||issuer.protocol!=='https:'&&!(issuer.protocol==='http:'&&['127.0.0.1','localhost'].includes(issuer.hostname)))throw new Error('Invalid identity issuer');
+    if(nativeIdentity()&&!process.env.COBUILD_IDENTITY_ORIGIN)throw new Error('Explicit suite identity issuer required');
     const key=process.env.MAKIT_SESSION_ENCRYPTION_KEY || '';
     if (!/^[a-f0-9]{64}$/i.test(key)) throw new Error('Missing session encryption key');
     this.key = Buffer.from(key, 'hex');
@@ -72,7 +76,7 @@ export class MakitSessionService {
     const value: CentralProfile = JSON.parse(Buffer.concat(chunks).toString('utf8'));
     if (value.issuer !== ISSUER || value.audience !== 'requirements' ||
       value.tenantKey !== process.env.LAB_IDENTITY_TENANT_KEY ||
-      !/^on_[\w-]{10,100}$/.test(value.unionId || '') ||
+      !(nativeIdentity()?value.provider==='local'&&/^[0-9a-f-]{36}$/.test(value.unionId||''):/^on_[\w-]{10,100}$/.test(value.unionId || '')) ||
       value.subject !== `${value.tenantKey}:${value.unionId}` ||
       !Number.isFinite(Date.parse(value.expiresAt)) || Date.parse(value.expiresAt) <= Date.now() ||
       Date.parse(value.expiresAt) > Date.now() + 30 * 86400000 + 5000) throw new UnauthorizedException('身份响应无效');
@@ -117,7 +121,7 @@ export class MakitSessionService {
     const profile = await this.central('exchange', { code: req.query.code, state: flow.state, verifier: flow.verifier,
       redirectUri: `${this.origin}/callback/110lab_requirements${embedded ? '/embedded' : ''}` });
     if (!opaque(profile.token)) throw new UnauthorizedException();
-    const member = await this.feishu.getUserByUnionId(profile.unionId);
+    const member = nativeIdentity()?await provisionSuiteMember(sql,profile):await this.feishu.getUserByUnionId(profile.unionId);
     const [user] = await sql<{ id: string }[]>`
       SELECT id FROM makit_user WHERE subject = ${profile.subject} AND employee_id = ${member.employeeId} AND active
     `;
@@ -142,13 +146,13 @@ export class MakitSessionService {
       WHERE s.token_hash = ${key} AND s.expires_at > now() AND u.active AND d.active
     `;
     if (!row) return null;
-    if ((this.verified.get(key) || 0) < Date.now()) {
+    if (nativeIdentity() || (this.verified.get(key) || 0) < Date.now()) {
       try {
         const central = await this.central('inspect', { token: this.decrypted(row.identity_token_ciphertext) });
         if (central.subject !== row.subject) throw new UnauthorizedException('登录身份不一致');
         // Refresh actual organization status and group-derived Makit roles, not
         // the central workbench role. A revoked member always fails closed.
-        await this.feishu.getUserByUnionId(central.unionId);
+        if(nativeIdentity())await provisionSuiteMember(sql,central);else await this.feishu.getUserByUnionId(central.unionId);
         await sql`UPDATE makit_session SET last_verified_at=now() WHERE token_hash=${key}`;
         this.verified.set(key, Date.now() + 30000);
         if (this.verified.size > 1000) for (const [key, expires] of this.verified) if (expires < Date.now()) this.verified.delete(key);
@@ -157,7 +161,7 @@ export class MakitSessionService {
         // user's read pages. This never renews the lease/cache or permits writes.
         const verifiedAge=Date.now()-new Date(row.last_verified_at).getTime();
         const recent=Number.isFinite(verifiedAge) && verifiedAge>=-5000 && verifiedAge<=5*60000;
-        if (!(error instanceof ServiceUnavailableException && ['GET','HEAD'].includes(req.method) && recent)) throw error;
+        if (!( !nativeIdentity() && error instanceof ServiceUnavailableException && ['GET','HEAD'].includes(req.method) && recent)) throw error;
       }
     }
     const roles = await sql<{ role_id: string }[]>`SELECT role_id FROM makit_user_role WHERE user_id = ${row.user_id}`;

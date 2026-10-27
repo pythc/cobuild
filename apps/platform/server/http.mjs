@@ -1,3 +1,5 @@
+import {suiteConfig,suiteApplications,moduleEnabled,moduleForPath,businessModule,portalHost,assertNativeRuntime} from '../../../packages/config/runtime.mjs';
+import {createSuiteIdentity} from './suite-identity.mjs';
 import {createWorkbenchNavigation} from './workbench-navigation.mjs';
 import {handleRelayWidget} from './relay-widget-http.mjs';
 import {openApplicationAccess} from './application-access.mjs';
@@ -5,7 +7,7 @@ import {createApplicationAccessHttp} from './application-access-http.mjs';
 import {join} from 'node:path';
 import {assessmentEntry} from './assessment-entry.mjs';
 import {PLUGIN_RELEASE} from '../src/plugin-release.js';
-import appConfig from '../src/projects.json' with {type:'json'};
+import legacyAppConfig from '../src/projects.json' with {type:'json'};
 import {createBusinessHttp,businessScope,businessChallenge} from './business-http.mjs';
 import {BUSINESS_TOOL_MAP} from './business-tools.mjs';
 import {createServer} from 'node:http';
@@ -16,6 +18,7 @@ import {StreamableHTTPServerTransport} from '@modelcontextprotocol/sdk/server/st
 import {createPortalServer} from './portal.mjs';
 import {serveAsset} from './assets.mjs';
 import {createHash} from 'node:crypto';
+import {renderWorkbench} from './render.mjs';
 import {openUpdatesStore} from './updates.mjs';
 import {createRecruitmentHttp} from './recruitment-http.mjs';
 import {createAdminHttp} from './admin-http.mjs';
@@ -28,9 +31,12 @@ import {createRecruitmentTestHttp} from './recruitment-test-http.mjs';
 import {ADMIN_FRAME_ANCESTORS} from './admin-http.mjs';
 import {mailAuthChallenge} from './mail-oauth.mjs';
 import packageInfo from '../package.json' with {type:'json'};
+const appConfig=suiteConfig?suiteApplications():legacyAppConfig;
+function renderWorkbenchForSuite(html){const data=JSON.stringify({catalog:appConfig,organization:suiteConfig.organization,modules:suiteConfig.modules}).replaceAll('<','\\u003c');return renderWorkbench(html,appConfig).replace('<script type="module">','<script>window.__COBUILD__='+data+'</script><script type="module">');}
 class HttpError extends Error {constructor(status,message){super(message);this.status=status;}}
 const securityHeaders={'X-Content-Type-Options':'nosniff','Referrer-Policy':'strict-origin-when-cross-origin','Permissions-Policy':'camera=(), microphone=(), geolocation=()'};
-const csp="frame-src 'self' https://cobuild.110-lab.cn; default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'self'; form-action 'self'";
+const legacyCsp="frame-src 'self' https://cobuild.110-lab.cn; default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'self'; form-action 'self'";
+const csp=suiteConfig?legacyCsp.replace('https://cobuild.110-lab.cn',Object.values(suiteConfig.origins).join(' ')):legacyCsp;
 function readBody(req,limit){
   return new Promise((resolve,reject)=>{
     if(Number(req.headers['content-length']||0)>limit){req.resume();reject(new HttpError(413,'Request too large'));return;}
@@ -45,6 +51,7 @@ async function jsonBody(req,limit=1024*1024){
 }
 const json=(res,status,body)=>{res.writeHead(status,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'});res.end(JSON.stringify(body));};
 export async function createHttpServer(options={}){
+  assertNativeRuntime();
   const [homepage,workbench,recruitmentTestPage,recruitmentPage,honorsPage,interviewerPage]=await Promise.all(['index','workbench','recruitment-test','recruitment','honors','recruitment-interviewer'].map(p=>readFile(new URL('../dist/'+p+'.html',import.meta.url),'utf8')));
   const readWorkbenchRelease=async(html)=>{
     const value=JSON.parse(await readFile(new URL('../dist/workbench-release.json',import.meta.url),'utf8'));
@@ -53,10 +60,15 @@ export async function createHttpServer(options={}){
   };
   const workbenchRelease=await readWorkbenchRelease(workbench);
   const allowedHosts=new Set(['110-lab.cn','internal.110-lab.cn','110lab-homepage','localhost','127.0.0.1','[::1]']);
-  const updates=options.updatesStore||openUpdatesStore(process.env.PORTAL_UPDATES_DATABASE||':memory:');
+  if(suiteConfig){
+    if(!process.env.COBUILD_DATA_DIR)throw new Error('COBUILD_DATA_DIR is required');
+    options={...options,recruitment:{localTest:true,enabled:moduleEnabled('hiflow'),directory:join(process.env.COBUILD_DATA_DIR,'intake'),origins:[suiteConfig.origins.platform]},admin:{localTest:true,enabled:moduleEnabled('publishing'),directory:join(process.env.COBUILD_DATA_DIR,'publishing'),origins:[suiteConfig.origins.platform]},recruitmentWorkflow:{localTest:true,enabled:moduleEnabled('hiflow'),deliveryMode:'dry-run',directory:join(process.env.COBUILD_DATA_DIR,'recruitment'),origins:[suiteConfig.origins.platform]},recruitmentTest:{configuredEnabled:moduleEnabled('hiflow')},honors:{configuredEnabled:moduleEnabled('honors')},monitoring:{config:null},workspace:{projectSyncEnabled:false,knowledgeWorkerEnabled:false,apps:appConfig.apps},business:{enabled:true,mailConfigPath:null}};
+    allowedHosts.clear();allowedHosts.add(portalHost());
+  }
+  const updates=options.updatesStore||openUpdatesStore(suiteConfig?moduleEnabled('publishing')?join(process.env.COBUILD_DATA_DIR,'updates.sqlite'):':memory:':process.env.PORTAL_UPDATES_DATABASE||':memory:');
   const recruitment=createRecruitmentHttp(options.recruitment);
-  if(process.env.PORTAL_ADMIN_ENABLED==='true'&&!process.env.PORTAL_UPDATES_DATABASE&&!options.updatesStore)throw new Error('Admin updates require a persistent database');
-  let mail;try{mail=await createMailHttp(options.mail);}catch(e){recruitment.close();if(!options.updatesStore)updates.close();throw e;}
+  if(!suiteConfig&&process.env.PORTAL_ADMIN_ENABLED==='true'&&!process.env.PORTAL_UPDATES_DATABASE&&!options.updatesStore)throw new Error('Admin updates require a persistent database');
+  let mail;try{mail=suiteConfig?createSuiteIdentity({config:suiteConfig,directory:process.env.COBUILD_DATA_DIR}):await createMailHttp(options.mail);}catch(e){recruitment.close();if(!options.updatesStore)updates.close();throw e;}
   let applicationAccess;try{applicationAccess=mail.enabled?openApplicationAccess({directory:join(mail.workspaceDirectory,'organization'),apps:appConfig.apps,profile:mail.profile,fetchSnapshot:options.applicationAccess?.fetchSnapshot||mail.directorySnapshot,now:options.mail?.now||Date.now}):null;}catch(e){mail.close();recruitment.close();if(!options.updatesStore)updates.close();throw e;}
   mail.setApplicationAccess?.(applicationAccess);
   const applicationAccessHttp=createApplicationAccessHttp({mail,apps:appConfig.apps,access:applicationAccess,localTest:options.mail?.localTest});
@@ -70,14 +82,17 @@ export async function createHttpServer(options={}){
   const monitoring=createMonitoringHttp({mail,...options.monitoring});
   const monitoringPage=await readFile(new URL('../dist/monitoring.html',import.meta.url),'utf8');
   const server=createServer(async(req,res)=>{
+    if(suiteConfig){const end=res.end.bind(res);res.end=(body,...args)=>{if(typeof body==='string'&&String(res.getHeader('Content-Type')).includes('text/html')&&body.includes('<script type="module">')&&!body.includes('window.__COBUILD__=')){const data=JSON.stringify({catalog:appConfig,organization:suiteConfig.organization,modules:suiteConfig.modules}).replaceAll('<','\\u003c');body=body.replace('<script type="module">','<script>window.__COBUILD__='+data+'</script><script type="module">');}return end(body,...args);};}
     for(const [name,value] of Object.entries(securityHeaders))res.setHeader(name,value);
     const host=(req.headers.host||'').toLowerCase().replace(/:\d+$/,'');
+    if(suiteConfig&&req.headers.host!==new URL(suiteConfig.origins.platform).host){res.writeHead(421);res.end('Unrecognized host');return;}
     if(!allowedHosts.has(host)){res.writeHead(421);res.end('Unrecognized host');return;}
     let path;
     try{path=new URL(req.url,'http://localhost').pathname;}catch{res.writeHead(400);res.end('Invalid request target');return;}
-    const internalHost=host!=='110-lab.cn';
+    const internalHost=suiteConfig?true:host!=='110-lab.cn';
     try{
-      if(await handleRelayWidget(req,res,path,host,mail))return;
+      if(suiteConfig){const module=moduleForPath(path);if(!moduleEnabled(module))throw new HttpError(404,'应用未启用');if(path==='/api/plugin/release'){json(res,200,{workbenchVersion:workbenchRelease.version,workbenchBuild:workbenchRelease.build,apps:appConfig.apps});return;}if(path.startsWith('/downloads/')||path==='/plugin-update'||path==='/api/relay/widget-grant')throw new HttpError(404,'Not found');}
+      if(!suiteConfig&&await handleRelayWidget(req,res,path,host,mail))return;
       if(await applicationAccessHttp.handle(req,res,path,host))return;
       if(await monitoring.handle(req,res,path,host))return;
       if(await business.handle(req,res,path,host))return;
@@ -114,9 +129,10 @@ export async function createHttpServer(options={}){
         if(req.method!=='POST'){res.writeHead(405,{Allow:'POST, OPTIONS'});res.end('Method not allowed');return;}
         let parsed;
         try{let limit=32*1024;if(business.enabled&&req.headers.authorization){try{await mail.businessIdentity(req.headers.authorization,[]);limit=16*1024*1024;}catch{}}parsed=await jsonBody(req,limit);}catch(error){if(error.status===400){json(res,400,{jsonrpc:'2.0',id:null,error:{code:-32700,message:'Parse error'}});return;}throw error;}
+        if(suiteConfig&&parsed?.method==='tools/call'){const def=BUSINESS_TOOL_MAP.get(parsed.params?.name);if(def&&!moduleEnabled(businessModule(def))){json(res,200,{jsonrpc:'2.0',id:parsed.id??null,error:{code:-32601,message:'工具未启用'}});return;}}
         // Tool-result metadata alone does not start OAuth in every MCP host.
         // Challenge only this protected call; discovery and the workbench stay public.
-        if(parsed?.method==='tools/call'&&parsed.params?.name==='connect_110lab_mail'&&!await mail.hostAuthorized(req.headers.authorization,{fresh:parsed.params.arguments?.fresh===true})){
+        if(!suiteConfig&&parsed?.method==='tools/call'&&parsed.params?.name==='connect_110lab_mail'&&!await mail.hostAuthorized(req.headers.authorization,{fresh:parsed.params.arguments?.fresh===true})){
           const challenge=mailAuthChallenge();
           res.setHeader('WWW-Authenticate',challenge._meta['mcp/www_authenticate'][0]);
           res.setHeader('Access-Control-Expose-Headers','WWW-Authenticate');
@@ -130,12 +146,12 @@ export async function createHttpServer(options={}){
             json(res,valid?403:401,{jsonrpc:'2.0',id:parsed.id??null,error:{code:-32001,message:'Business authorization required'}});return;
           }
         }
-        const mcp=await createPortalServer({assessmentSsoEnabled:options.mail?.assessmentSsoEnabled,...(business.enabled?{businessCall:(name,args)=>business.call(name,args,req.headers.authorization)}:{}),mailHandoff:(state,options)=>mail.hostHandoff(req.headers.authorization,state,options)}),transport=new StreamableHTTPServerTransport({sessionIdGenerator:undefined,enableJsonResponse:true});
+        const mcp=await createPortalServer({suiteCatalog:suiteConfig?appConfig:null,toolEnabled:tool=>!suiteConfig||moduleEnabled(businessModule(tool)),assessmentSsoEnabled:options.mail?.assessmentSsoEnabled,...(business.enabled?{businessCall:(name,args)=>business.call(name,args,req.headers.authorization)}:{}),mailHandoff:(state,options)=>mail.hostHandoff(req.headers.authorization,state,options)}),transport=new StreamableHTTPServerTransport({sessionIdGenerator:undefined,enableJsonResponse:true});
         try{await mcp.connect(transport);await transport.handleRequest(req,res,parsed);}finally{await transport.close();await mcp.close();}return;
       }
       if(req.method!=='GET'&&req.method!=='HEAD'){res.writeHead(405,{Allow:'GET, HEAD'});res.end('Method not allowed');req.resume();return;}
       const head=req.method==='HEAD';
-      if(path==='/healthz'){json(res,200,{status:'ok',service:'110lab-homepage',version:packageInfo.version,contentManagement:false,businessMcp:business.enabled,mailManagement:mail.enabled,dynamicManagement:admin.enabled,recruitmentEnabled:recruitment.enabled,workspaceEnabled:workspace.enabled,honorsEnabled:honors.enabled,recruitmentTestEnabled:recruitmentTest.enabled,recruitmentWorkflowEnabled:recruitmentWorkflow.enabled});return;}
+      if(path==='/healthz'){json(res,200,{status:'ok',service:suiteConfig?'cobuild-platform':'110lab-homepage',version:packageInfo.version,contentManagement:false,...(suiteConfig?{modules:suiteConfig.modules,externalMessages:false,projectSyncEnabled:false,knowledgeWorkerEnabled:false}:{}),businessMcp:business.enabled,mailManagement:suiteConfig?moduleEnabled('mail')&&mail.mailboxReady():mail.enabled,dynamicManagement:admin.enabled,recruitmentEnabled:recruitment.enabled,workspaceEnabled:workspace.enabled,honorsEnabled:honors.enabled,recruitmentTestEnabled:recruitmentTest.enabled,recruitmentWorkflowEnabled:recruitmentWorkflow.enabled});return;}
       if(path.startsWith('/assets/')){
         if(!await serveAsset(req,res,path.slice(8)))throw new HttpError(404,'Not found');
         return;
@@ -147,7 +163,8 @@ export async function createHttpServer(options={}){
       else if(['/recruitment/interviewer','/recruitment/interviewer/embedded'].includes(path)&&internalHost)html=interviewerPage;
       else if(['/recruitment','/recruitment/','/recruitment/embedded'].includes(path)&&internalHost)html=recruitmentPage;
       else if(['/honors','/honors/','/honors/embedded'].includes(path)&&internalHost)html=honorsPage;
-      else if(path==='/'||path==='/index.html')html=host==='internal.110-lab.cn'?workbench:homepage;
+      else if(path==='/'||path==='/index.html')html=suiteConfig||host==='internal.110-lab.cn'?workbench:homepage;
+      if(suiteConfig&&html)html=renderWorkbenchForSuite(html);
       if(html&&options.liveReload){const name=path.startsWith('/honors')?'honors':path.startsWith('/recruitment-test')?'recruitment-test':path.startsWith('/recruitment/interviewer')?'recruitment-interviewer':path.startsWith('/recruitment')?'recruitment':path.startsWith('/workbench')||path.startsWith('/projects')||host==='internal.110-lab.cn'?'workbench':'index';html=await readFile(new URL('../dist/'+name+'.html',import.meta.url),'utf8');}
       if(html){html=assessmentEntry(html,options.mail?.assessmentSsoEnabled);const policy=['/honors/embedded','/workbench/embedded','/projects/embedded','/recruitment-test/embedded','/recruitment/embedded','/recruitment/interviewer/embedded'].includes(path)?csp.replace("frame-ancestors 'self'","frame-ancestors 'self' "+ADMIN_FRAME_ANCESTORS.join(' ')):csp;res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store','Content-Security-Policy':policy});res.end(head?undefined:html);return;}
       if(path==='/robots.txt'){res.writeHead(200,{'Content-Type':'text/plain'});res.end(head?undefined:host==='110-lab.cn'?'User-agent: *\nAllow: /\n':'User-agent: *\nDisallow: /\n');return;}

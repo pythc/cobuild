@@ -1,3 +1,4 @@
+import {suiteConfig,portalHost,portalRequestOrigin} from '../../../packages/config/runtime.mjs';
 import { join } from "node:path";
 import { z } from "zod";
 import { openHonorsStore, HonorsError } from "./honors-store.mjs";
@@ -59,6 +60,7 @@ async function body(req) {
 }
 export function createHonorsHttp({
   mail,
+  configuredEnabled = true,
   projects = () => [],
   localTest = false,
   directory = mail?.workspaceDirectory &&
@@ -66,7 +68,7 @@ export function createHonorsHttp({
   store: provided,
   now = Date.now,
 } = {}) {
-  const enabled = !!mail?.enabled && !!directory,
+  const enabled = configuredEnabled && !!mail?.enabled && !!directory,
     store = enabled ? provided || openHonorsStore({ directory, now }) : null,
     uploads = new Set(),
     writes = new Map();
@@ -111,7 +113,7 @@ export function createHonorsHttp({
       if (!path.startsWith("/api/honors/")) return false;
       try {
         const local = localTest && ["localhost", "127.0.0.1"].includes(host);
-        if (host !== "internal.110-lab.cn" && !local)
+        if (host !== portalHost() && !local)
           throw new HonorsError(404, "Not found");
         if (!store) throw new HonorsError(503, "荣誉登记尚未启用");
         if (!["GET", "POST"].includes(req.method))
@@ -122,8 +124,7 @@ export function createHonorsHttp({
         if (
           write &&
           (!(
-            req.headers.origin === "https://internal.110-lab.cn" ||
-            (local && req.headers.origin === "http://" + req.headers.host)
+            portalRequestOrigin(req,localTest)
           ) ||
             (req.headers["sec-fetch-site"] &&
               req.headers["sec-fetch-site"] !== "same-origin"))

@@ -13,6 +13,7 @@ if (['/projects','/projects/','/projects/embedded'].includes(location.pathname))
  if(row&&!row.querySelector('[data-suite-sidebar]')){
   const identity=document.createElement('span');identity.className='suite-identity';identity.dataset.suiteSidebar='true';
   identity.innerHTML='<span class="suite-slot"><a class="suite-link" href="https://cobuild.110-lab.cn/" aria-label="CoBuild 首页" data-cobuild-brand><span class="suite-initial" aria-hidden="true"></span><span class="suite-wordmark" aria-hidden="true"></span></a></span><span class="suite-divider" aria-hidden="true"></span><span class="suite-application"><a href="/projects" aria-label="Kick 项目首页"><img src="/assets/cobuild/kick.png" width="26" height="26" alt="" aria-hidden="true"><span>Kick</span></a></span>';
+  if(globalThis.__COBUILD__)identity.querySelector('[data-cobuild-brand]').href='/workbench';
   const previous=row.querySelector('.brand');if(previous)previous.replaceWith(identity);else row.prepend(identity);
   const link=identity.querySelector('[data-cobuild-brand]');
   identity.addEventListener('keydown',e=>{if(e.key==='Tab')identity.dataset.preserveAppFocus='true'},true);

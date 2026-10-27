@@ -1,3 +1,4 @@
+import {suiteRuntime} from '@/lib/suite-runtime';
 import ProjectActionsDialog from './ProjectActionsDialog';
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
@@ -91,7 +92,7 @@ export default function ProjectsPage() {
           </Button>
           <Button asChild>
             <a
-              href="https://internal.110-lab.cn/projects"
+              href={suiteRuntime()?.native ? suiteRuntime()!.platform+'/projects' : 'https://internal.110-lab.cn/projects'}
               target="_blank"
               rel="noreferrer"
             >

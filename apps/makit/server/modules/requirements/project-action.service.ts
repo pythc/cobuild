@@ -25,6 +25,7 @@ const actionInput = z
 export class ProjectActionService {
   constructor(private readonly feishu: FeishuService) {}
   async execute(actor: CurrentUserSummary, body: unknown): Promise<unknown> {
+    if(process.env.COBUILD_IDENTITY_MODE==='local')throw new ServiceUnavailableException('套件项目连接尚未接入');
     const parsed = actionInput.safeParse(body);
     if (!parsed.success) throw new BadRequestException('项目操作参数无效');
     const secret = process.env.PORTAL_PROJECT_BRIDGE_SECRET || '';

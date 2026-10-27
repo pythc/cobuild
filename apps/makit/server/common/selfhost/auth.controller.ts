@@ -10,6 +10,8 @@ export class MakitAuthController {
   constructor(private readonly sessions: MakitSessionService, private readonly database: DrizzleDatabaseManager) {}
   @Get('healthz')
   health() { return { status: 'ok', storage: 'postgres' }; }
+  @Get('api/selfhost/config')
+  config() { return {native:process.env.COBUILD_IDENTITY_MODE==='local',platform:process.env.COBUILD_IDENTITY_ORIGIN||'',relay:process.env.COBUILD_IDENTITY_MODE!=='local'}; }
   @Get('readyz')
   async ready() {
     await this.database.assertRuntimeRole();

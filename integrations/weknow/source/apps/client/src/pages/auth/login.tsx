@@ -8,6 +8,7 @@ import "./feishu-login.css";
 export default function LoginPage() {
   const [ready, setReady] = useState<boolean | null>(null);
   const [pending, setPending] = useState(false);
+  const [native, setNative] = useState(false);
   const [unified, setUnified] = useState(false);
   const [failed, setFailed] = useState(false);
   const error = new URLSearchParams(window.location.search).get("error");
@@ -24,6 +25,7 @@ export default function LoginPage() {
       .then(async (r) => {
         const enabled = (r.data ?? r).enabled === true;
         setUnified(enabled);
+        setNative((r.data ?? r).provider === "local");
         if (enabled) {
           setReady(true);
           return;
@@ -75,13 +77,13 @@ export default function LoginPage() {
             欢迎来到 WeKnow
           </Title>
           <Text c="dimmed" size="sm">
-            使用飞书账号，继续你的工作。
+            {native ? "使用 CoBuild 统一账号，继续你的工作。" : "使用飞书账号，继续你的工作。"}
           </Text>
         </Stack>
         {error && (
           <Alert color="red" mb="md" role="alert">
             {error === "organization"
-              ? "仅限 110lab 组织成员访问。"
+              ? "仅限组织成员访问。"
               : error === "denied"
                 ? "你已取消授权，可以重新登录。"
                 : error === "disabled"
@@ -93,7 +95,7 @@ export default function LoginPage() {
           <Alert color="gray" mb="md" role="status">
             {failed
               ? "暂时无法连接登录服务，请刷新重试。"
-              : "飞书登录尚未配置，请联系管理员。"}
+              : "登录尚未配置，请联系管理员。"}
           </Alert>
         )}
         <Button
@@ -124,10 +126,10 @@ export default function LoginPage() {
             </svg>
           }
         >
-          使用飞书登录
+          {native ? "使用 CoBuild 登录" : "使用飞书登录"}
         </Button>
         <Text c="dimmed" size="xs" mt="xl" ta="center">
-          一个账号，连接 110lab
+          {native ? "一个账号，连接协作空间" : "一个账号，连接 110lab"}
         </Text>
       </section>
     </main>

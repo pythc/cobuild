@@ -12,6 +12,7 @@ import subprocess
 import tempfile
 import time
 import uuid
+from local_process import captured
 
 ROOT=Path(__file__).resolve().parents[1]
 LOCAL=ROOT/'.local'
@@ -33,17 +34,18 @@ def main():
         container=subprocess.check_output(command,text=True,stderr=subprocess.PIPE).strip()
         report['image']=subprocess.check_output(['docker','inspect','--format','{{.Image}}',container],text=True).strip()
         for _ in range(60):
-            if subprocess.run(['docker','exec',container,'pg_isready','-U','suite_owner','-d','suite_test'],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL).returncode==0:break
+            if subprocess.run(['docker','exec',container,'pg_isready','-h','127.0.0.1','-U','suite_owner','-d','suite_test'],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL).returncode==0:break
             time.sleep(0.25)
         else:raise RuntimeError('Isolated PostgreSQL did not become ready')
         binding=json.loads(subprocess.check_output(['docker','inspect','--format','{{json .NetworkSettings.Ports}}',container],text=True))['5432/tcp'][0]
         if binding['HostIp']!='127.0.0.1':raise RuntimeError('Test database is not loopback-only')
         port=binding['HostPort']
-        env={k:v for k,v in os.environ.items() if not k.startswith(('MAKIT_','LAB_IDENTITY_','FEISHU_'))}
+        env={k:os.environ[k] for k in ['PATH','HOME','TMPDIR','LANG'] if k in os.environ}
+        env['NODE_OPTIONS']='--require='+str(ROOT/'tools/local-network-guard.cjs')
         env.update({'MAKIT_STORAGE':'postgres','LAB_IDENTITY_TENANT_KEY':'isolated-suite-test','MAKIT_MIGRATION_DATABASE_URL':f'postgres://suite_owner:{password}@127.0.0.1:{port}/suite_test','MAKIT_DATABASE_URL':f'postgres://makit_application:{application_password}@127.0.0.1:{port}/suite_test','MAKIT_APPLICATION_PASSWORD':application_password})
         stages=[('migrations',['node','scripts/selfhost/migrate.cjs']),('runtime-role',['node','scripts/selfhost/set-runtime-password.cjs']),('integration',['npm','run','test:selfhost'])]
         for name,command in stages:
-            result=subprocess.run(command,cwd=ROOT/'apps/makit',env=env,text=True,capture_output=True,timeout=180)
+            result=captured(command,cwd=ROOT/'apps/makit',env=env,timeout=180)
             output=(result.stdout+result.stderr).replace(password,'[REDACTED]').replace(application_password,'[REDACTED]')
             (LOCAL/f'makit-isolated-{name}.log').write_text(output)
             results.append({'stage':name,'exitCode':result.returncode})

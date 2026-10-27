@@ -1,3 +1,4 @@
+import {suiteConfig,portalHost,portalRequestOrigin} from '../../../packages/config/runtime.mjs';
 import {timingSafeEqual} from 'node:crypto';
 import {readFileSync,lstatSync} from 'node:fs';
 import {z} from 'zod';
@@ -19,7 +20,7 @@ export function protectedApplication(path){
 }
 export function createApplicationAccessHttp({mail,access,apps,localTest=false}){
   async function handle(req,res,path,host){
-    if(!access||host!=='internal.110-lab.cn'&&!(localTest&&['localhost','127.0.0.1'].includes(host)))return false;
+    if(!access||host!==portalHost()&&!(localTest&&['localhost','127.0.0.1'].includes(host)))return false;
     if(path==='/api/application-access/service/relay'){
       try{
         if(req.method!=='POST'||req.headers.origin||req.headers['sec-fetch-site'])throw new ApplicationAccessError(403,'服务请求无效');
@@ -42,13 +43,13 @@ export function createApplicationAccessHttp({mail,access,apps,localTest=false}){
     try{
       if(entry){if(!['GET','HEAD'].includes(req.method))throw new ApplicationAccessError(405,'请求方式无效');const app=apps.find(a=>a.id===entry[2]);if(!app)throw new ApplicationAccessError(404,'应用不存在');
         const embedded=!!entry[1]||new URL(req.url,'http://localhost').searchParams.get('embedded')==='1';let actor=null;try{actor=mail.identity(req,{embedded});}catch(e){if(e.status!==401||access.policy(app.id).mode!=='inherit')throw e;}await access.authorize(actor,app.id);
-        if(path.startsWith('/api/'))json(res,200,{allowed:true,id:app.id,url:app.url});else{let target=app.url;if(frameEntry){if(['projects','honors','recruitment-test','organization','public-mail','updates-admin'].includes(app.id))target=app.url.replace(/\/$/,'')+'/embedded';else if(app.id==='assessment')target='https://exam.110-lab.cn/api/auth/feishu/start?embedded=1';if(app.id==='honors'){const record=new URL(req.url,'http://localhost').searchParams.get('record');if(record&&z.uuid().safeParse(record).success)target+='?record='+encodeURIComponent(record);}}res.writeHead(302,{Location:target,'Cache-Control':'private, no-store'});res.end();}return true;}
+        if(path.startsWith('/api/'))json(res,200,{allowed:true,id:app.id,url:app.url});else{let target=app.url;if(frameEntry&&!suiteConfig){if(['projects','honors','recruitment-test','organization','public-mail','updates-admin'].includes(app.id))target=app.url.replace(/\/$/,'')+'/embedded';else if(app.id==='assessment')target='https://exam.110-lab.cn/api/auth/feishu/start?embedded=1';if(app.id==='honors'){const record=new URL(req.url,'http://localhost').searchParams.get('record');if(record&&z.uuid().safeParse(record).success)target+='?record='+encodeURIComponent(record);}}res.writeHead(302,{Location:target,'Cache-Control':'private, no-store'});res.end();}return true;}
       if(entries&&req.method==='GET'){let actor=null;try{actor=mail.identity(req,{embedded:!!entries[1]});}catch(e){if(e.status!==401)throw e;}json(res,200,{...await access.entries(actor),subject:actor?.subject||null});return true;}
       if(match){const embedded=!!match[1],write=req.method==='POST';if(!['GET','POST'].includes(req.method))throw new ApplicationAccessError(405,'请求方式无效');
         let actor=mail.identity(req,{embedded,write});if(actor.role!=='super_admin')throw new ApplicationAccessError(403,'仅超级管理员可配置应用权限');
         if(!write&&!match[2]){json(res,200,await access.manage(actor));return true;}
         if(!write||!match[2])throw new ApplicationAccessError(404,'接口不存在');
-        if(req.headers.origin!==(localTest?'http://'+req.headers.host:'https://internal.110-lab.cn')||req.headers['sec-fetch-site']&&req.headers['sec-fetch-site']!=='same-origin')throw new ApplicationAccessError(403,'请在组织与权限页面操作');
+        if(!portalRequestOrigin(req,localTest)||req.headers['sec-fetch-site']&&req.headers['sec-fetch-site']!=='same-origin')throw new ApplicationAccessError(403,'请在组织与权限页面操作');
         if(req.headers['content-type']!=='application/json')throw new ApplicationAccessError(415,'请求格式无效');
         let size=0,parts=[];const timeout=setTimeout(()=>req.destroy(),8000);timeout.unref();let value;try{for await(const c of req){if((size+=c.length)>65536)throw new ApplicationAccessError(413,'内容过长');parts.push(c);}value=JSON.parse(Buffer.concat(parts));}finally{clearTimeout(timeout);}
         if(match[2]==='directory'){if(!value||Object.keys(value).length)throw new ApplicationAccessError(400,'参数无效');await access.refresh({fresh:true});actor=mail.identity(req,{embedded,write:true});json(res,200,await access.manage(actor));return true;}

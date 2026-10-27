@@ -36,7 +36,16 @@ const EMBED_FRAME_DOMAINS=Object.freeze([
 const WIDGET_CSP=Object.freeze({connect_domains:[],resource_domains:RESOURCE_DOMAINS,frame_domains:EMBED_FRAME_DOMAINS,redirect_domains:[...new Set([
   'https://110-lab.cn','https://internal.110-lab.cn','https://aigrading.110-lab.cn','https://ai-grading.110-lab.cn','https://www.feishu.cn','https://fcncvoyreb8p.feishu.cn',...EMBED_FRAME_DOMAINS
 ])]});
-export async function createPortalServer({mailHandoff,businessCall,assessmentSsoEnabled}={}){
+export async function createPortalServer({mailHandoff,businessCall,assessmentSsoEnabled,suiteCatalog,toolEnabled=()=>true}={}){
+  if(suiteCatalog){
+    const server=new McpServer({name:'cobuild',version:packageInfo.version});
+    server.registerTool('cobuild_overview',{title:'CoBuild 应用',description:'当前套件中已启用的应用。',inputSchema:z.object({}),annotations:{readOnlyHint:true}},async()=>({content:[{type:'text',text:JSON.stringify(suiteCatalog.apps)}],structuredContent:{apps:suiteCatalog.apps}}));
+    for(const tool of BUSINESS_TOOLS.filter(toolEnabled)){
+      const {name,scope,...definition}=tool;
+      server.registerTool(name,definition,async(args)=>{try{const result=await businessCall(name,args);if(name==='lab_attachment_read'){const {contentBase64,...meta}=result;return {structuredContent:meta,content:[{type:'text',text:JSON.stringify(meta)},{type:'resource',resource:{uri:result.reference,mimeType:result.mime,blob:contentBase64}}]};}return {content:[{type:'text',text:JSON.stringify(result)}],structuredContent:result};}catch(error){return {isError:true,content:[{type:'text',text:error.status?error.message:'操作未完成'}]};}});
+    }
+    return server;
+  }
   const [html,config,icon]=await Promise.all([
     readFile(new URL('../dist/mcp-app.html',import.meta.url),'utf8'),
     readFile(new URL('../src/projects.json',import.meta.url),'utf8').then(JSON.parse),

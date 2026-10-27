@@ -14,7 +14,7 @@ export type JwtPayload = {
   email: string;
   workspaceId: string;
   type: 'access';
-  identityProvider?: 'feishu';
+  identityProvider?: 'feishu' | 'cobuild';
   sessionId?: string;
 };
 

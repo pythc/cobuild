@@ -166,6 +166,7 @@ export function initWorkbench(config, options={}) {
     },onChange:renderFavorites,onUnauthorized:()=>document.dispatchEvent(new CustomEvent('110lab:session-expired'))
   });
   bindChrome();restoreCollapse();
+  if(globalThis.__COBUILD__&&!globalThis.__COBUILD__.modules.includes('kick'))$('cb-nav-projects').hidden=true;
   if(projectPage){document.body.classList.add('is-project-page');$('cb-page-title').textContent='项目';document.title='Kick 项目 · CoBuild';$('cb-nav-projects').setAttribute('aria-current','page');$('apps').hidden=true;}
   else setView(location.hash==='#apps'?'apps':'home');
   renderFavorites();

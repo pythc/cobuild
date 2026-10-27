@@ -1,3 +1,4 @@
+import {suiteConfig,portalHost,portalRequestOrigin} from '../../../packages/config/runtime.mjs';
 import {readFileSync,unlinkSync,existsSync} from 'node:fs';
 import {join} from 'node:path';
 import {isIP} from 'node:net';
@@ -45,7 +46,7 @@ export function createRecruitmentWorkflowHttp({mail,offerIntegration:providedOff
     if(!privateRoute&&!offerRoute&&!(store&&publicRoute))return false;
     try{
       const local=localTest&&['localhost','127.0.0.1'].includes(host);
-      if(publicRoute?host!=='110-lab.cn'&&!local:host!=='internal.110-lab.cn'&&!local)throw new RecruitmentTestError(404,'Not found');
+      if(publicRoute?host!=='110-lab.cn'&&!local:host!==portalHost()&&!local)throw new RecruitmentTestError(404,'Not found');
       if(!store)throw new RecruitmentTestError(503,'招新管理尚未启用');
       if(offerRoute){
         offerIntegration.authenticate(req);
@@ -79,7 +80,7 @@ export function createRecruitmentWorkflowHttp({mail,offerIntegration:providedOff
       }
       if(!['GET','POST'].includes(req.method))throw new RecruitmentTestError(405,'请求方式无效');
       const prefix=interviewerRoute?'/api/recruitment-interviewer/':'/api/recruitment-admin/',embedded=path.startsWith(prefix+'embedded/'),route=path.slice((prefix+(embedded?'embedded/':'')).length),write=req.method==='POST';
-      if(write&&(!(req.headers.origin==='https://internal.110-lab.cn'||local&&req.headers.origin==='http://'+req.headers.host)||(req.headers['sec-fetch-site']&&req.headers['sec-fetch-site']!=='same-origin')))throw new RecruitmentTestError(403,'请在招新管理页面操作');
+      if(write&&(!(portalRequestOrigin(req,localTest))||(req.headers['sec-fetch-site']&&req.headers['sec-fetch-site']!=='same-origin')))throw new RecruitmentTestError(403,'请在招新管理页面操作');
       let actor=mail.identity(req,{embedded,write});if(write)assertWritable();
       if(!write&&route==='session'){json(res,200,store.recruitmentSession(actor));return true;}
       if(interviewerRoute||route==='my-interviews'||route.startsWith('my-interviews/')){

@@ -10,6 +10,8 @@ interface Binding { role_id: string; kind: string; external_id: string }
 @Injectable()
 export class MakitIdentityRepository {
   constructor(private readonly database: DrizzleDatabaseManager) {}
+  async localMember(unionId:string){const [row]=await this.database.client`SELECT employee_id,open_id,name FROM makit_directory WHERE union_id=${unionId} AND active`;if(!row)throw new UnauthorizedException('组织成员不可用');return {employeeId:row.employee_id,openId:row.open_id,name:row.name};}
+  async localDirectory(){const rows=await this.database.client`SELECT * FROM makit_directory WHERE active ORDER BY name`;return {departments:[],members:rows.map(r=>({user_id:r.employee_id,open_id:r.open_id,union_id:r.union_id,name:r.name,avatar:{avatar_240:r.avatar_url},department_ids:[],status:{is_activated:true,is_resigned:false,is_exited:false,is_frozen:false}}))};}
   async unionId(employeeId: string) {
     const [member]=await this.database.client<{union_id:string}[]>`SELECT union_id FROM makit_directory WHERE employee_id=${employeeId} AND active`;
     if (!member?.union_id) throw new UnauthorizedException('无法确认组织成员身份');

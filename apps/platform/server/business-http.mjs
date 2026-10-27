@@ -1,3 +1,4 @@
+import {suiteConfig,portalHost,portalRequestOrigin} from '../../../packages/config/runtime.mjs';
 import {readFile} from 'node:fs/promises';
 import {join} from 'node:path';
 import {z} from 'zod';
@@ -13,7 +14,7 @@ export function businessScope(name,args={}){
   if(name==='lab_attachment_read'){try{const host=parseBusinessReference(args.reference).hostname;return ({honor:'honors:read',resume:'recruitment:read',mail:'mail:read'})[host]||'lab:identity';}catch{return 'lab:identity';}}
   return BUSINESS_TOOL_MAP.get(name)?.scope||'lab:identity';
 }
-export function businessChallenge(scope='lab:identity'){return `Bearer resource_metadata="${MAIL_RESOURCE_METADATA}", scope="${scope}", error="insufficient_scope"`;}
+export function businessChallenge(scope='lab:identity'){return suiteConfig?`Bearer realm="CoBuild", scope="${scope}", error="insufficient_scope"`:`Bearer resource_metadata="${MAIL_RESOURCE_METADATA}", scope="${scope}", error="insufficient_scope"`;}
 const json=(res,status,value)=>{res.writeHead(status,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'private, no-store'});res.end(JSON.stringify(value));};
 export async function createBusinessHttp({mail,workspace,honors,recruitment,updates,updatesEnabled,enabled=process.env.PORTAL_BUSINESS_MCP_ENABLED==='true',directory=mail.workspaceDirectory&&join(mail.workspaceDirectory,'mcp-business'),mailConfigPath=process.env.PORTAL_BUSINESS_MAIL_CONFIG,mailProvider,localTest=false,now=Date.now}={}){
   if(!enabled)return {enabled:false,handle:async()=>false,close:async()=>{}};
@@ -26,12 +27,12 @@ export async function createBusinessHttp({mail,workspace,honors,recruitment,upda
     async handle(req,res,path,host){
       if(!['/mcp-confirm','/mcp-confirm/embedded'].includes(path)&&!path.startsWith('/api/business/'))return false;
       try{
-        if(host!=='internal.110-lab.cn'&&!(localTest&&['localhost','127.0.0.1'].includes(host)))throw Object.assign(new Error('Not found'),{status:404});
+        if(host!==portalHost()&&!(localTest&&['localhost','127.0.0.1'].includes(host)))throw Object.assign(new Error('Not found'),{status:404});
         const embedded=path.endsWith('/embedded')||path.startsWith('/api/business/embedded/');
         if(path.startsWith('/mcp-confirm')&&req.method==='GET'){res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Cache-Control':'private, no-store','Referrer-Policy':'no-referrer','Content-Security-Policy':`default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors ${embedded?"'self' "+ADMIN_FRAME_ANCESTORS.join(' '):"'none'"}`});res.end(html);return true;}
         const route=path.slice(('/api/business/'+(embedded?'embedded/':'')).length),write=req.method==='POST';
         if(!['GET','POST'].includes(req.method))throw Object.assign(new Error('Method not allowed'),{status:405});
-        if(write&&(req.headers.origin!=='https://internal.110-lab.cn'&&!(localTest&&req.headers.origin==='http://'+req.headers.host)||req.headers['sec-fetch-site']&&req.headers['sec-fetch-site']!=='same-origin'))throw Object.assign(new Error('请在确认页面操作'),{status:403});
+        if(write&&(!portalRequestOrigin(req,localTest)||req.headers['sec-fetch-site']&&req.headers['sec-fetch-site']!=='same-origin'))throw Object.assign(new Error('请在确认页面操作'),{status:403});
         let actor=mail.identity(req,{embedded,write});
         if(route==='session'&&!write){json(res,200,actor);return true;}
         const m=/^confirmations\/([a-f0-9-]{36})$/.exec(route);if(!m)throw Object.assign(new Error('Not found'),{status:404});z.uuid().parse(m[1]);const application=service.confirmationApplication(actor,m[1]);if(application)await mail.authorizeApplication?.(actor,application);

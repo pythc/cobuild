@@ -35,6 +35,7 @@ export class MakitOrganizationService {
     this.expires = Date.now() + 300000;
   }
   async visibleChats() {
+    if(process.env.COBUILD_IDENTITY_MODE==='local')return [];
     if (this.chatExpires <= Date.now()) {
       this.chats = await this.feishu.visibleChats();
       this.chatExpires = Date.now() + 60000;

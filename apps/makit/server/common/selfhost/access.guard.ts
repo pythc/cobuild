@@ -38,7 +38,7 @@ export class MakitAccessGuard implements CanActivate {
       if (!login) return true;
     }
     if (publicRoute) return true;
-    if (req.path === '/healthz' || req.path === '/readyz' || req.path === '/auth/start' ||
+    if (req.path === '/api/selfhost/config' || req.path === '/healthz' || req.path === '/readyz' || req.path === '/auth/start' ||
       req.path === '/callback/110lab_requirements' || req.path === '/callback/110lab_requirements/embedded') return true;
     if (req.path.startsWith('/api/') || login) {
       if (!req.userContext?.userId) throw new UnauthorizedException('请先登录');

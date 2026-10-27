@@ -54,7 +54,7 @@ export function identityEndpoint(config: any) {
     u.origin !== origin ||
     u.username ||
     u.password ||
-    (u.origin !== LAB_ISSUER &&
+    (u.origin !== LAB_ISSUER && !(config.get('COBUILD_IDENTITY_MODE') === 'local' && config.get('LAB_IDENTITY_ORIGIN') && (u.protocol === 'https:' || u.protocol === 'http:' && ['127.0.0.1','localhost'].includes(u.hostname))) &&
       !(
         config.get('LAB_IDENTITY_LOCAL_TEST') === 'true' &&
         u.protocol === 'http:' &&
@@ -165,10 +165,10 @@ export async function identityRequest(
     throw new UnauthorizedException();
   }
   if (
-    p.issuer !== LAB_ISSUER ||
+    p.issuer !== (config.get('COBUILD_IDENTITY_MODE') === 'local' ? origin : LAB_ISSUER) ||
     p.audience !== 'knowledge' ||
-    p.tenantKey !== config.get('FEISHU_TENANT_KEY') ||
-    !/^on_[\w-]{10,100}$/.test(p.unionId || '') ||
+    p.tenantKey !== config.get(config.get('COBUILD_IDENTITY_MODE') === 'local' ? 'LAB_IDENTITY_TENANT_KEY' : 'FEISHU_TENANT_KEY') ||
+    !(config.get('COBUILD_IDENTITY_MODE') === 'local' ? p.provider === 'local' && /^[0-9a-f-]{36}$/.test(p.unionId || '') : /^on_[\w-]{10,100}$/.test(p.unionId || '')) ||
     p.subject !== p.tenantKey + ':' + p.unionId ||
     !Number.isFinite(Date.parse(p.expiresAt)) ||
     Date.parse(p.expiresAt) <= Date.now() ||

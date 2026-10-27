@@ -1,6 +1,7 @@
 import './relay-widget-entry.js';
 import {initWorkbench} from './workbench.js';
-import config from './projects.json';
+import legacyConfig from './projects.json';
+const config=globalThis.__COBUILD__?.catalog||legacyConfig;
 import {initWorkspace} from './workspace.js';
 import {EMBEDDED_APPS, DIRECT_APPS} from './embedded-workspace.js';
 const embedded=['/workbench/embedded','/projects/embedded'].includes(location.pathname);

@@ -20,6 +20,156 @@
       "reason": "skip excluded public website and desktop plugin packaging in suite mode"
     },
     {
+      "path": "apps/platform/server/admin-http.mjs",
+      "baselineSha256": "0d662fbb129d2822dd2a78aeff90fd048006324e64770d6f863442a9d11c38ac",
+      "currentSha256": "7490031cd00d3ef85b3558136da0f95649d141e3e82c58fa7938ba2d4b12f79a",
+      "reason": "native local identity and configuration adapters; module HTTP/MCP/worker gates; preserve legacy behavior without suite config"
+    },
+    {
+      "path": "apps/platform/server/application-access-http.mjs",
+      "baselineSha256": "94359a44efa0c8c19481e0e8b38c19f1461ab888c572d9b8aa26be6644a15c33",
+      "currentSha256": "ff1cf9faf8d1c49324584fd62f5f3def50ac8dc07f81ad09bb41161a0bcfeb9c",
+      "reason": "native local identity and configuration adapters; module HTTP/MCP/worker gates; preserve legacy behavior without suite config"
+    },
+    {
+      "path": "apps/platform/server/business-http.mjs",
+      "baselineSha256": "d887a2a35da4ba94fb69eac827d41b77d017cea7ea08de533b37f0f2910a0a11",
+      "currentSha256": "c68e55afd9915bc95f2c94491a51993380d7b75c20ea8dfe1122e85d14321c29",
+      "reason": "native local identity and configuration adapters; module HTTP/MCP/worker gates; preserve legacy behavior without suite config"
+    },
+    {
+      "path": "apps/platform/server/business-service.mjs",
+      "baselineSha256": "a990aaec5882980b1515cf4edeee60ccd15857759bbb3e1ce79be9c6f1481102",
+      "currentSha256": "a182e450c61d6e09cb2d39de906242d335c5a059921869813f3db9674e8d9d89",
+      "reason": "native local identity and configuration adapters; module HTTP/MCP/worker gates; preserve legacy behavior without suite config"
+    },
+    {
+      "path": "apps/platform/server/honors-http.mjs",
+      "baselineSha256": "24c0b43d991d3e23616d21317ee5dbe89adfb232dbe2e2d2f86fb6978bdb0b57",
+      "currentSha256": "0363b7e7c0a5af34eccec3f67bd9091532b8ad024670e7cbd31ca10ac985a01c",
+      "reason": "native local identity and configuration adapters; module HTTP/MCP/worker gates; preserve legacy behavior without suite config"
+    },
+    {
+      "path": "apps/platform/server/http.mjs",
+      "baselineSha256": "b216182948737823b31dd8b62770694721f7802d289318e50cea25dac12c96b7",
+      "currentSha256": "f734f7e06f997a72953aabd2a5081abe001670a4377b2ea04936cce6e5e606da",
+      "reason": "native local identity and configuration adapters; module HTTP/MCP/worker gates; preserve legacy behavior without suite config"
+    },
+    {
+      "path": "apps/platform/server/monitoring-http.mjs",
+      "baselineSha256": "d1d675e0c2b0fe008439755dd2c4f864f09ac3b8ea5190b07df2b6a2a2711b49",
+      "currentSha256": "dd171cb8bded09fd92e6fa5b2cec734222734098933612f8edbf531fc1bbeefb",
+      "reason": "native local identity and configuration adapters; module HTTP/MCP/worker gates; preserve legacy behavior without suite config"
+    },
+    {
+      "path": "apps/platform/server/portal.mjs",
+      "baselineSha256": "4cdc98969abf6fcb59467ffd7d1714adcfc56d64eb5ad28f6381a5df7b2e4dc6",
+      "currentSha256": "d2520a4ef33a773cc64acc10b7e6122ca4fa0e6229ddc76a77a14f49184c6473",
+      "reason": "native local identity and configuration adapters; module HTTP/MCP/worker gates; preserve legacy behavior without suite config"
+    },
+    {
+      "path": "apps/platform/server/recruitment-test-http.mjs",
+      "baselineSha256": "576ec3137f1994b83eedb55fe860164574d7731a5a37c5b9b5f6ab95036a3c2f",
+      "currentSha256": "b01d851f99bcf543408f951ff986de96af136d7d675a42ff5119cac768546b3f",
+      "reason": "native local identity and configuration adapters; module HTTP/MCP/worker gates; preserve legacy behavior without suite config"
+    },
+    {
+      "path": "apps/platform/server/recruitment-workflow-http.mjs",
+      "baselineSha256": "07c93311147c07c8c52f4430fd770bf53202223a114e9514748ee7be5b1e6159",
+      "currentSha256": "db36eda8d32b272d02c43675634a17b054d5c608c01d5709c2c5a5957c4781f0",
+      "reason": "native local identity and configuration adapters; module HTTP/MCP/worker gates; preserve legacy behavior without suite config"
+    },
+    {
+      "path": "apps/platform/server/unified-identity.mjs",
+      "baselineSha256": "850f5f1c3bff7a06c4e1457fae0d5101000d06ceaa38d4883ad864a100de6177",
+      "currentSha256": "441aa51a195e49856bf33772d636f565f1a920989f04f2f40b9f19983d9ef120",
+      "reason": "native local identity and configuration adapters; module HTTP/MCP/worker gates; preserve legacy behavior without suite config"
+    },
+    {
+      "path": "apps/platform/server/workbench-navigation.mjs",
+      "baselineSha256": "91e20a38c1900f341e9bf3c91a42aa5836bdb4d5bc71e86af4538182a957c620",
+      "currentSha256": "13f5c569dbee715797f832c21298f5c6f86163c5917de4160b3434127b9fde5d",
+      "reason": "native local identity and configuration adapters; module HTTP/MCP/worker gates; preserve legacy behavior without suite config"
+    },
+    {
+      "path": "apps/platform/server/workspace-http.mjs",
+      "baselineSha256": "9d9c1ade9d545dc6634ebba07ec826ff9a5df3bdc49067124fc54ea82c7e8821",
+      "currentSha256": "f315990c1b796d9bd342036c9f65964324d8857529c7e87de0ea6015a5b38000",
+      "reason": "native local identity and configuration adapters; module HTTP/MCP/worker gates; preserve legacy behavior without suite config"
+    },
+    {
+      "path": "apps/platform/src/lab-session.js",
+      "baselineSha256": "5161f06483f1c7d5ee797db1a0326361aed6a0c3f58f6bc4cc43deeeaef92a45",
+      "currentSha256": "427f0cb6399bd0b387a6b59b2bf54fbe31a4fee591ecc15e25503622fb7a33c1",
+      "reason": "native local identity and configuration adapters; module HTTP/MCP/worker gates; preserve legacy behavior without suite config"
+    },
+    {
+      "path": "apps/platform/src/relay-widget-entry.js",
+      "baselineSha256": "561bd241761341571a8a651bc592cad94a10991991f1bae448dde8d4a4ca3e11",
+      "currentSha256": "095f191210e488331d5d7975a98679ce82cd982df02bd88a992786ac6de78a98",
+      "reason": "native local identity and configuration adapters; module HTTP/MCP/worker gates; preserve legacy behavior without suite config"
+    },
+    {
+      "path": "apps/platform/src/suite-brand.js",
+      "baselineSha256": "33e418dad068cc8dd98a54473986fd26059d9093bf62cfa0a3192766e7d40c22",
+      "currentSha256": "5a6e79add89639e723f5bbbc44642335d6dc2f8f1f55b5e49f69d2b45cb1d7e4",
+      "reason": "native local identity and configuration adapters; module HTTP/MCP/worker gates; preserve legacy behavior without suite config"
+    },
+    {
+      "path": "apps/platform/src/workbench-catalog.js",
+      "baselineSha256": "c54486f7853a41d595b8b3754b55a9e85ddc58c98a5269a06ba07abea4872e7a",
+      "currentSha256": "14c58aca565b294cb029e149363793a15cd8d88cb9a1496664b9d1ffbe3772b7",
+      "reason": "native local identity and configuration adapters; module HTTP/MCP/worker gates; preserve legacy behavior without suite config"
+    },
+    {
+      "path": "apps/platform/src/workbench-standalone.js",
+      "baselineSha256": "f9f607e6a3bff73e39ac83a8a0746d405fa9dce1fa802794f05ff633b4b7cafd",
+      "currentSha256": "29977154bb45ae2c17d7fa651aea6c7f8d84658c1c4fee645cbc67df733f1be2",
+      "reason": "native local identity and configuration adapters; module HTTP/MCP/worker gates; preserve legacy behavior without suite config"
+    },
+    {
+      "path": "apps/platform/src/workbench.js",
+      "baselineSha256": "5a342de1ea3474b791a129e1919b1fb9833eb976062b9361ec5207cb5f6d51b9",
+      "currentSha256": "f474472df4e9a1e24cb6b2e13bf221fe3ddf465e06af1c405c276f49407ec59e",
+      "reason": "native local identity and configuration adapters; module HTTP/MCP/worker gates; preserve legacy behavior without suite config"
+    },
+    {
+      "path": "apps/platform/src/workspace.js",
+      "baselineSha256": "6d0884f56c2dceaf951b80ace4ec65def32e618d2ef6b8d1e277797fb77838ed",
+      "currentSha256": "cb7acb0ffe1afaaaade962e667dea15e1f6394c1434f415fc079b04e5461eac0",
+      "reason": "native local identity and configuration adapters; module HTTP/MCP/worker gates; preserve legacy behavior without suite config"
+    },
+    {
+      "path": "apps/makit/client/src/components/CoBuildBrand.tsx",
+      "baselineSha256": "c39e562d53aa85c32e8bef354d43909f7a053cd2effe3f0d18f9a15bc372a686",
+      "currentSha256": "976ffac63299b1162b3acf8914044a4b7c5ea875ee7abe11965c68d9a9e10b80",
+      "reason": "native suite identity mapping and session inspection; local directory and browser configuration; preserve application-owned roles"
+    },
+    {
+      "path": "apps/makit/client/src/components/relay/RelayWidget.tsx",
+      "baselineSha256": "dd677ae43f6308c161b6956f335dbeef7954dcedb3cf9b0cf6b62c4e569ffadf",
+      "currentSha256": "c51df95698af8418383fe15e525f1866483f5a16d50f73b955e4b084626c6626",
+      "reason": "native suite identity mapping and session inspection; local directory and browser configuration; preserve application-owned roles"
+    },
+    {
+      "path": "apps/makit/client/src/pages/ProjectsPage/ProjectsPage.tsx",
+      "baselineSha256": "37c24222e3c0a7347c074d596e8044c106239154416d55d55d7689c479dd9483",
+      "currentSha256": "e204c0a47bd6b8e4e3025cde0638632cc23f8ecd6627405461da3328a743c7b0",
+      "reason": "native suite identity mapping and session inspection; local directory and browser configuration; preserve application-owned roles"
+    },
+    {
+      "path": "apps/makit/client/src/pages/RelayPage/RelayPage.tsx",
+      "baselineSha256": "d9f8d4e3b05e9a7bb83f84e2e90fb236903b1ef50274a68d7ef7041a5f9f4119",
+      "currentSha256": "e63f36e413fc1fb5d79cf21946fca70e0d429434fefc1d70a0844e7fcb2a0194",
+      "reason": "native suite identity mapping and session inspection; local directory and browser configuration; preserve application-owned roles"
+    },
+    {
+      "path": "apps/makit/client/src/selfhost-index.tsx",
+      "baselineSha256": "dd3826154a084e16a35bd22ef4af9f17665a3f37d96260a8644502e116314820",
+      "currentSha256": "b1e0da58340dd874686cfe21388705ead915219add7cb45fdfc486e45b3e62fe",
+      "reason": "native suite identity mapping and session inspection; local directory and browser configuration; preserve application-owned roles"
+    },
+    {
       "path": "apps/makit/package-lock.json",
       "baselineSha256": "8b6a2fb691d6b925688049c5f1c9c85f40097dea2de99253a9a990236bec49bc",
       "currentSha256": "208dfaa14d531ccdb19eda81711d1ad58a07309af960ca035796114ab231af5b",
@@ -30,6 +180,54 @@
       "baselineSha256": "3cba06bfa60e9c724e062655227b5f417e4e67f8fadb4104cd2b995a9de3d251",
       "currentSha256": "24c29070073758689f71560531a9bd5097f09b499a836b7b5770dc4d1406de2a",
       "reason": "remove managed initialization and hook installers; default build/start to selfhost"
+    },
+    {
+      "path": "apps/makit/server/common/selfhost/access.guard.ts",
+      "baselineSha256": "be97fb33a220064f589155568a0bc6306d0e59425baf3c710f60732d43d52891",
+      "currentSha256": "74b8e24d0c5c2edb0e2f294fa328493d09ef870fd6d9aa6ad6a3ffafb697b0f2",
+      "reason": "native suite identity mapping and session inspection; local directory and browser configuration; preserve application-owned roles"
+    },
+    {
+      "path": "apps/makit/server/common/selfhost/auth.controller.ts",
+      "baselineSha256": "4df31ee63f24c45892e62df1860b4dc343226a86d2d2268c82369dc90867d0de",
+      "currentSha256": "f077845bcc21cbb65e8cc4b5ed820587f58b8f2b2010e3f1341b6354b8468182",
+      "reason": "native suite identity mapping and session inspection; local directory and browser configuration; preserve application-owned roles"
+    },
+    {
+      "path": "apps/makit/server/common/selfhost/identity.repository.ts",
+      "baselineSha256": "bacb611503373e2f25a6adff8f16b41bf48bb53d3097434aca9d9179e8b350b8",
+      "currentSha256": "93bb47d27628b291fc9d5036db8f0c8e650011ed1690ca2bd01f36caabb07823",
+      "reason": "native suite identity mapping and session inspection; local directory and browser configuration; preserve application-owned roles"
+    },
+    {
+      "path": "apps/makit/server/common/selfhost/organization.service.ts",
+      "baselineSha256": "cd8f49e616ca19d4522cf00f39dd1ed3f4b8c06a79a3230acfb43d45df369fa4",
+      "currentSha256": "3a39687b75cc44b54a4e415fff571478ba4b0fa8f210cc3c796a55279f6b6e9a",
+      "reason": "native suite identity mapping and session inspection; local directory and browser configuration; preserve application-owned roles"
+    },
+    {
+      "path": "apps/makit/server/common/selfhost/session.service.ts",
+      "baselineSha256": "8eb2958d1451d0eab36f4c53515b80cebbef321c05a06d100cda9c3863e0910e",
+      "currentSha256": "54005b2e6a502ba9921c855510e0d5ed628fe850a621f6943102f8e15dbf8be4",
+      "reason": "native suite identity mapping and session inspection; local directory and browser configuration; preserve application-owned roles"
+    },
+    {
+      "path": "apps/makit/server/modules/requirements/feishu.service.ts",
+      "baselineSha256": "b0ec41cc513f31f62b00dfc0485e6d1b5988e64539bd230bb084e552d371257a",
+      "currentSha256": "aa40057ce305d324fe8c696dcdcc1fce7d6eb286fe96ed53a2a9f22c8793e50b",
+      "reason": "native suite identity mapping and session inspection; local directory and browser configuration; preserve application-owned roles"
+    },
+    {
+      "path": "apps/makit/server/modules/requirements/project-action.service.ts",
+      "baselineSha256": "a33c8df8cc06e46325bbe1aeb0e4e85f6215333a30c2b1a2b0396a3300122b97",
+      "currentSha256": "0d068ce2497d0e727fc850937e982340e01adbc461d80a414c6584d3c9462b63",
+      "reason": "native suite runtime adapter and failure-closed local configuration"
+    },
+    {
+      "path": "apps/makit/server/selfhost-main.ts",
+      "baselineSha256": "fa0478cd8d5d3434c4e26d5882bfbcc54090e4cc5532c7f7396546c0ba9a086c",
+      "currentSha256": "db442abcf5e76bdfdc7e1e7b1331164c7080deb685f195082656d694659bd794",
+      "reason": "native suite identity mapping and session inspection; local directory and browser configuration; preserve application-owned roles"
     },
     {
       "path": "integrations/weknow/source/apps/client/package.json",
@@ -44,10 +242,88 @@
       "reason": "remove direct enterprise AI imports and UI paths; preserve ordinary search and filters"
     },
     {
+      "path": "integrations/weknow/source/apps/client/src/pages/auth/login.tsx",
+      "baselineSha256": "17521fe1863e81e4f4589501b2ac4426e4a1870dfd281e2872fc8807e272d01c",
+      "currentSha256": "ca3357a17496558cd9545aefaa3fc24d16560829589bef2dbad314c8e5f438fc",
+      "reason": "native suite account/workspace mapping, configured issuer, session revocation and generic login; preserve legacy Feishu path"
+    },
+    {
+      "path": "integrations/weknow/source/apps/client/src/platform/cobuild-brand.tsx",
+      "baselineSha256": "468b12dcd824bee3c8fe27ac81fc23688f140ce6abdab0735a99dde29a13ca91",
+      "currentSha256": "0c945af6ae3eeaac459b2d1a227dfad311d84af11bdba6055e13007305da69fa",
+      "reason": "native suite account/workspace mapping, configured issuer, session revocation and generic login; preserve legacy Feishu path"
+    },
+    {
       "path": "integrations/weknow/source/apps/server/package.json",
       "baselineSha256": "af704b3e119862a5f8e7dda9563ca8112f6eee96bc2775eb4edba66f33169449",
       "currentSha256": "e026a8afd75cecc36678e5419f39213551d07f54e38550ac2515354039e9caec",
       "reason": "remove restricted base-formula dependency and stale enterprise test aliases"
+    },
+    {
+      "path": "integrations/weknow/source/apps/server/src/common/helpers/constants.ts",
+      "baselineSha256": "7db2b23898383b16f486f8c64d0eba4d35884b63aa9f119911c981d9af8f11fb",
+      "currentSha256": "7b754ee9bca81d292312ce73f57b77ac560717d99129a642bd87a1ef977f7faa",
+      "reason": "native suite account/workspace mapping, configured issuer, session revocation and generic login; preserve legacy Feishu path"
+    },
+    {
+      "path": "integrations/weknow/source/apps/server/src/common/helpers/utils.ts",
+      "baselineSha256": "57e55312e7b8d4ee4381e694ba01e391e493ac6bf53c354c5c8be72d9db2f085",
+      "currentSha256": "2816562156dbe07fdd2dcf5780f411bc55c5c05477db07aa31cfcf63ec850faf",
+      "reason": "native suite account/workspace mapping, configured issuer, session revocation and generic login; preserve legacy Feishu path"
+    },
+    {
+      "path": "integrations/weknow/source/apps/server/src/core/auth/dto/jwt-payload.ts",
+      "baselineSha256": "149daf8171327f9a2e36e685079f1df8146be9d37946c58a5ceaa9b7eb533dd4",
+      "currentSha256": "8f4ba8e0709cf19d5de7d700be38c2724a231ae1bd71a12238526a5c990cedb7",
+      "reason": "native suite account/workspace mapping, configured issuer, session revocation and generic login; preserve legacy Feishu path"
+    },
+    {
+      "path": "integrations/weknow/source/apps/server/src/core/auth/feishu/lab-identity-policy.ts",
+      "baselineSha256": "8f445aad29a2b52d05f901c8ac8a0d4b9030f50d0fefd87f4889d3d02c4c086a",
+      "currentSha256": "4504a87f77218a008aa89a246f7f5c6037da760a434a9fdc2aab5226d7888087",
+      "reason": "native suite account/workspace mapping, configured issuer, session revocation and generic login; preserve legacy Feishu path"
+    },
+    {
+      "path": "integrations/weknow/source/apps/server/src/core/auth/feishu/lab-identity.controller.spec.ts",
+      "baselineSha256": "cb63afb035cc91dd6e6dbd30b42872c663c6700fb44572fb2ec587c4ebf87af2",
+      "currentSha256": "b955485a72181810db9427860c73019d973793b7c704d07ba0fc6e7089ba13f4",
+      "reason": "native suite account/workspace mapping, configured issuer, session revocation and generic login; preserve legacy Feishu path"
+    },
+    {
+      "path": "integrations/weknow/source/apps/server/src/core/auth/feishu/lab-identity.controller.ts",
+      "baselineSha256": "c212cd0f61a1ffa9cb3d8b965f4ecbfb7bfc2f09f0a26bc52e005346685e6472",
+      "currentSha256": "25cd8bd7400b4d56eb224e0002af884e23939a64bdfdf51709852e44c53e7e9b",
+      "reason": "native suite account/workspace mapping, configured issuer, session revocation and generic login; preserve legacy Feishu path"
+    },
+    {
+      "path": "integrations/weknow/source/apps/server/src/core/auth/feishu/lab-identity.service.ts",
+      "baselineSha256": "9bbcbc36fe124862efcc3c6fbf1fd6314d51c88073c1fb1fc02e4b3ea0f16be5",
+      "currentSha256": "5ff6dcac9883f7b203b561b6d5f16b656536024a60a58743b122ba2fb2c6a8db",
+      "reason": "native suite account/workspace mapping, configured issuer, session revocation and generic login; preserve legacy Feishu path"
+    },
+    {
+      "path": "integrations/weknow/source/apps/server/src/core/auth/services/token.service.ts",
+      "baselineSha256": "e1fb33e87ddfb7dd76b9953ea24407c9d75953de96d1ede9c64bec71078ed2dc",
+      "currentSha256": "f47cb7744709f7bd5759d093751099690c9d2e42b9ebe6d075d63836f8b391b9",
+      "reason": "native suite account/workspace mapping, configured issuer, session revocation and generic login; preserve legacy Feishu path"
+    },
+    {
+      "path": "integrations/weknow/source/apps/server/src/core/auth/strategies/jwt.strategy.ts",
+      "baselineSha256": "a7988218c2a685c8f10857e0046bf1f1d79f103baaa93cf57f353d55a48ca610",
+      "currentSha256": "da5142f80b79669a17362f955740c233cb208720cd167d158f4069e4bbba34ac",
+      "reason": "native suite account/workspace mapping, configured issuer, session revocation and generic login; preserve legacy Feishu path"
+    },
+    {
+      "path": "integrations/weknow/source/apps/server/src/core/session/native-session.service.ts",
+      "baselineSha256": "168ee0086c318b95719ce92a06b5fb8a79b211e4c62fa2cee69d9022e1676956",
+      "currentSha256": "25ee37c8e516fcbb9c2020b50631ee121f742e46400f1f44226b4332e3bc3b9c",
+      "reason": "native suite account/workspace mapping, configured issuer, session revocation and generic login; preserve legacy Feishu path"
+    },
+    {
+      "path": "integrations/weknow/source/apps/server/src/main.ts",
+      "baselineSha256": "013ecafcd44ccc10c9a23911aa0282ff03b88eea678530ec8956d26e18ff8c1e",
+      "currentSha256": "cc9df1794152f7229b5da8aeedfe839ce93995bee6d574fe482951db87a0c60e",
+      "reason": "native suite account/workspace mapping, configured issuer, session revocation and generic login; preserve legacy Feishu path"
     },
     {
       "path": "integrations/weknow/source/apps/server/test/jest-e2e.json",

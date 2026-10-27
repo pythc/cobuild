@@ -39,7 +39,12 @@
         "evalab",
         "relay"
       ],
-      "acceptance": "公共配置接入各运行时，移除实际执行路径中的实验室域名、固定身份、服务地址和绝对路径"
+      "acceptance": "公共配置接入各运行时，移除实际执行路径中的实验室域名、固定身份、服务地址和绝对路径",
+      "evidence": [
+        "provenance/native-runtime-checks.json",
+        "docs/LOCAL-RUNTIME.md"
+      ],
+      "scopeNote": "Partial local acceptance on macOS: native core identity and selected built-in module gates verified. Unported extensions, integrations, recovery, migration and deployment remain open."
     },
     {
       "id": "identity",
@@ -49,7 +54,12 @@
         "makit",
         "weknow"
       ],
-      "acceptance": "无飞书环境完成首个管理员初始化、邀请、登录、退出和跨应用身份映射；首次部署不依赖既有服务"
+      "acceptance": "无飞书环境完成首个管理员初始化、邀请、登录、退出和跨应用身份映射；首次部署不依赖既有服务",
+      "evidence": [
+        "provenance/native-runtime-checks.json",
+        "docs/LOCAL-RUNTIME.md"
+      ],
+      "scopeNote": "Partial local acceptance on macOS: native core identity and selected built-in module gates verified. Unported extensions, integrations, recovery, migration and deployment remain open."
     },
     {
       "id": "module-isolation",
@@ -57,7 +67,12 @@
       "scope": [
         "platform"
       ],
-      "acceptance": "可选模块关闭时，页面、API、MCP、定时任务和邮件消费全部停止；服务端执行限制"
+      "acceptance": "可选模块关闭时，页面、API、MCP、定时任务和邮件消费全部停止；服务端执行限制",
+      "evidence": [
+        "provenance/native-runtime-checks.json",
+        "docs/LOCAL-RUNTIME.md"
+      ],
+      "scopeNote": "Partial local acceptance on macOS: native core identity and selected built-in module gates verified. Unported extensions, integrations, recovery, migration and deployment remain open."
     },
     {
       "id": "project-contract",

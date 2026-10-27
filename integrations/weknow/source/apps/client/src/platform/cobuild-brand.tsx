@@ -16,7 +16,7 @@ export function CoBuildBrand({ children }: { children: ReactNode }) {
     >
       <div className={classes.slot}>
         <a
-          href="https://cobuild.110-lab.cn/"
+          href="/api/auth/identity/home"
           aria-label="CoBuild 首页"
           className={classes.link}
           data-cobuild-brand

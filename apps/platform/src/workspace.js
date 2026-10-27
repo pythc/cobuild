@@ -8,9 +8,10 @@ const EMBEDDED = PATHNAME === '/workbench/embedded' || PATHNAME.endsWith('/workb
 const MAIL_PREFIX = '/api/mail/' + (EMBEDDED ? 'embedded/' : '');
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const isUuid = (value) => typeof value === 'string' && UUID_RE.test(value);
+const suiteModule=id=>!globalThis.__COBUILD__||globalThis.__COBUILD__.modules.includes(id);
 const DELIVERY_LABEL={RECEIVED:'已接收',SENDING:'发送中',RETRYING:'重试中',SENT:'已发送',FAILED:'发送失败',UNKNOWN:'发送结果待核实',EXPIRED:'文件已到保留期限'};
 const PREFIX = '/api/workspace/' + (EMBEDDED ? 'embedded/' : '');
-const ROLE_LABEL = { super_admin: '实验室超级管理员', admin: '实验室管理员', member: '实验室成员' };
+const ROLE_LABEL = globalThis.__COBUILD__?{super_admin:'组织所有者',admin:'组织管理员',member:'成员'}:{ super_admin: '实验室超级管理员', admin: '实验室管理员', member: '实验室成员' };
 const PHASE_LABEL = { exploring: '探索中', pending: '审核中', active: '进行中', needs_changes: '需修改' };
 const PHASE_BADGE = { exploring: 'ws-badge-indigo', pending: 'ws-badge-amber', active: 'ws-badge-teal', needs_changes: 'ws-badge-rose' };
 const PROJECT_FILTERS = { active: 1, mine: 1, archived: 1 };
@@ -112,6 +113,7 @@ function openExternal(url) {
   try { window.open(url, '_blank', 'noopener,noreferrer'); } catch { /* ignore */ }
 }
 function openApp(id) {
+  if(globalThis.__COBUILD__){if(globalThis.__COBUILD__.catalog.apps.some(a=>a.id===id))location.assign('/apps/enter/'+id);return;}
   if (!['public-mail', 'assessment', 'requirements', 'organization'].includes(id)) return;
   if (EMBEDDED) postToParent({ type: '110lab-workspace-open-app', id });
   else if(id==='organization')location.assign('/apps/enter/organization');
@@ -168,7 +170,7 @@ function renderShell() {
     document.dispatchEvent(new CustomEvent('110lab:identity', {detail: state.profile}));
   }
   if($('ws-title'))$('ws-title').textContent=PROJECTS_PAGE?'项目立项':'工作台';
-  setHidden($('ws-recruit-history'),!isAdminLike());
+  setHidden($('ws-recruit-history'),!isAdminLike()||!suiteModule('hiflow'));
   const greet = $('ws-greeting'), chip = $('ws-role-chip'), login = $('ws-login'), logout = $('ws-logout');
   const admin = $('ws-admin-settings'), needed = $('ws-login-needed'), perms = $('ws-permissions-hint');
   const tabs = $('ws-tabs'), newBtn = $('ws-project-new');
@@ -188,7 +190,7 @@ function renderShell() {
       loginHint.hidden = false;
     }
     const neededTitle = needed?.querySelector?.('p');
-    if (neededTitle) neededTitle.textContent = PROJECTS_PAGE
+    if (neededTitle) neededTitle.textContent = globalThis.__COBUILD__ ? '登录后查看个人待办与项目空间' : PROJECTS_PAGE
       ? '通过飞书登录 查看和维护实验室项目'
       : '通过飞书登录 查看个人待办和项目空间';
     return;
@@ -206,7 +208,7 @@ function renderShell() {
   // Tabs only make sense on the workbench. The projects page shows a single panel.
   setHidden(tabs, PROJECTS_PAGE);
   setHidden(reviewsChip, !isAdminLike());
-  setHidden(recruitChip, !isAdminLike());
+  setHidden(recruitChip, !isAdminLike()||!suiteModule('hiflow'));
   if (PROJECTS_PAGE) {
     setHidden($('ws-panel-todos'), true);
     setHidden($('ws-panel-projects'), false);
@@ -618,7 +620,7 @@ function renderMemberPicker() {
     const parts = ['已选 ' + selected.size + ' 人'];
     if (state.membersLoading && !state.membersLoaded) parts.push('目录加载中…');
     else if (state.membersUnavailable) parts.push('企业目录暂不可用');
-    else if (state.membersSource) parts.push('来源：' + (state.membersSource === 'feishu' ? '飞书通讯录' : '已登录成员'));
+    else if (state.membersSource) parts.push('来源：' + (state.membersSource === 'feishu' ? '飞书通讯录' : state.membersSource === 'organization' ? '组织成员' : '已登录成员'));
     summary.textContent = parts.join(' · ');
   }
   const status = $('ws-field-members-status');
@@ -705,6 +707,7 @@ function openProjectDialog(project) {
   $('ws-field-link-repo').value = links.repository || '';
   $('ws-field-link-req').value = links.requirements || '';
   $('ws-field-link-docs').value = links.docs || '';
+  if(globalThis.__COBUILD__){$('ws-field-create-knowledge').disabled=true;$('ws-field-create-knowledge').title='自动建空间连接尚未启用';}
   $('ws-field-link-knowledge').value = links.knowledgeSpace || '';
   $('ws-field-create-knowledge').checked = false;
   $('ws-create-knowledge-option').hidden = !!project && !project.unconfigured;
@@ -906,6 +909,7 @@ async function loadSession() {
 // never silently disappear from an open dialog.
 let membersRead=0;
 async function loadMembers({ refresh = false } = {}) {
+  if(!suiteModule('kick')){state.members=[];return;}
   const epoch = state.generation,serial=++membersRead;
   state.membersLoading = true; state.membersError = '';
   if (refresh) refreshMemberPicker();
@@ -933,6 +937,7 @@ async function loadMembers({ refresh = false } = {}) {
 }
 let projectsRead=0,todosRead=0;
 async function loadProjects() {
+  if(!suiteModule('kick')){state.projects=[];return;}
   const epoch=state.generation,serial=++projectsRead;
   if(state.applicationAccess?.projects?.allowed===false){state.projects=[];state.selectedProjectId=null;renderProjects();renderProjectSide();return;}
   try{
@@ -968,6 +973,7 @@ function renderRequirementsSource() {
   const recruitment=state.todoSources?.recruitment;
   if(recruitment?.state==='unavailable'){node.append(document.createTextNode('招新待办暂时无法同步 · '));node.hidden=false;}
   if(recruitment?.partial){node.append(document.createTextNode('招新显示前 200 条 待处理后继续加载 · '));node.hidden=false;}
+  if(globalThis.__COBUILD__)return;
   if (!EMBEDDED) {
     if (state.requirementsStandaloneHint) {
       node.append(document.createTextNode('需求待办在 110lab 插件中同步。'));
@@ -1055,6 +1061,7 @@ async function handleParentMessage(ev) {
 
 function finishLogin(){clearTimeout(state.loginTimer);state.loginFlow=null;state.busy=false;if($('ws-login'))$('ws-login').disabled=false;}
 async function doLogin() {
+  if(globalThis.__COBUILD__){location.assign('/login?next='+encodeURIComponent(PROJECTS_PAGE?'/projects':'/workbench'));return;}
   if(state.busy)return;state.busy=true;$('ws-login').disabled=true;setStatus('');
   try{
     const flow=await api('auth/start',{method:'POST',data:EMBEDDED?{}:{returnTo:PROJECTS_PAGE?'/projects':'/workbench'}});
@@ -1097,7 +1104,7 @@ function bindEvents() {
     if (state.membersLoading) return;
     void loadMembers({ refresh: true });
   });
-  const loginBtn = $('ws-login'); if (loginBtn) loginBtn.onclick = () => { void doLogin(); };
+  const loginBtn = $('ws-login'); if(loginBtn&&globalThis.__COBUILD__)loginBtn.textContent='登录'; if (loginBtn) loginBtn.onclick = () => { void doLogin(); };
   const logoutBtn = $('ws-logout'); if (logoutBtn) logoutBtn.onclick = () => { void doLogout(); };
   const adminBtn = $('ws-admin-settings'); if (adminBtn) adminBtn.onclick = () => { if (isSuperAdmin()) openApp('organization'); };
   const tTodos = $('ws-tab-todos'); if (tTodos) tTodos.onclick = () => selectTab('todos');

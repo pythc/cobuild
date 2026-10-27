@@ -17,7 +17,7 @@ import {
 } from '../feishu/feishu-directory-policy';
 @Injectable()
 export class NativeSessionService {
-  private readonly centralChecks = new IdentityInspectionCache();
+  private readonly centralChecks = new IdentityInspectionCache(process.env.COBUILD_IDENTITY_MODE === 'local' ? 0 : 15_000);
   constructor(
     @InjectKysely() private db: Kysely<any>,
     private config: ConfigService,
@@ -51,7 +51,7 @@ export class NativeSessionService {
   async validate(userId: string, workspaceId: string, sessionId: string) {
     if (!sessionId) throw new UnauthorizedException();
     const [identity, user, session] = await Promise.all([
-      this.db
+      this.config.get('COBUILD_IDENTITY_MODE') === 'local' ? this.db.selectFrom('suiteIdentityAccounts').selectAll().where('userId','=',userId).where('workspaceId','=',workspaceId).where('issuer','=',this.config.get('LAB_IDENTITY_ORIGIN','')).executeTakeFirst() : this.db
         .selectFrom('feishuIdentities')
         .select(['userId', 'directoryStatus', 'directoryCheckedAt'])
         .where('userId', '=', userId)
@@ -71,7 +71,8 @@ export class NativeSessionService {
       session.workspaceId !== workspaceId
     )
       throw new UnauthorizedException();
-    if (directoryEnabled(this.config)) assertDirectoryAccess(identity);
+    if (this.config.get('COBUILD_IDENTITY_MODE') === 'local') { /* Central membership is checked below on every request. */ }
+    else if (directoryEnabled(this.config)) assertDirectoryAccess(identity);
     else if (
       identity.directoryStatus &&
       !['unknown', 'active'].includes(identity.directoryStatus)
@@ -108,7 +109,7 @@ export class NativeSessionService {
               this.config.get('APP_SECRET', ''),
             ),
           });
-          if (profile.subject !== central.subject)
+          if (profile.subject !== central.subject || this.config.get('COBUILD_IDENTITY_MODE') === 'local' && ('subject' in identity ? identity.subject : undefined) !== profile.subject)
             throw new UnauthorizedException();
           return Date.parse(profile.expiresAt);
         },

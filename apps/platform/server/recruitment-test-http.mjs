@@ -1,3 +1,4 @@
+import {suiteConfig,portalHost,portalRequestOrigin} from '../../../packages/config/runtime.mjs';
 import {z} from 'zod';
 import {openRecruitmentTestStore,RecruitmentTestError,requireRecruitmentAdmin} from './recruitment-test-store.mjs';
 import {MailAuthError} from './mail-auth.mjs';
@@ -19,18 +20,18 @@ async function body(req){
   });
   try{return JSON.parse(Buffer.concat(chunks).toString('utf8'));}catch{throw new RecruitmentTestError(400,'请求格式无效');}
 }
-export function createRecruitmentTestHttp({mail,localTest=false,now=Date.now,directory=mail?.workspaceDirectory}={}){
-  const enabled=!!mail?.enabled&&!!directory,store=enabled?openRecruitmentTestStore({directory,now}):null,writes=new Map(),uploads=new Set();
+export function createRecruitmentTestHttp({mail,configuredEnabled=true,localTest=false,now=Date.now,directory=mail?.workspaceDirectory}={}){
+  const enabled=configuredEnabled&&!!mail?.enabled&&!!directory,store=enabled?openRecruitmentTestStore({directory,now}):null,writes=new Map(),uploads=new Set();
   const cleanup=store?setInterval(()=>{try{store.cleanup();}catch(e){console.error('Recruitment test cleanup failed',e.code||e.name);}},300000):null;
   cleanup?.unref();
   return {enabled,close(){clearInterval(cleanup);store?.close();},async handle(req,res,path,host){
     if(!path.startsWith('/api/recruitment-test/'))return false;
     try{
-      if(host!=='internal.110-lab.cn'&&!(localTest&&['localhost','127.0.0.1'].includes(host)))throw new RecruitmentTestError(404,'Not found');
+      if(host!==portalHost()&&!(localTest&&['localhost','127.0.0.1'].includes(host)))throw new RecruitmentTestError(404,'Not found');
       if(!enabled)throw new RecruitmentTestError(503,'实验室登录尚未配置');
       if(!['GET','POST'].includes(req.method))throw new RecruitmentTestError(405,'请求方式无效');
       const embedded=path.startsWith('/api/recruitment-test/embedded/'),prefix='/api/recruitment-test/'+(embedded?'embedded/':''),route=path.slice(prefix.length),write=req.method==='POST';
-      if(write&&(req.headers.origin!==(localTest?'http://'+req.headers.host:'https://internal.110-lab.cn')||req.headers['sec-fetch-site']&&req.headers['sec-fetch-site']!=='same-origin'))throw new RecruitmentTestError(403,'请通过招新测试页面操作');
+      if(write&&(!portalRequestOrigin(req,localTest)||req.headers['sec-fetch-site']&&req.headers['sec-fetch-site']!=='same-origin'))throw new RecruitmentTestError(403,'请通过招新测试页面操作');
       let actor=mail.identity(req,{embedded,write});
       // Show an authenticated member's own role without exposing applicant data.
       if(!write&&route==='session'){json(res,200,actor);return true;}

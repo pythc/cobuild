@@ -7,6 +7,9 @@ import RoutesComponent from './app';
 import { useSelfhostSession } from './hooks/use-selfhost-session';
 import { Button } from './components/ui/button';
 import './index.css';
+import {loadSuiteRuntime} from './lib/suite-runtime';
+
+await loadSuiteRuntime();
 
 const client = new QueryClient({ defaultOptions: { queries: { staleTime: 8000, retry: 1, refetchOnWindowFocus: false } } });
 function SessionGate() {

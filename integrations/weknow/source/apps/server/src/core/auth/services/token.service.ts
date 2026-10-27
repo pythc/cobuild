@@ -37,7 +37,7 @@ export class TokenService {
       email: user.email,
       workspaceId: user.workspaceId,
       type: JwtType.ACCESS,
-      identityProvider: 'feishu',
+      identityProvider: process.env.COBUILD_IDENTITY_MODE === 'local' ? 'cobuild' : 'feishu',
       sessionId,
     };
     return this.jwtService.sign(payload);

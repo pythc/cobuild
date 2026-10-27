@@ -51,6 +51,7 @@ export function createLabSession({onChange=()=>{},onStatus=()=>{},apiRoot='/api/
     catch(e){if(flow===expected){finish();onStatus(e.message,true);}}
   }
   async function login(){
+    if(globalThis.__COBUILD__){location.assign('/login?next='+encodeURIComponent(location.pathname+location.search));return;}
     if(flow)return;
     // Open during the user gesture; asynchronous window.open is blocked by browsers.
     if(!embedded)popup=window.open('about:blank','110lab-recruitment-login','popup,width=640,height=740');

@@ -63,7 +63,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
 
     if (
       payload.type !== JwtType.ACCESS ||
-      payload.identityProvider !== 'feishu' ||
+      payload.identityProvider !== (this.config.get('COBUILD_IDENTITY_MODE') === 'local' ? 'cobuild' : 'feishu') ||
       !payload.sessionId
     )
       throw new UnauthorizedException();

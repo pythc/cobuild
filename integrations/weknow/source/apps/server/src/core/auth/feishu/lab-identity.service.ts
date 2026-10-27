@@ -20,6 +20,8 @@ import {
   identityRequest,
   sealIdentity,
 } from './lab-identity-policy';
+import { provisionSuiteAccount } from './suite-identity';
+import { SignupService } from '../services/signup.service';
 import { isUserDisabled } from '../../../common/helpers';
 @Injectable()
 export class LabIdentityService {
@@ -33,7 +35,9 @@ export class LabIdentityService {
     private sessions: UserSessionRepo,
     private tokens: TokenService,
     private env: EnvironmentService,
+    private signup: SignupService,
   ) {}
+  get issuer() { return identityEndpoint(this.config); }
   get enabled() {
     return this.config.get('LAB_IDENTITY_ENABLED') === 'true';
   }
@@ -111,6 +115,9 @@ export class LabIdentityService {
     );
     // Resolve the union ID in this app's own directory. Never merge by email or
     // transfer a portal administrator role into a knowledge space.
+    const identity = this.config.get('COBUILD_IDENTITY_MODE') === 'local'
+      ? await provisionSuiteAccount(this.db,this.signup,profile,this.config.get('COBUILD_ORGANIZATION_NAME','CoBuild'))
+      : await (async () => {
     const data = await identityLoginStep('directory_lookup', () =>
       this.api.call(
         '/contact/v3/users/' + encodeURIComponent(profile.unionId),
@@ -125,13 +132,14 @@ export class LabIdentityService {
     await identityLoginStep('directory_membership', () =>
       this.directory.ensureMember(data.user.open_id),
     );
-    const identity = await this.db
+    return await this.db
       .selectFrom('feishuIdentities')
       .selectAll()
       .where('appId', '=', this.config.get('FEISHU_APP_ID', ''))
       .where('tenantKey', '=', profile.tenantKey)
       .where('subject', '=', data.user.open_id)
       .executeTakeFirst();
+    })();
     if (!identity) throw new IdentityLoginError('identity_not_registered');
     const user = await this.users.findById(
       identity.userId,
@@ -145,7 +153,7 @@ export class LabIdentityService {
           {
             userId: user.id,
             workspaceId: user.workspaceId,
-            deviceName: '110lab 统一登录',
+            deviceName: this.config.get('COBUILD_IDENTITY_MODE') === 'local' ? 'CoBuild' : '110lab 统一登录',
             expiresAt: new Date(
               Math.min(
                 this.env.getCookieExpiresIn().getTime(),

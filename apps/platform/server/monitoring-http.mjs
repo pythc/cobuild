@@ -1,3 +1,4 @@
+import {suiteConfig,portalHost,portalRequestOrigin} from '../../../packages/config/runtime.mjs';
 import {readMonitoringConfig,monitoringConfig,createMonitoringService,MonitoringError,limitedFetch} from './monitoring.mjs';
 import {serveMonitoringAsset,grafanaAssetCache} from './monitoring-assets.mjs';
 const json=(res,status,value)=>{res.writeHead(status,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','X-Robots-Tag':'noindex','X-Content-Type-Options':'nosniff'});res.end(JSON.stringify(value));};
@@ -12,7 +13,7 @@ export function createMonitoringHttp({mail,config=readMonitoringConfig(),localTe
   return {enabled,async handle(req,res,path,host){
     if(!path.startsWith('/api/monitoring/')&&!path.startsWith('/monitoring/grafana/'))return false;
     try{
-      if(host!=='internal.110-lab.cn'&&!(localTest&&['127.0.0.1','localhost'].includes(host)))throw new MonitoringError(404,'Not found');
+      if(host!==portalHost()&&!(localTest&&['127.0.0.1','localhost'].includes(host)))throw new MonitoringError(404,'Not found');
       if(!enabled)throw new MonitoringError(503,'监控服务尚未配置');
       const url=new URL(req.url,'http://localhost'),embedded=path.includes('/embedded/')||url.searchParams.get('embedded')==='1';
       authorize(req,embedded);
@@ -35,7 +36,7 @@ export function createMonitoringHttp({mail,config=readMonitoringConfig(),localTe
       if(await serveMonitoringAsset(req,res,p,config.grafanaAssetsDirectory))return true;
       let body;
       if(req.method==='POST'){
-        if(req.headers.origin!==(localTest?'http://'+req.headers.host:'https://internal.110-lab.cn')||req.headers['sec-fetch-site']&&req.headers['sec-fetch-site']!=='same-origin')throw new MonitoringError(403,'请在监控页面操作');
+        if(!portalRequestOrigin(req,localTest)||req.headers['sec-fetch-site']&&req.headers['sec-fetch-site']!=='same-origin')throw new MonitoringError(403,'请在监控页面操作');
         if(!String(req.headers['content-type']).startsWith('application/json'))throw new MonitoringError(415,'请求格式无效');
         let length=0;const chunks=[];for await(const c of req){length+=c.length;if(length>256*1024)throw new MonitoringError(413,'请求过大');chunks.push(c);}body=Buffer.concat(chunks);
       }

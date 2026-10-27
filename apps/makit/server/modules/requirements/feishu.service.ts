@@ -146,6 +146,7 @@ export class FeishuService {
     method: 'GET' | 'POST' | 'PUT' | 'DELETE', path: string,
     options: {params?: Record<string, unknown>; data?: unknown; retryableRead?: boolean} = {},
   ): Promise<T> {
+    if(process.env.COBUILD_IDENTITY_MODE==='local')throw new ServiceUnavailableException('飞书集成尚未启用');
     if (process.env.MAKIT_STORAGE === 'postgres' && path.startsWith('/bitable/')) {
       throw new ServiceUnavailableException('已停用飞书表运行时访问');
     }
@@ -575,6 +576,7 @@ export class FeishuService {
   }
 
   async getUserByUnionId(unionId:string):Promise<{employeeId:string;openId:string;name:string}>{
+    if(process.env.COBUILD_IDENTITY_MODE==='local')return this.identities!.localMember(unionId);
     const data=await this.request<{user?:{union_id?:string;user_id?:string;open_id?:string;name?:string;department_ids?:string[];avatar?:{avatar_240?:string};status?:{is_resigned?:boolean;is_frozen?:boolean;is_exited?:boolean;is_activated?:boolean}}}>('GET',`/contact/v3/users/${encodeURIComponent(unionId)}`,{params:{user_id_type:'union_id',department_id_type:'open_department_id'}});
     const u=data.user;
     // Explicit offboarding/freezing is a denial, never a provider outage that
@@ -596,6 +598,7 @@ export class FeishuService {
 
   private readonly permissionFreshness = new Map<string,number>();
   async refreshMakitPermissions(employeeId:string):Promise<void> {
+    if(process.env.COBUILD_IDENTITY_MODE==='local')return;
     if (!this.identities || (this.permissionFreshness.get(employeeId) || 0)>Date.now()) return;
     await this.getUserByUnionId(await this.identities.unionId(employeeId));
   }
@@ -610,6 +613,7 @@ export class FeishuService {
   }
 
   async organizationSnapshot() {
+    if(process.env.COBUILD_IDENTITY_MODE==='local')return this.identities!.localDirectory();
     type Department = {open_department_id:string;parent_department_id:string;name:string};
     type Member = {user_id:string;open_id:string;union_id:string;name:string;department_ids?:string[];
       avatar?:{avatar_240?:string};status?:{is_activated?:boolean;is_resigned?:boolean;is_frozen?:boolean;is_exited?:boolean}};

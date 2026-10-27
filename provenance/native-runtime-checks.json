@@ -1,0 +1,155 @@
+{
+  "schemaVersion": 1,
+  "version": "0.2.0-dev.0",
+  "date": "2026-10-27",
+  "scope": "isolated macOS native login/configuration/selected module runtime; not production or public release acceptance",
+  "productionModified": false,
+  "realExternalMessages": false,
+  "tests": [
+    {
+      "name": "suite",
+      "passed": 42,
+      "failed": 0,
+      "localLog": ".local/native-root-tests.log",
+      "sha256": "5254e0c1be3f0c28736a7b44465de3ad090515a161a8741752949ec03e6d1ab7"
+    },
+    {
+      "name": "platform",
+      "passed": 55,
+      "failed": 0,
+      "localLog": ".local/native-platform-regression.log",
+      "sha256": "135f43fcba014ae4f9de770b18ab5ccddc8e251d0c71864d903244cf0d2bbc4e"
+    },
+    {
+      "name": "makit-session",
+      "passed": 8,
+      "failed": 0,
+      "localLog": ".local/native-makit-session-tests.log",
+      "sha256": "739619703fbe681de9c91ba8246a45bbb83c44b9f1a4b35f696077c32c3d2062"
+    },
+    {
+      "name": "makit-database",
+      "passed": 21,
+      "failed": 0,
+      "localLog": ".local/makit-isolated-integration.log",
+      "sha256": "6c011cd5bb21d8198846722efe98fb19621721e4e24afa75b4dfdf242f934a2d"
+    },
+    {
+      "name": "makit-migrations",
+      "passed": 8,
+      "failed": 0,
+      "localLog": ".local/makit-isolated-integration.log",
+      "sha256": "6c011cd5bb21d8198846722efe98fb19621721e4e24afa75b4dfdf242f934a2d"
+    },
+    {
+      "name": "weknow-identity",
+      "passed": 69,
+      "failed": 0,
+      "localLog": ".local/native-weknow-tests.log",
+      "sha256": "0bdf47f43d696b64c68e660b69a042388959fffebd75ec9601eac4869fa67902"
+    },
+    {
+      "name": "local-process-cleanup",
+      "passed": 2,
+      "failed": 0,
+      "localLog": ".local/native-process-tests.log",
+      "sha256": "181a3a87efe6f647089f97233eb1048bd525b9710198a756af0ac1b20fbfb13b"
+    }
+  ],
+  "totalTestCasesPassed": 205,
+  "coreFlow": {
+    "passed": true,
+    "checks": 82,
+    "scope": "native platform + real Makit and WeKnow HTTP SSO",
+    "externalMessages": false,
+    "testEnvironment": {
+      "productionAccess": false,
+      "stages": [
+        {
+          "name": "makit-migrations",
+          "exitCode": 0
+        },
+        {
+          "name": "makit-role",
+          "exitCode": 0
+        },
+        {
+          "name": "core-e2e",
+          "exitCode": 0
+        }
+      ],
+      "passed": true,
+      "ownedContainersRemoved": true
+    },
+    "evidence": {
+      "localLog": ".local/native-core-e2e.log",
+      "sha256": "3a6beef61480801e1619c1a90c2b37a975e3b6591b7b6fb06bacf5145e831663"
+    }
+  },
+  "makitDatabase": {
+    "kind": "isolated-test-database",
+    "productionAccess": false,
+    "checks": [
+      {
+        "stage": "migrations",
+        "exitCode": 0
+      },
+      {
+        "stage": "runtime-role",
+        "exitCode": 0
+      },
+      {
+        "stage": "integration",
+        "exitCode": 0
+      }
+    ],
+    "image": "sha256:b0f9560a2de083e2cc7382e75f808c7381a32852a7ec49117deedb300e552b24",
+    "containerRemoved": true,
+    "passed": true
+  },
+  "builds": [
+    {
+      "name": "platform",
+      "passed": true,
+      "localLog": ".local/native-platform-build.log",
+      "sha256": "fe4037d06ecbec9ef1bcaaa22b9b4b05140fc81f02ad4e752097953dc18f1de0"
+    },
+    {
+      "name": "makit-server",
+      "passed": true,
+      "localLog": ".local/makit-native-build.log",
+      "sha256": "9822b9a2e3bfde3b1d630c5b20efd85a09d9ae7c7698e9e754cc4ea7993a0716"
+    },
+    {
+      "name": "makit-client",
+      "passed": true,
+      "localLog": ".local/native-makit-client-build.log",
+      "sha256": "81d07d0d72895403cee5b8a418e2840b4ac1dc2ffb12d981c59c6d50b9118c5c"
+    },
+    {
+      "name": "weknow",
+      "passed": true,
+      "localLog": ".local/weknow-native-build.log",
+      "sha256": "fa8ec682ddaa847b6d8241d9bb17ccef68739044643cb0d6903bd7b635c9f541"
+    }
+  ],
+  "clientTypecheck": {
+    "passed": true,
+    "localLog": ".local/native-makit-client-types.log",
+    "sha256": "5de4c739afd533e2467ccf8cc61ee38975e0cd63a2b89969d99259b0a72b4c1e"
+  },
+  "browser": {
+    "scope": "platform login, reload persistence, organization entry and page",
+    "coreApplicationsBrowserE2E": false,
+    "localScreenshot": ".local/native-organization-preview.png"
+  },
+  "notVerified": [
+    "Linux/Compose/HTTPS proxy deployment",
+    "existing identity or data migration",
+    "account recovery and ownership transfer",
+    "all business workflows",
+    "unported optional modules and external integrations",
+    "upgrade rollback and restoration",
+    "public release"
+  ]
+}

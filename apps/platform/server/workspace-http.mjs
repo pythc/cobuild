@@ -1,3 +1,4 @@
+import {suiteConfig,portalHost,portalRequestOrigin} from '../../../packages/config/runtime.mjs';
 import {verifyProjectBridge,runProjectBridge} from './project-action-bridge.mjs';
 import {projectKnowledgeWorker} from './project-knowledge-worker.mjs';
 import {z} from 'zod';
@@ -26,13 +27,13 @@ async function body(req){
   try{return JSON.parse(Buffer.concat(chunks).toString('utf8'));}catch{throw new WorkspaceError(400,'请求格式无效');}
 }
 
-export function createWorkspaceHttp({mail,recruitment,honorsTodos=()=>[],localTest=false,now=Date.now,directory=mail?.workspaceDirectory,projectSyncEnabled=process.env.PORTAL_PROJECT_SYNC_ENABLED==='true',projectSyncClient,knowledgeProjectClient,projectBridgeSecret}={}){
+export function createWorkspaceHttp({mail,knowledgeWorkerEnabled=true,apps=appConfig.apps,recruitment,honorsTodos=()=>[],localTest=false,now=Date.now,directory=mail?.workspaceDirectory,projectSyncEnabled=process.env.PORTAL_PROJECT_SYNC_ENABLED==='true',projectSyncClient,knowledgeProjectClient,projectBridgeSecret}={}){
   const enabled=!!mail?.enabled&&!!directory;
   const store=enabled?openWorkspaceStore({directory,now,syncProjects:projectSyncEnabled}):null;
   let inbox;try{inbox=enabled?openWorkspaceRecruitment({directory,source:()=>recruitment.labInbox(),canManage:a=>recruitment.store?.canManage?.(a)||['admin','super_admin'].includes(a.role),now}):null;}catch(e){store?.close();throw e;}
-  let preferences;try{preferences=enabled?openWorkbenchPreferencesStore({directory,allowedAppIds:appConfig.apps.map(app=>app.id),now}):null;}catch(e){inbox?.close();store?.close();throw e;}
+  let preferences;try{preferences=enabled?openWorkbenchPreferencesStore({directory,allowedAppIds:apps.map(app=>app.id),now}):null;}catch(e){inbox?.close();store?.close();throw e;}
   const projectSync=store?projectSyncWorker({store,mail,client:projectSyncClient,enabled:projectSyncEnabled}):null;
-  const knowledgeWorker=store?projectKnowledgeWorker({store,client:knowledgeProjectClient}):null;
+  const knowledgeWorker=store&&knowledgeWorkerEnabled?projectKnowledgeWorker({store,client:knowledgeProjectClient}):null;
   const writes=new Map();
   function throttle(actor){const time=now(),old=writes.get(actor.subject),v=old&&time-old.at<60000?old:{at:time,count:0};
     if(++v.count>60)throw new WorkspaceError(429,'操作频繁 请稍后再试');
@@ -57,7 +58,7 @@ export function createWorkspaceHttp({mail,recruitment,honorsTodos=()=>[],localTe
   return {enabled,store,canonicalMembers,favorites:actor=>preferences.get(actor),projects:actor=>store?.list(actor).projects||[],async close(){await knowledgeWorker?.close();if(!projectSync){preferences?.close();inbox?.close();store?.close();return Promise.resolve();}return projectSync.close().finally(()=>{preferences?.close();inbox?.close();store?.close();});},async handle(req,res,path,host){
     if(!path.startsWith('/api/workspace/'))return false;
     try{
-      if(host!=='internal.110-lab.cn'&&!(localTest&&['localhost','127.0.0.1'].includes(host)))throw new WorkspaceError(404,'Not found');
+      if(host!==portalHost()&&!(localTest&&['localhost','127.0.0.1'].includes(host)))throw new WorkspaceError(404,'Not found');
       if(!enabled)throw new WorkspaceError(503,'工作台登录尚未配置');
       if(path==='/api/workspace/project-actions'){
         if(req.method!=='POST'||req.headers.origin||req.headers['sec-fetch-site'])throw new WorkspaceError(403,'仅供服务连接使用');
@@ -67,7 +68,7 @@ export function createWorkspaceHttp({mail,recruitment,honorsTodos=()=>[],localTe
       }
       if(!['GET','POST'].includes(req.method))throw new WorkspaceError(405,'请求方式无效');
       const embedded=path.startsWith('/api/workspace/embedded/'),route=path.slice(embedded?24:15),write=req.method==='POST';
-      if(write){const origin=req.headers.origin;const ok=origin==='https://internal.110-lab.cn'||localTest&&origin==='http://'+req.headers.host;
+      if(write){const origin=req.headers.origin;const ok=portalRequestOrigin(req,localTest);
         if(!ok||req.headers['sec-fetch-site']&&req.headers['sec-fetch-site']!=='same-origin')throw new WorkspaceError(403,'请通过工作台操作');}
       let actor=mail.identity(req,{embedded,write});
       if(!write){
@@ -89,6 +90,7 @@ export function createWorkspaceHttp({mail,recruitment,honorsTodos=()=>[],localTe
         if(route==='projects'){
           if(!input||typeof input!=='object'||Array.isArray(input))throw new WorkspaceError(400,'invalid_input');
           const {requestId,...fields}=input;
+          if(suiteConfig&&fields.createKnowledgeSpace)throw new WorkspaceError(503,'自动创建 WeKnow 空间的连接尚未启用');
           if(requestId!==undefined&&!z.uuid().safeParse(requestId).success)throw new WorkspaceError(400,'invalid_input');
           const canonical=await canonicalMembers(actor,fields);actor=mail.identity(req,{embedded,write:true});
           const value=requestId?store.durable(actor,requestId,'web_project_create',fields,()=>store.create(actor,canonical)):store.create(actor,canonical);

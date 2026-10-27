@@ -1,3 +1,4 @@
+import {suiteConfig,portalHost,portalRequestOrigin} from '../../../packages/config/runtime.mjs';
 import {readFile} from 'node:fs/promises';
 import {isIP} from 'node:net';
 import {z} from 'zod';
@@ -47,7 +48,7 @@ export async function createAdminHttp({updates,mail,legacyPasswordEnabled=false,
       if(path.startsWith('/api/admin/embedded/'))path='/api/admin/'+path.slice('/api/admin/embedded/'.length);
       try{
         const local=localTest&&['localhost','127.0.0.1'].includes(host);
-        if(host!=='internal.110-lab.cn'&&!local)throw new AdminError(404,'Not found');
+        if(host!==portalHost()&&!local)throw new AdminError(404,'Not found');
         if(pagePath&&['GET','HEAD'].includes(req.method)){
           const ancestors=embedded?"'self' "+ADMIN_FRAME_ANCESTORS.join(' '):"'none'";
           res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store','X-Robots-Tag':'noindex, nofollow','Content-Security-Policy':`default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors ${ancestors}; form-action 'self'`});res.end(req.method==='HEAD'?undefined:embedded?html.replace('<body>','<body class="embedded">'):html);return true;

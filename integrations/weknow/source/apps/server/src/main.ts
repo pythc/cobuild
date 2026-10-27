@@ -19,6 +19,7 @@ import {
 } from './common/helpers';
 
 async function bootstrap() {
+  if(process.env.COBUILD_IDENTITY_MODE === 'local' && process.env.COBUILD_MODULE_ENABLED !== 'true') throw new Error('WeKnow module is disabled');
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
     new FastifyAdapter({
@@ -134,6 +135,7 @@ async function bootstrap() {
       // don't require workspaceId for the following paths
       const excludedPaths = [
         '/api/auth/setup',
+        ...(process.env.COBUILD_IDENTITY_MODE === 'local' ? ['/api/auth/identity/status','/api/auth/identity/login','/api/auth/identity/callback'] : []),
         '/api/health',
         '/api/billing/stripe/webhook',
         '/api/workspace/check-hostname',
