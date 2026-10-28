@@ -58,20 +58,16 @@ export class StaticModule implements OnModuleInit {
 
       const windowScriptContent = `<script>window.CONFIG=${JSON.stringify(configString)};</script>`;
 
-      if (!fs.existsSync(indexTemplateFilePath)) {
-        fs.copyFileSync(indexFilePath, indexTemplateFilePath);
-      }
-
-      const html = fs.readFileSync(indexTemplateFilePath, 'utf8');
+      const html = fs.readFileSync(fs.existsSync(indexTemplateFilePath) ? indexTemplateFilePath : indexFilePath, 'utf8');
       const transformedHtml = html.replace(windowVar, windowScriptContent);
-
-      fs.writeFileSync(indexFilePath, transformedHtml);
 
       const RENDER_PATH = '*';
 
       await app.register(fastifyStatic, {
         root: clientDistPath,
         wildcard: false,
+        index: false,
+        globIgnore: ['**/index.html', '**/index-template.html'],
         setHeaders: (reply: any, pathName: string) => {
           // Vite content-hashes everything under /assets, so they can be cached forever
           if (/[\\/]assets[\\/]/.test(pathName)) {
@@ -84,11 +80,10 @@ export class StaticModule implements OnModuleInit {
       });
 
       app.get(RENDER_PATH, (req: any, res: any) => {
-        const stream = fs.createReadStream(indexFilePath);
         res
           .header('Cache-Control', 'no-cache, no-store, must-revalidate')
           .type('text/html')
-          .send(stream);
+          .send(transformedHtml);
       });
     }
   }

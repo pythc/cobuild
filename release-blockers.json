@@ -59,9 +59,10 @@
       "evidence": [
         "provenance/native-runtime-checks.json",
         "docs/LOCAL-RUNTIME.md",
-        "provenance/collaboration-checks.json"
+        "provenance/collaboration-checks.json",
+        "provenance/deployment-checks.json"
       ],
-      "scopeNote": "Native initialization, invitation, account recovery, owner transfer, live revocation and directory sync verified on an empty local organization. Existing identity migration and deployment acceptance remain open."
+      "scopeNote": "Native accounts, owner recovery, roles, directory and project identity verified on empty local and Linux-container organizations, including restored sessions. Historical identity migration and public HTTPS remain open."
     },
     {
       "id": "module-isolation",
@@ -104,9 +105,10 @@
       ],
       "acceptance": "独立依赖安装与锁文件校验通过，不使用原目录 node_modules、私有仓库认证或本机链接",
       "evidence": [
-        "provenance/checks.json"
+        "provenance/checks.json",
+        "provenance/deployment-checks.json"
       ],
-      "scopeNote": "Verified on this macOS machine using independent installs and lockfiles; clean Linux installation remains under deployment acceptance."
+      "scopeNote": "Independent macOS installs plus core Linux arm64 Docker lockfile builds verified without host node_modules. Other architectures and optional-module clean Linux deployment remain open."
     },
     {
       "id": "deployment",
@@ -116,7 +118,11 @@
         "makit",
         "weknow"
       ],
-      "acceptance": "核心 Compose、初始化、健康检查、持久化路径和私有凭据初始化在干净环境通过"
+      "acceptance": "核心 Compose、初始化、健康检查、持久化路径和私有凭据初始化在干净环境通过",
+      "evidence": [
+        "provenance/deployment-checks.json"
+      ],
+      "scopeNote": "Linux arm64 containers: core initialization, owned Compose networks, frontend/API access and persistence verified. Public HTTPS, cross-host/engine restore, x86_64 and resource/capacity acceptance remain open."
     },
     {
       "id": "upgrade-recovery",
@@ -126,7 +132,11 @@
         "makit",
         "weknow"
       ],
-      "acceptance": "验证备份恢复、兼容升级、迁移失败处理，不默认用旧数据库覆盖新写入"
+      "acceptance": "验证备份恢复、兼容升级、迁移失败处理，不默认用旧数据库覆盖新写入",
+      "evidence": [
+        "provenance/deployment-checks.json"
+      ],
+      "scopeNote": "Complete same-engine cold restore, schema-identical image upgrades, retained new writes, failed-candidate rollback and interrupted recovery verified. Unknown schemas rejected before shutdown. Forward schema migration execution and cross-schema compatibility remain open."
     },
     {
       "id": "workflow-acceptance",

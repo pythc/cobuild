@@ -1,3 +1,4 @@
+import { transportFetch } from './suite-backchannel';
 import {
   createCipheriv,
   createDecipheriv,
@@ -92,9 +93,10 @@ export async function identityRequest(
   const attempts = kind === 'inspect' ? 2 : 1;
   for (let attempt = 0; attempt < attempts; attempt++) {
     try {
-      response = await fetch(base + '/api/identity/' + kind, {
+      const send = config.get('COBUILD_IDENTITY_MODE') === 'local' ? transportFetch : (o: string, p: string, v: RequestInit) => fetch(o + p, v);
+      response = await send(base, '/api/identity/' + kind, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Host: new URL(origin).host },
         body: JSON.stringify({ audience: 'knowledge', ...input }),
         redirect: 'error',
         signal: AbortSignal.timeout(3000),

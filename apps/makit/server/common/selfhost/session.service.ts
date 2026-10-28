@@ -1,4 +1,5 @@
 import {provisionSuiteMember} from './suite-identity';
+import { transportFetch } from './suite-backchannel';
 import { Injectable, UnauthorizedException, ServiceUnavailableException } from '@nestjs/common';
 import { createCipheriv, createDecipheriv, createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 import type { Request, Response, CookieOptions } from 'express';
@@ -57,8 +58,8 @@ export class MakitSessionService {
   private async central(action: string, input: Record<string, string>): Promise<CentralProfile> {
     let response: globalThis.Response;
     try {
-      response = await fetch(`${ISSUER}/api/identity/${action}`, {
-        method: 'POST', headers: { 'content-type': 'application/json' },
+      response = await transportFetch(ISSUER, `/api/identity/${action}`, {
+        method: 'POST', headers: { 'content-type': 'application/json', Host: new URL(ISSUER).host },
         body: JSON.stringify({ audience: 'requirements', ...input }),
         redirect: 'error', signal: AbortSignal.timeout(6000),
       });

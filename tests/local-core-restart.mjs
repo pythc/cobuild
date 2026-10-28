@@ -119,6 +119,7 @@ check(
   r.data.user.role !== "owner",
   "new organization owner does not inherit WeKnow owner role",
 );
+if (process.env.COBUILD_PERSISTENCE_ONLY !== 'true') {
 r = await req(
   base + "/api/auth/change-password",
   {
@@ -136,6 +137,7 @@ check(
   (await req(cfg.origins.weknow + "/api/users/me", {})).status === 401,
   "password change invalidates WeKnow session",
 );
+}
 console.log(
   JSON.stringify({
     passed: true,

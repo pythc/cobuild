@@ -192,7 +192,7 @@
     {
       "path": "apps/makit/server/common/selfhost/session.service.ts",
       "baselineSha256": "8eb2958d1451d0eab36f4c53515b80cebbef321c05a06d100cda9c3863e0910e",
-      "currentSha256": "54005b2e6a502ba9921c855510e0d5ed628fe850a621f6943102f8e15dbf8be4"
+      "currentSha256": "62653a446a0b47cc7ddc5873a8ed03cea98b5162313b87f76b0ee253af358eb6"
     },
     {
       "path": "apps/makit/server/modules/operations/operations.model.ts",
@@ -297,7 +297,7 @@
     {
       "path": "integrations/weknow/source/apps/server/src/core/auth/feishu/lab-identity-policy.ts",
       "baselineSha256": "8f445aad29a2b52d05f901c8ac8a0d4b9030f50d0fefd87f4889d3d02c4c086a",
-      "currentSha256": "4504a87f77218a008aa89a246f7f5c6037da760a434a9fdc2aab5226d7888087"
+      "currentSha256": "a4e33277daaf7915f75e78e077746d63a52bb9720f99bff086d966c21aeead97"
     },
     {
       "path": "integrations/weknow/source/apps/server/src/core/auth/feishu/lab-identity.controller.spec.ts",
@@ -333,6 +333,11 @@
       "path": "integrations/weknow/source/apps/server/src/database/repos/user/user.repo.ts",
       "baselineSha256": "044b363ef36b8f5ce9c55425eadce7fd70edaddf43c2a7d50e8c9f5d36040bfd",
       "currentSha256": "0b29c9100d394d5e013b859e2f445c90132d827b97c40c62a541a1bdfcdfe747"
+    },
+    {
+      "path": "integrations/weknow/source/apps/server/src/integrations/static/static.module.ts",
+      "baselineSha256": "079591b1935f738b89cc6bc84b8be8024c857b7b32c1d184e3ef6cb04e2448af",
+      "currentSha256": "4b08820448bbb26fbc1e3e3450a405ca2f536f6f9e40bec81ec17950b780f8aa"
     },
     {
       "path": "integrations/weknow/source/apps/server/src/main.ts",
@@ -2143,7 +2148,7 @@
     {
       "rule": "lab-service-address",
       "path": "apps/makit/server/common/selfhost/session.service.ts",
-      "line": 9
+      "line": 10
     },
     {
       "rule": "lab-service-address",
@@ -2543,7 +2548,7 @@
     {
       "rule": "lab-service-address",
       "path": "integrations/weknow/source/apps/server/src/core/auth/feishu/lab-identity-policy.ts",
-      "line": 13
+      "line": 14
     }
   ]
 }

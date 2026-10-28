@@ -19,7 +19,7 @@ for (const path of [
   "../integrations/weknow/source/apps/server/src/core/auth/feishu/suite-channel.ts",
 ]) {
   const js = stripTypeScriptTypes(
-    readFileSync(new URL(path, import.meta.url), "utf8"),
+    readFileSync(new URL(path, import.meta.url), "utf8").replace("'./suite-backchannel'", JSON.stringify(new URL('../packages/service/backchannel.mjs', import.meta.url).href)),
   );
   adapters.push(
     await import(
@@ -27,6 +27,26 @@ for (const path of [
     ),
   );
 }
+test('container backchannel retains the configured public Host and signed path', fixture(async(dir)=>{
+  const keyFile=join(dir,'service.key');channel.serviceKey(keyFile,true);
+  const server=createServer(async(req,res)=>{
+    const parts=[];for await(const p of req)parts.push(p);
+    const payload=channel.verifyService(req.headers,JSON.parse(Buffer.concat(parts)),req.url,keyFile);
+    res.setHeader('Content-Type','application/json');res.end(JSON.stringify({host:req.headers.host,payload}));
+  });
+  await new Promise(r=>server.listen(0,'127.0.0.1',r));
+  const previous=process.env.COBUILD_BACKCHANNELS;
+  try {
+    process.env.COBUILD_BACKCHANNELS=JSON.stringify({'https://identity.example.test':'http://127.0.0.1:'+server.address().port});
+    for(const adapter of adapters){
+      const result=await adapter.serviceRequest('https://identity.example.test','/signed',{value:'local'},keyFile);
+      assert.equal(result.host,'identity.example.test');assert.equal(result.payload.value,'local');
+    }
+  } finally {
+    if(previous===undefined)delete process.env.COBUILD_BACKCHANNELS;else process.env.COBUILD_BACKCHANNELS=previous;
+    await new Promise(r=>server.close(r));
+  }
+}));
 function fixture(fn) {
   return async () => {
     const dir = mkdtempSync(join(tmpdir(), "suite-channel-"));

@@ -1,4 +1,5 @@
 // Keep protocol compatible with packages/service/channel.mjs.
+import { transportFetch } from './suite-backchannel';
 import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import { lstatSync, readFileSync, writeFileSync, existsSync } from "node:fs";
 export function serviceKey(path: string, create = false) {
@@ -68,10 +69,11 @@ export async function serviceRequest(
     nonce: randomBytes(16).toString("hex"),
     payload,
   };
-  const r = await fetch(origin + path, {
+  const r = await transportFetch(origin, path, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      "Host": new URL(origin).host,
       "X-CoBuild-Signature": signature(serviceKey(keyFile), path, body),
     },
     body: JSON.stringify(body),

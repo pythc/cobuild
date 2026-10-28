@@ -1,4 +1,5 @@
 import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
+import { transportFetch } from './backchannel.mjs';
 import { lstatSync, readFileSync, writeFileSync, existsSync } from "node:fs";
 export function serviceKey(path, create = false) {
   if (create && !existsSync(path))
@@ -57,10 +58,11 @@ export async function serviceRequest(origin, path, payload, keyFile) {
     nonce: randomBytes(16).toString("hex"),
     payload,
   };
-  const r = await fetch(origin + path, {
+  const r = await transportFetch(origin, path, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      "Host": new URL(origin).host,
       "X-CoBuild-Signature": signature(serviceKey(keyFile), path, body),
     },
     body: JSON.stringify(body),
