@@ -9,7 +9,6 @@ import {
   DialogContent,
   DialogTitle,
   DialogHeader,
-  DialogDescription,
 } from '@/components/ui/dialog';
 import { ErrorState, LoadingState } from '@/components/WorkspaceStates';
 
@@ -79,14 +78,12 @@ export default function ProjectActionsDialog({
       }}
     >
       <DialogContent
+        aria-describedby={undefined}
         showCloseButton={!mutation.isPending}
         className="max-h-[85dvh] overflow-y-auto sm:max-w-2xl"
       >
         <DialogHeader>
           <DialogTitle>{p?.name || '项目管理'}</DialogTitle>
-          <DialogDescription>
-            项目资料和里程碑与 Kick 共用一份数据
-          </DialogDescription>
         </DialogHeader>
         {query.isPending ? <LoadingState label="正在核对项目和权限" /> : null}
         {query.isError ? (
@@ -269,11 +266,7 @@ export default function ProjectActionsDialog({
                     添加里程碑
                   </Button>
                 </form>
-              ) : (
-                <p className="text-sm text-muted-foreground">
-                  由项目负责人或实验室管理员维护项目；里程碑负责人可更新自己的完成状态
-                </p>
-              )}
+              ) : null}
             </section>
           </div>
         ) : null}

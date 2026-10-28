@@ -122,7 +122,7 @@
     {
       "path": "apps/platform/src/workspace-markup.html",
       "baselineSha256": "478362e21f800d274683e1685295921f720066d181e39043410e97e7d9ddff5e",
-      "currentSha256": "04ef83ae7d2e522f1223a1822402c29666f4ad39718d75c99b9bfedc341e10d7"
+      "currentSha256": "7ee2e9288ca8de9719843304fc22e80f5a49680021500526c4e2196c1dd28c47"
     },
     {
       "path": "apps/platform/src/workspace.js",
@@ -138,6 +138,11 @@
       "path": "apps/makit/client/src/components/relay/RelayWidget.tsx",
       "baselineSha256": "dd677ae43f6308c161b6956f335dbeef7954dcedb3cf9b0cf6b62c4e569ffadf",
       "currentSha256": "c51df95698af8418383fe15e525f1866483f5a16d50f73b955e4b084626c6626"
+    },
+    {
+      "path": "apps/makit/client/src/pages/ProjectsPage/ProjectActionsDialog.tsx",
+      "baselineSha256": "e72a97573fe0608ab7d1565488ae728c33bb4af93bbab22fa18dc4b7bd9a2d34",
+      "currentSha256": "9ecc600cfdb4bf502f42e84f522f9889c60eb0ab5e66b159b8a91a4737a7a339"
     },
     {
       "path": "apps/makit/client/src/pages/ProjectsPage/ProjectsPage.tsx",
@@ -2088,7 +2093,7 @@
     {
       "rule": "lab-service-address",
       "path": "apps/makit/client/src/pages/ProjectsPage/ProjectActionsDialog.tsx",
-      "line": 140
+      "line": 137
     },
     {
       "rule": "lab-service-address",
