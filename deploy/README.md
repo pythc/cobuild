@@ -10,7 +10,7 @@
 
 ```sh
 docker build -f deploy/Dockerfile -t cobuild-suite:local .
-python3 deploy/suite.py seal --image cobuild-suite:local --version 0.5.0-local.1 --output release-local.json
+python3 deploy/suite.py seal --image cobuild-suite:local --version 0.6.0-local.1 --output release-local.json
 python3 deploy/suite.py init /srv/cobuild/team --release release-local.json
 python3 deploy/suite.py up /srv/cobuild/team
 ```
@@ -48,6 +48,33 @@ python3 deploy/suite.py down /srv/cobuild/team
 所有者遗失密码时，部署机器的操作人员可执行 `python3 deploy/suite.py recover-owner /srv/cobuild/team`。它只输出一个私有恢复文件的路径及过期时间；在本机私下打开该文件完成重置。原所有者会话和更早的恢复链接立即失效，恢复链接不输出到终端。
 
 其他成员访问时，应配置三个 HTTPS origins，由部署者的反向代理转发至本机应用端口，保留 Host，支持 WebSocket 和上传大小。浏览器 issuer、精确回调、返回链接保持公开域名；核心内部仅走回环通信。TLS、DNS 和公网浏览器访问需要在目标环境另外验收。
+
+## 部署器管理 HTTPS 入口
+
+也可以让本部署的入口代理加载部署者提供的证书。默认端口仍只绑定 `127.0.0.1`，不会自动开放公网、修改 DNS、申请证书或安装系统信任。配置中的三个核心 origin 必须使用各自的 HTTPS 地址，证书 SAN 须覆盖已启用核心应用的全部主机名。
+
+```sh
+python3 deploy/suite.py init /srv/cobuild/team --release release-local.json --config /srv/cobuild/config.json --tls-cert /srv/certs/fullchain.pem --tls-key /srv/certs/private-key.pem --tls-ca /srv/certs/team-ca.pem
+python3 deploy/suite.py up /srv/cobuild/team
+```
+
+`--tls-cert` 为 PEM 证书链，`--tls-key` 为未加密 PEM 私钥，须是普通文件并以 0600 保存；拒绝软链接。`--tls-ca` 可选：省略时部署器使用其默认信任根，指定时以该 CA 包校验证书链。使用私有 CA 的成员设备需要由部署者另行安排信任；工具不会修改成员设备。
+
+证书和私钥复制到私有 `state/ingress/<generation>`，最后原子提交 `state/ingress.json`。预检在不出网的临时容器中验证有效期、SAN、密钥配对及 TLS 证书链，再核验代理配置。入口只给准确的 Host 转发，并覆盖客户端提供的转发头；健康检查连接本机端口，同时验证公开主机名和证书链。不会使用 `-k` 或关闭证书校验。文件装载和代理头配置参考 [Caddy TLS](https://caddyserver.com/docs/caddyfile/directives/tls) 与 [反向代理文档](https://caddyserver.com/docs/caddyfile/directives/reverse_proxy)。
+
+证书更新使用新代际，不直接修改已有 PEM 或摘要记录：
+
+```sh
+python3 deploy/suite.py stop /srv/cobuild/team
+python3 deploy/suite.py tls-configure /srv/cobuild/team --tls-cert /srv/certs/new-fullchain.pem --tls-key /srv/certs/new-private-key.pem --tls-ca /srv/certs/team-ca.pem
+python3 deploy/suite.py up /srv/cobuild/team
+```
+
+所有本部署写入进程停止后才可更新。新材料验证失败时，原记录保持；进程或文件系统中断后，以最后提交的记录为准，引用的文件不会被错误清理。旧代际保留并纳入备份，须按团队私钥保管策略处理；本工具不自动删除历史私钥，也不自动续期。
+
+已有 TLS 材料而配置记录丢失或不完整时，拒绝回退到明文入口。若升级 pending 期间证书过期，先 `stop`，使用 `tls-configure` 修复证书，再执行 `recover`。证书修复不会清除 pending、授予数据库兼容性或启动业务。
+
+完整备份包含证书、私钥及代际记录；恢复仍保留相同 origins。备份中的证书已经过期时，可在新的目标目录恢复时同时提供新的 `--tls-cert`、`--tls-key` 和可选 `--tls-ca`，源备份不改动。没有新证书且预检失败时，目标保持停止。
 
 ## 完整备份
 
@@ -113,7 +140,7 @@ python3 deploy/suite.py migration-sql --plan deploy/examples/makit-additive.plan
 将生成的原文文件复制进候选镜像的 `apps/makit/migrations/selfhost/`，保留已有迁移和驱动不变。例如从当前已封存的镜像派生，Dockerfile 使用 `COPY --chmod=644 sql/*.sql /suite/apps/makit/migrations/selfhost/`，确保非 root 进程可读。新镜像必须包含本仓库受审的 `deploy/runtime/migrate.mjs`。随后封存精确来源及计划：
 
 ```sh
-python3 deploy/suite.py seal --image cobuild-suite:next --version 0.5.0-local.2 --base-release release-local.json --migration-plan deploy/examples/makit-additive.plan.json --output release-next.json
+python3 deploy/suite.py seal --image cobuild-suite:next --version 0.6.0-local.2 --base-release release-local.json --migration-plan deploy/examples/makit-additive.plan.json --output release-next.json
 python3 deploy/suite.py upgrade /srv/cobuild/team --release release-next.json
 python3 deploy/suite.py schema-status /srv/cobuild/team
 ```
@@ -143,6 +170,11 @@ npm test
 docker build -f deploy/Dockerfile -t cobuild-suite:deployment-candidate .
 npm run test:deployment
 npm run test:migrations
+npm run test:https
 ```
 
 验收另需宿主 Node.js 24，实际部署不需要宿主 Node。迁移演练另外需要保留的本机 `cobuild-suite:recovery-v04-baseline` 镜像，ID 必须等于上一阶段证据中的原始镜像，用于真实旧二进制回退；缺失或不同则失败，普通部署和同 schema 演练不依赖它。测试使用随机端口、临时账号和专用资源，结束后只清理自身容器、网络与数据卷，并核对原有运行容器未重启。基础结果见 `provenance/deployment-checks.json`，本轮结果见 `provenance/migration-checks.json` 和 `docs/VERIFICATION.md`。
+
+HTTPS 演练另需宿主 OpenSSL（只生成临时测试 CA）及 WeKnow 开发依赖中的 Undici。`--https --with-migrations` 将原完整生命周期跑在三个测试 HTTPS 域名下。加 `--with-browser` 并设置 `COBUILD_PLAYWRIGHT_MODULE` 到已安装 Playwright 的入口，可验证独立 Chromium 中的实际 Cookie 和回调；可用 `COBUILD_CHROMIUM_EXECUTABLE` 指定已有 Chrome，工具不自动下载浏览器。`--https --tls-lifecycle-only --with-browser` 针对证书 / 会话及证书恢复复测，不包含原完整升级 / 迁移演练；`--core-only` 用于默认 HTTP 的核心回归。
+
+测试只在独立进程中把 `.cobuild.test` 域名解析到回环地址，并指定临时 CA；不修改 hosts、DNS、系统信任或个人浏览器。Chromium 正向测试使用精确测试证书的 SPKI 固定，负向浏览器不使用该固定；证书链另由完整 CA 校验客户端验证。此证据不等同于公网 DNS、公有 CA 或目标设备验收。HTTPS 结果见 `provenance/https-checks.json`。

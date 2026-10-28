@@ -91,7 +91,7 @@ def run_checks(suite,root,directory,dep,deployments,child_image,retained,check,p
         nonlocal dep
         release,path,_=planned(name,base_release,[{'file':filename,'changes':[{'kind':'create_table','table':table_name,'columns':[{'name':'id','type':'text'}]}]}])
         checkpoint=directory/(name+'.checkpoint')
-        logfile=root/'.local'/('migration-interrupt-'+name+'.private.log')
+        logfile=root/'.local'/((base_env.get('COBUILD_DEPLOYMENT_TEST_PROFILE','')+'-' if base_env.get('COBUILD_DEPLOYMENT_TEST_PROFILE') else '')+'migration-interrupt-'+name+'.private.log')
         with open(logfile,'wb') as output:
             os.chmod(logfile,0o600)
             process=subprocess.Popen([sys.executable,str(root/'tools/migration_interrupt_worker.py'),str(dep.path),str(path),mode,str(checkpoint)],cwd=root,env=base_env,stdout=output,stderr=output,start_new_session=True)

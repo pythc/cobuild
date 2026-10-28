@@ -60,9 +60,10 @@
         "provenance/native-runtime-checks.json",
         "docs/LOCAL-RUNTIME.md",
         "provenance/collaboration-checks.json",
-        "provenance/deployment-checks.json"
+        "provenance/deployment-checks.json",
+        "provenance/https-checks.json"
       ],
-      "scopeNote": "Native accounts, owner recovery, roles, directory and project identity verified on empty local and Linux-container organizations, including restored sessions. Historical identity migration and public HTTPS remain open."
+      "scopeNote": "Native accounts and restored sessions verified locally over HTTP and TLS, including independent browser host-only Secure cookies, callback, persistence and live logout. Historical identity migration and target public DNS/CA acceptance remain open."
     },
     {
       "id": "module-isolation",
@@ -120,9 +121,10 @@
       ],
       "acceptance": "核心 Compose、初始化、健康检查、持久化路径和私有凭据初始化在干净环境通过",
       "evidence": [
-        "provenance/deployment-checks.json"
+        "provenance/deployment-checks.json",
+        "provenance/https-checks.json"
       ],
-      "scopeNote": "Linux arm64 containers: core initialization, owned Compose networks, frontend/API access and persistence verified. Public HTTPS, cross-host/engine restore, x86_64 and resource/capacity acceptance remain open."
+      "scopeNote": "Linux arm64 core install, local HTTP/TLS gateways, caller-provided certificates, strict host/chain validation, stopped rotation and private certificate restore verified. Target public DNS/CA/firewall, automatic renewal, cross-host/engine restore, x86_64 and capacity remain open."
     },
     {
       "id": "upgrade-recovery",
@@ -135,9 +137,10 @@
       "acceptance": "验证备份恢复、兼容升级、迁移失败处理，不默认用旧数据库覆盖新写入",
       "evidence": [
         "provenance/deployment-checks.json",
-        "provenance/migration-checks.json"
+        "provenance/migration-checks.json",
+        "provenance/https-checks.json"
       ],
-      "scopeNote": "Same-engine cold restore, schema-identical rollout, constrained additive Makit migrations, partial-prefix restore/forward repair, immutable 0.4 binary rollback and real transaction/after-commit interruption recovery verified locally. No data snapshot rollback. Platform/WeKnow or destructive migrations, historical conversion, cross-host/engine and public HTTPS remain open."
+      "scopeNote": "Local cold restore, additive Makit migration/repair, exact legacy binary rollback and real interruption recovery rerun over TLS. Expired-certificate pending repair and replacement-certificate restore verified without restoring old data over new writes. Platform/WeKnow or destructive migrations, historical conversion and cross-host/engine remain open."
     },
     {
       "id": "workflow-acceptance",

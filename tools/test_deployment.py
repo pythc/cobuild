@@ -36,7 +36,13 @@ def main():
     os.umask(0o077);suite.daemon()
     local=ROOT/'.local';local.mkdir(exist_ok=True,mode=0o700)
     owner='cobuild-deploy-'+uuid.uuid4().hex[:10]
-    report={'format':1,'productionAccess':False,'externalMessages':False,'checks':[],'stages':[]}
+    https='--https' in sys.argv
+    focused='--tls-lifecycle-only' in sys.argv
+    core_only='--core-only' in sys.argv
+    if focused and (not https or '--with-migrations' in sys.argv):raise ValueError('TLS lifecycle profile requires --https and excludes migration rehearsal')
+    if core_only and (focused or '--with-migrations' in sys.argv or '--with-browser' in sys.argv):raise ValueError('Core-only profile excludes lifecycle, migration and browser checks')
+    prefix='deployment-https-core-' if core_only and https else 'deployment-http-core-' if core_only else 'deployment-https-focused-' if focused else 'deployment-https-' if https else 'deployment-'
+    report={'format':1,'transport':'https' if https else 'http','profile':'core' if core_only else 'tls-lifecycle' if focused else 'full-deployment','productionAccess':False,'externalMessages':False,'checks':[],'stages':[]}
     deployments=[];images=[];retained=[];baseline_tag=None;before=inventory();directory=Path(tempfile.mkdtemp(prefix='deployment-',dir=local))
     base={k:os.environ[k] for k in ['PATH','HOME','TMPDIR','LANG'] if k in os.environ}
     def check(value,label):
@@ -44,7 +50,7 @@ def main():
         report['checks'].append(label)
     def run(name,args,env):
         result=captured(args,cwd=ROOT,env=env,timeout=180)
-        log=local/('deployment-'+name+'.private.log');log.write_text(result.stdout+result.stderr);log.chmod(0o600)
+        log=local/(prefix+name+'.private.log');log.write_text(result.stdout+result.stderr);log.chmod(0o600)
         report['stages'].append({'name':name,'exitCode':result.returncode})
         if result.returncode:raise RuntimeError(name+' failed; see private log')
         for line in result.stdout.splitlines():
@@ -56,7 +62,7 @@ def main():
         env={**base,'COBUILD_CONFIG':str(dep.path/'state/config.json'),'COBUILD_DATA_DIR':str(dep.path/'state/platform'),
              'COBUILD_FLOW_RECEIPT':str(directory/'flow.json'),'COBUILD_ATTACHMENT_RECEIPT':str(directory/'attachment.json')}
         if readonly:env['COBUILD_PERSISTENCE_ONLY']='true'
-        run(name,['node',script,*args],env)
+        run(name,['node',*(['--import','./tests/https-fixture.mjs'] if https else []),script,*args],env)
     def child_image(name,tail,extra_files=None,from_image=None):
         tag=owner+':'+name;context=directory/'fixture-images'/name;context.mkdir(parents=True,mode=0o700)
         file=context/'Dockerfile'
@@ -66,7 +72,7 @@ def main():
             if path.is_absolute() or '..' in path.parts:raise ValueError('Invalid fixture path')
             path=context/path;path.parent.mkdir(parents=True,exist_ok=True,mode=0o700);path.write_bytes(content)
         result=captured(['docker','build','--network','none','-f',str(file),'-t',tag,str(context)],cwd=ROOT,env=base,timeout=180)
-        log=local/('deployment-fixture-'+name+'.private.log');log.write_text(result.stdout+result.stderr);log.chmod(0o600)
+        log=local/(prefix+'fixture-'+name+'.private.log');log.write_text(result.stdout+result.stderr);log.chmod(0o600)
         if result.returncode:raise RuntimeError('Fixture image build failed')
         images.append(tag);return tag
     def preserve(name,dep,add=False):node(name,'tests/deployment-persistence.mjs',dep,*(['--add-page'] if add else []))
@@ -74,127 +80,140 @@ def main():
         release=directory/'release-v1.json'
         pinned=suite.image_info('cobuild-suite:deployment-candidate')['id']
         baseline_tag=owner+':baseline';suite.docker('tag',pinned,baseline_tag)
-        suite.seal(baseline_tag,'0.4.0-rehearsal.1',release)
+        suite.seal(baseline_tag,'0.6.0-rehearsal.1',release)
         report['baselineImage']=pinned
         cfg=json.loads((ROOT/'config/cobuild.local.example.json').read_text());ports=free_ports()
         cfg['organization']={'name':'Isolated Deployment Team','slug':'isolated-deployment'}
         cfg['origins']={k:'http://127.0.0.1:'+str(v) for k,v in ports.items()}
-        dep=suite.initialize(directory/'original',cfg,suite.read(release),ports);deployments.append(dep)
+        tls_sources=None
+        if https:
+            from https_deployment_checks import NAMES,prepare,entry_checks,lifecycle_checks
+            cfg['origins']={k:'https://'+name+':'+str(ports[k]) for k,name in zip(['platform','makit','weknow'],NAMES)}
+            tls_sources,wrong_tls=prepare(suite,directory,cfg,suite.read(release),ports,check)
+            base.update(COBUILD_TEST_CA=str(tls_sources['ca.pem']),COBUILD_DEPLOYMENT_TEST_PROFILE='https')
+        dep=suite.initialize(directory/'original',cfg,suite.read(release),ports,tls_sources=tls_sources);deployments.append(dep)
         with dep.lock():dep.up()
         check(dep.core_running(),'fresh Linux core starts with generated secrets')
+        if https:entry_checks(suite,dep,check,tls_sources['ca.pem'])
         node('core-e2e','tests/local-core-e2e.mjs',dep)
         node('attachment-seed','tests/deployment-persistence.mjs',dep,'--seed')
-        redis_name=dep.project+'-redis-1'
-        suite.docker('exec',redis_name,'redis-cli','set','cobuild:recovery-fixture',owner)
-        with dep.lock():dep.stop();dep.up()
-        node('restart','tests/local-core-restart.mjs',dep,readonly=True);preserve('restart-session-files',dep)
-        snapshot=directory/'backup'
-        with dep.lock():dep.snapshot(snapshot)
-        check(suite.verify_snapshot(snapshot)['release']==dep.release,'complete backup manifest and checksums verify')
-        check(dep.core_running(),'backup returns the original service to healthy running state')
-        for mode in ['tampered','missing','symlink']:
-            bad=directory/('backup-'+mode);shutil.copytree(snapshot,bad)
-            if mode=='tampered':(bad/'state/config.json').write_text('{}')
-            elif mode=='missing':(bad/'redis.tar').unlink()
-            else:(bad/'state/link').symlink_to('/etc/passwd')
-            target=directory/('restore-'+mode)
-            try:suite.restore(target,bad)
+        restored=dep
+        if not focused and not core_only:
+            redis_name=dep.project+'-redis-1'
+            suite.docker('exec',redis_name,'redis-cli','set','cobuild:recovery-fixture',owner)
+            with dep.lock():dep.stop();dep.up()
+            node('restart','tests/local-core-restart.mjs',dep,readonly=True);preserve('restart-session-files',dep)
+            snapshot=directory/'backup'
+            with dep.lock():dep.snapshot(snapshot)
+            check(suite.verify_snapshot(snapshot)['release']==dep.release,'complete backup manifest and checksums verify')
+            if https:check(any(n.startswith('state/ingress/') and n.endswith('/key.pem') for n in suite.verify_snapshot(snapshot)['files']),'complete snapshot includes private TLS key and descriptor inventory')
+            check(dep.core_running(),'backup returns the original service to healthy running state')
+            for mode in ['tampered','missing','symlink']:
+                bad=directory/('backup-'+mode);shutil.copytree(snapshot,bad)
+                if mode=='tampered':(bad/'state/config.json').write_text('{}')
+                elif mode=='missing':(bad/'redis.tar').unlink()
+                else:(bad/'state/link').symlink_to('/etc/passwd')
+                target=directory/('restore-'+mode)
+                try:suite.restore(target,bad)
+                except suite.Failure:pass
+                else:raise AssertionError('Corrupt backup accepted: '+mode)
+                check(not target.exists(),'reject '+mode+' snapshot before creating restore target')
+                shutil.rmtree(bad)
+            try:suite.restore(dep.path,snapshot)
             except suite.Failure:pass
-            else:raise AssertionError('Corrupt backup accepted: '+mode)
-            check(not target.exists(),'reject '+mode+' snapshot before creating restore target')
-            shutil.rmtree(bad)
-        try:suite.restore(dep.path,snapshot)
-        except suite.Failure:pass
-        else:raise AssertionError('Existing target overwritten')
-        check((dep.path/'state/platform/identity.sqlite').exists(),'restore cannot overwrite existing deployment')
-        with dep.lock():dep.down()
-        restored=suite.restore(directory/'restored',snapshot);deployments.append(restored)
-        check(not restored.core_running(),'restore creates a stopped isolated deployment')
-        with restored.lock():restored.up()
-        node('restored-core','tests/local-core-restart.mjs',restored,readonly=True);preserve('restored-session-files',restored)
-        check(suite.docker('exec',restored.project+'-redis-1','redis-cli','get','cobuild:recovery-fixture').decode().strip()==owner,'Redis state restored')
-        v2=directory/'release-v2.json';suite.seal(child_image('v2','ENV COBUILD_REHEARSAL_RELEASE=2'),'0.4.0-rehearsal.2',v2)
-        retained.append(suite.read(v2)['retainedImages']['core'])
-        suite.docker('image','rm',images[-1]);images.pop()
-        suite.validate_release(suite.read(v2))
-        check(True,'sealed release retains its immutable image after the working tag is removed')
-        with restored.lock():restored.upgrade(suite.read(v2))
-        check(restored.release['version']=='0.4.0-rehearsal.2','compatible image upgrade succeeds')
-        check(suite.docker('inspect','--format','{{.Image}}',restored.project+'-core-1').decode().strip()==suite.read(v2)['images']['core']['id'],'running container uses the new immutable image')
-        preserve('upgrade-new-write',restored,add=True)
-        with restored.lock():restored.upgrade(suite.read(release))
-        check(suite.docker('inspect','--format','{{.Image}}',restored.project+'-core-1').decode().strip()==suite.read(release)['images']['core']['id'],'rollback selects the previous immutable image')
-        preserve('rollback-retains-writes',restored)
-        failed=directory/'release-broken.json'
-        cmd='CMD ["node","-e","require(\'fs\').writeFileSync(\'/state/upgrade-preserved.txt\',\'candidate write\');process.exit(1)"]'
-        suite.seal(child_image('broken',cmd),'0.4.0-rehearsal.broken',failed)
-        retained.append(suite.read(failed)['retainedImages']['core'])
-        try:
-            with restored.lock():restored.upgrade(suite.read(failed))
-        except suite.Failure:pass
-        else:raise AssertionError('Broken upgrade accepted')
-        check(restored.core_running() and restored.release['version']=='0.4.0-rehearsal.1','failed upgrade automatically restores old application image')
-        check((restored.path/'state/upgrade-preserved.txt').read_text()=='candidate write','failed candidate writes are retained rather than overwritten by old snapshot')
-        preserve('failed-upgrade-retains-data',restored)
-        incompatible=directory/'release-incompatible.json'
-        mutation="USER root\nRUN node -e \"require('fs').writeFileSync('/suite/apps/makit/migrations/selfhost/9999_rehearsal.sql','INVALID MIGRATION')\"\nUSER node"
-        suite.seal(child_image('incompatible',mutation),'0.4.0-rehearsal.incompatible',incompatible)
-        retained.append(suite.read(incompatible)['retainedImages']['core'])
-        core=restored.project+'-core-1'
-        started=suite.docker('inspect','--format','{{.State.StartedAt}}',core)
-        try:
-            with restored.lock():restored.upgrade(suite.read(incompatible))
-        except suite.Failure:pass
-        else:raise AssertionError('Unknown schema upgrade accepted')
-        check(suite.docker('inspect','--format','{{.State.StartedAt}}',core)==started,'unknown migration rejected before stopping current service')
-        try:restored.preflight(suite.read(incompatible))
-        except suite.Failure:pass
-        else:raise AssertionError('Runtime schema gate bypassed')
-        check(True,'stored runtime contract also rejects an incompatible direct start')
-        suite.write(restored.path/'pending.json',{'previous':restored.release,'candidate':suite.read(v2),'phase':'prepared'})
-        try:restored.up()
-        except suite.Failure:pass
-        else:raise AssertionError('Interrupted operation started silently')
-        with restored.lock():restored.recover()
-        preserve('interrupted-upgrade-recovery',restored)
-        check(not (restored.path/'pending.json').exists(),'interrupted upgrade has explicit recover path')
-        original= suite.read(restored.path/'state/config.json')
-        disabled={**original,'modules':['platform','kick']}
-        with restored.lock():
-            restored.stop();suite.write(restored.path/'state/config.json',disabled);restored.up()
-        check(restored.core_running(),'platform/Kick-only module selection starts')
-        for app in ['makit','weknow']:
-            with socket.socket() as sock:check(sock.connect_ex(('127.0.0.1',ports[app]))!=0,app+' disabled port is not published')
-        with restored.lock():
-            restored.stop();suite.write(restored.path/'state/config.json',original);restored.up()
-        preserve('reenabled-modules-data',restored)
-        check(True,'module re-enable preserves shared identity, files and new document')
-        if '--with-migrations' in sys.argv:
-            from deployment_migration_checks import run_checks
-            restored=run_checks(suite,ROOT,directory,restored,deployments,child_image,retained,check,preserve,base)
+            else:raise AssertionError('Existing target overwritten')
+            check((dep.path/'state/platform/identity.sqlite').exists(),'restore cannot overwrite existing deployment')
+            with dep.lock():dep.down()
+            restored=suite.restore(directory/'restored',snapshot);deployments.append(restored)
+            check(not restored.core_running(),'restore creates a stopped isolated deployment')
+            with restored.lock():restored.up()
+            node('restored-core','tests/local-core-restart.mjs',restored,readonly=True);preserve('restored-session-files',restored)
+            check(suite.docker('exec',restored.project+'-redis-1','redis-cli','get','cobuild:recovery-fixture').decode().strip()==owner,'Redis state restored')
+            v2=directory/'release-v2.json';suite.seal(child_image('v2','ENV COBUILD_REHEARSAL_RELEASE=2'),'0.6.0-rehearsal.2',v2)
+            retained.append(suite.read(v2)['retainedImages']['core'])
+            suite.docker('image','rm',images[-1]);images.pop()
+            suite.validate_release(suite.read(v2))
+            check(True,'sealed release retains its immutable image after the working tag is removed')
+            with restored.lock():restored.upgrade(suite.read(v2))
+            check(restored.release['version']=='0.6.0-rehearsal.2','compatible image upgrade succeeds')
+            check(suite.docker('inspect','--format','{{.Image}}',restored.project+'-core-1').decode().strip()==suite.read(v2)['images']['core']['id'],'running container uses the new immutable image')
+            preserve('upgrade-new-write',restored,add=True)
+            with restored.lock():restored.upgrade(suite.read(release))
+            check(suite.docker('inspect','--format','{{.Image}}',restored.project+'-core-1').decode().strip()==suite.read(release)['images']['core']['id'],'rollback selects the previous immutable image')
+            preserve('rollback-retains-writes',restored)
+            failed=directory/'release-broken.json'
+            cmd='CMD ["node","-e","require(\'fs\').writeFileSync(\'/state/upgrade-preserved.txt\',\'candidate write\');process.exit(1)"]'
+            suite.seal(child_image('broken',cmd),'0.6.0-rehearsal.broken',failed)
+            retained.append(suite.read(failed)['retainedImages']['core'])
+            try:
+                with restored.lock():restored.upgrade(suite.read(failed))
+            except suite.Failure:pass
+            else:raise AssertionError('Broken upgrade accepted')
+            check(restored.core_running() and restored.release['version']=='0.6.0-rehearsal.1','failed upgrade automatically restores old application image')
+            check((restored.path/'state/upgrade-preserved.txt').read_text()=='candidate write','failed candidate writes are retained rather than overwritten by old snapshot')
+            preserve('failed-upgrade-retains-data',restored)
+            incompatible=directory/'release-incompatible.json'
+            mutation="USER root\nRUN node -e \"require('fs').writeFileSync('/suite/apps/makit/migrations/selfhost/9999_rehearsal.sql','INVALID MIGRATION')\"\nUSER node"
+            suite.seal(child_image('incompatible',mutation),'0.6.0-rehearsal.incompatible',incompatible)
+            retained.append(suite.read(incompatible)['retainedImages']['core'])
+            core=restored.project+'-core-1'
+            started=suite.docker('inspect','--format','{{.State.StartedAt}}',core)
+            try:
+                with restored.lock():restored.upgrade(suite.read(incompatible))
+            except suite.Failure:pass
+            else:raise AssertionError('Unknown schema upgrade accepted')
+            check(suite.docker('inspect','--format','{{.State.StartedAt}}',core)==started,'unknown migration rejected before stopping current service')
+            try:restored.preflight(suite.read(incompatible))
+            except suite.Failure:pass
+            else:raise AssertionError('Runtime schema gate bypassed')
+            check(True,'stored runtime contract also rejects an incompatible direct start')
+            suite.write(restored.path/'pending.json',{'previous':restored.release,'candidate':suite.read(v2),'phase':'prepared'})
+            try:restored.up()
+            except suite.Failure:pass
+            else:raise AssertionError('Interrupted operation started silently')
+            with restored.lock():restored.recover()
+            preserve('interrupted-upgrade-recovery',restored)
+            check(not (restored.path/'pending.json').exists(),'interrupted upgrade has explicit recover path')
+            original= suite.read(restored.path/'state/config.json')
+            disabled={**original,'modules':['platform','kick']}
+            with restored.lock():
+                restored.stop();suite.write(restored.path/'state/config.json',disabled);restored.up()
+            check(restored.core_running(),'platform/Kick-only module selection starts')
+            for app in ['makit','weknow']:
+                with socket.socket() as sock:check(sock.connect_ex(('127.0.0.1',ports[app]))!=0,app+' disabled port is not published')
+            with restored.lock():
+                restored.stop();suite.write(restored.path/'state/config.json',original);restored.up()
+            preserve('reenabled-modules-data',restored)
+            check(True,'module re-enable preserves shared identity, files and new document')
+            if '--with-migrations' in sys.argv:
+                from deployment_migration_checks import run_checks
+                restored=run_checks(suite,ROOT,directory,restored,deployments,child_image,retained,check,preserve,base)
+        if https and not core_only:
+            env={**base,'COBUILD_CONFIG':str(restored.path/'state/config.json'),'COBUILD_DATA_DIR':str(restored.path/'state/platform')}
+            restored=lifecycle_checks(suite,ROOT,directory,restored,tls_sources,wrong_tls,check,preserve,run,env,'--with-browser' in sys.argv,deployments)
         recovery=restored.recover_owner()
         recovery_file=Path(recovery['recoveryFile'])
         check(recovery_file.is_file() and recovery_file.stat().st_mode & 0o077==0,'owner recovery writes only a private local file')
         report['passed']=True
     except BaseException as error:
         report['passed']=False;report['error']=type(error).__name__+': '+str(error)
-        failure=local/'deployment-failure-traceback.private.log'
+        failure=local/(prefix+'failure-traceback.private.log')
         failure.write_text(traceback.format_exc());failure.chmod(0o600)
         command_error=local/'deployment-command-error.private.log'
         if command_error.is_file():
-            saved=local/'deployment-failure-command.private.log';shutil.copyfile(command_error,saved);saved.chmod(0o600)
+            saved=local/(prefix+'failure-command.private.log');shutil.copyfile(command_error,saved);saved.chmod(0o600)
         for i,dep in enumerate(deployments):
             for service in ['core','gateway']:
                 try:
                     logs=suite.docker('logs',dep.project+'-'+service+'-1').decode(errors='replace')
                     for secret in suite.read(dep.path/'state/secrets.json').values():logs=logs.replace(secret,'[REDACTED]')
-                    path=local/('deployment-failure-'+str(i)+'-'+service+'.private.log');path.write_text(logs);path.chmod(0o600)
+                    path=local/(prefix+'failure-'+str(i)+'-'+service+'.private.log');path.write_text(logs);path.chmod(0o600)
                 except Exception:pass
     finally:
         cleaned=[]
         known={d.path for d in deployments}
         for path in directory.glob('*/instance.json'):
-            if path.parent.name not in ['original','restored','migration-restored']:continue
+            if path.parent.name not in ['original','restored','migration-restored','https-cert-restored']:continue
             if path.parent not in known:
                 try:deployments.append(suite.Deployment(path.parent))
                 except Exception:pass
@@ -225,7 +244,7 @@ def main():
         after=inventory();report['otherRunningContainersPreserved']=all(after.get(k)==v for k,v in before.items())
         if report['ownedResourcesRemoved']:shutil.rmtree(directory)
         else:report['retainedPrivateTestDirectory']=str(directory)
-        suite.write(local/'deployment-result.json',report)
+        suite.write(local/(prefix+'result.json'),report)
     print(json.dumps(report));return 0 if report.get('passed') and report['ownedResourcesRemoved'] and report['otherRunningContainersPreserved'] else 1
 
 if __name__=='__main__':raise SystemExit(main())

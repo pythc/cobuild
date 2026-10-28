@@ -24,6 +24,7 @@ import uuid
 from functools import lru_cache
 sys.path.insert(0,str(Path(__file__).resolve().parent))
 import migration_policy as policy
+import ingress
 
 ROOT = Path(__file__).resolve().parents[1]
 PG = 'postgres:17-alpine@sha256:b0f9560a2de083e2cc7382e75f808c7381a32852a7ec49117deedb300e552b24'
@@ -102,6 +103,10 @@ def checked_policy(function,*args):
     try:return function(*args)
     except policy.PolicyError as error:raise Failure(str(error)) from error
 
+def checked_ingress(function,*args):
+    try:return function(*args)
+    except ingress.IngressError as error:raise Failure(str(error)) from error
+
 def available_subnet(exclude=()):
     ids=docker('network','ls','-q').decode().split()
     networks=json.loads(docker('network','inspect',*ids)) if ids else []
@@ -151,6 +156,9 @@ def compose_value(directory, instance, release):
     owner = instance['id']; project = 'cobuild-' + owner
     labels = {'cobuild.deployment':owner}
     cfg = read(directory/'state/config.json')
+    transport=checked_ingress(ingress.descriptor,directory)
+    gateway_volumes=[str(directory/'Caddyfile')+':/etc/caddy/Caddyfile:ro']
+    if transport:gateway_volumes.append(str(directory/'state/ingress'/transport['generation'])+':/etc/cobuild/tls:ro')
     port_bindings = [f"127.0.0.1:{instance['ports'][app]}:{4100+i}" for i,app in enumerate(['platform','makit','weknow']) if app in cfg['modules']]
     return {'name':project, 'services':{
       'postgres':{'image':release['images']['postgres']['id'], 'labels':labels,
@@ -169,7 +177,7 @@ def compose_value(directory, instance, release):
         'command':['caddy','run','--config','/etc/caddy/Caddyfile','--adapter','caddyfile'],
         'environment':{'XDG_CONFIG_HOME':'/tmp/config','XDG_DATA_HOME':'/tmp/data'},
         'tmpfs':['/config','/data'],
-        'volumes':[str(directory/'Caddyfile')+':/etc/caddy/Caddyfile:ro'],'ports':port_bindings,
+        'volumes':gateway_volumes,'ports':port_bindings,
         'networks':['default','ingress'],'depends_on':{'core':{'condition':'service_healthy'}},
         # Official Caddy binary carries this file capability. Its bounding set
         # must include it even when listening on unprivileged container ports.
@@ -209,9 +217,8 @@ class Deployment:
         return docker('compose','--project-name',self.project,'--file',self.path/'compose.json',*args,timeout=timeout)
     def configure(self, release=None):
         config=read(self.path/'state/config.json')
-        text='{\n admin off\n auto_https off\n}\n'
-        for i,app in enumerate(['platform','makit','weknow']):
-            if app in config['modules']:text+=':'+str(4100+i)+' {\n reverse_proxy core:'+str(4100+i)+' {\n header_up Host {http.request.hostport}\n }\n}\n'
+        transport=checked_ingress(ingress.descriptor,self.path)
+        text=checked_ingress(ingress.gateway_text,config,transport)
         with open(self.path/'Caddyfile','w',opener=lambda p,f:os.open(p,f,0o600)) as stream:stream.write(text)
         write(self.path/'compose.json',compose_value(self.path,self.instance,release or self.release))
     def status(self):
@@ -242,7 +249,7 @@ class Deployment:
             raise Failure('Schema change requires an explicit migration plan')
         elif (self.path/'state/runtime.json').exists() and not policy.same_schema(read(self.path/'state/runtime.json'),self.release['contract']):
             raise Failure('Stored runtime contract differs from the active release')
-    def preflight(self, release=None, for_migration=False):
+    def preflight(self, release=None, for_migration=False, ingress_override=None):
         release = validate_release(release or self.release)
         private(self.path/'state'); private(self.path/'state/secrets.json')
         if not for_migration:self.schema_allowed(release)
@@ -255,6 +262,45 @@ class Deployment:
             docker('run','--rm','--network','none','--user',str(os.getuid())+':'+str(os.getgid()),
                    '--mount','type=bind,src='+str(tmp)+',dst=/state,readonly',
                    '--entrypoint','node',release['images']['core']['id'],'deploy/runtime/start.mjs','--check')
+        transport=checked_ingress(ingress.descriptor,self.path,ingress_override)
+        if transport:
+            self.ingress_check('-i','--network','none','--user',str(os.getuid())+':'+str(os.getgid()),
+                '--cap-drop','ALL','--security-opt','no-new-privileges:true','--read-only','--memory','256m','--pids-limit','64',
+                '--mount','type=bind,src='+str(self.path/'state')+',dst=/state,readonly',
+                '--entrypoint','node',release['images']['core']['id'],'--input-type=module','-',json.dumps(transport),
+                input=(ROOT/'deploy/runtime/check-tls.mjs').read_bytes())
+            with tempfile.TemporaryDirectory(prefix='.cobuild-ingress-',dir=self.path.parent) as tmp:
+                tmp=Path(tmp);os.chmod(tmp,0o700)
+                (tmp/'Caddyfile').write_text(checked_ingress(ingress.gateway_text,read(self.path/'state/config.json'),transport))
+                os.chmod(tmp/'Caddyfile',0o600)
+                self.ingress_check('--network','none','--user',str(os.getuid())+':'+str(os.getgid()),
+                    '--cap-drop','ALL','--cap-add','NET_BIND_SERVICE','--security-opt','no-new-privileges:true',
+                    '--read-only','--tmpfs','/tmp:rw,nosuid,size=16m','-e','XDG_DATA_HOME=/tmp/data','-e','XDG_CONFIG_HOME=/tmp/config',
+                    '--mount','type=bind,src='+str(tmp)+',dst=/check,readonly',
+                    '--mount','type=bind,src='+str(self.path/'state/ingress'/transport['generation'])+',dst=/etc/cobuild/tls,readonly',
+                    '--entrypoint','timeout',release['images']['gateway']['id'],'30','caddy','validate','--config','/check/Caddyfile','--adapter','caddyfile')
+    def ingress_check(self,*arguments,input=None):
+        name=self.project+'-tls-check-'+uuid.uuid4().hex[:16]
+        try:
+            return docker('run','--rm','--name',name,'--label','cobuild.deployment='+self.instance['id'],
+                '--label','cobuild.tls-check=true',*arguments,input=input,timeout=40)
+        finally:
+            result=subprocess.run(['docker','container','inspect',name],stdout=subprocess.PIPE,stderr=subprocess.DEVNULL)
+            if result.returncode==0:
+                value=json.loads(result.stdout)[0]
+                if (value['Config'].get('Labels') or {}).get('cobuild.deployment')!=self.instance['id']:raise Failure('TLS check ownership differs')
+                docker('rm','-f',name)
+    def configure_tls(self,sources):
+        pending=(self.path/'pending.json').exists()
+        self.check_owned()
+        for name in [self.project+'-'+s+'-1' for s in ['core','gateway','postgres','redis']]+[self.project+'-migration']:
+            result=subprocess.run(['docker','inspect','--format','{{.State.Running}}',name],stdout=subprocess.PIPE,stderr=subprocess.DEVNULL)
+            if result.returncode==0 and result.stdout.strip()==b'true':raise Failure('Stop this deployment before changing TLS')
+        # Transport repair is safe while pending only because every owned
+        # writer is stopped. It never grants schema compatibility or clears pending.
+        value=checked_ingress(ingress.install,self.path,sources,lambda v:self.preflight(for_migration=pending,ingress_override=v),write)
+        self.configure()
+        return {'mode':'tls','generation':value['generation']}
     def up(self):
         if (self.path/'pending.json').exists(): raise Failure('Interrupted upgrade: run recover before starting')
         self.preflight(); self.configure(); self.activate_runtime(self.release); self.start_wait()
@@ -273,16 +319,12 @@ class Deployment:
         self.schema_allowed(release or self.release)
         self.start_databases()
         self.compose('up','-d','--pull','never','--wait','--wait-timeout','210',timeout=240)
-        import urllib.request
         cfg=read(self.path/'state/config.json')
         for app,path in [('platform','/healthz'),('makit','/readyz'),('weknow','/api/auth/identity/status')]:
             if app not in cfg['modules']:continue
-            from urllib.parse import urlsplit
-            request=urllib.request.Request('http://127.0.0.1:'+str(self.instance['ports'][app])+path,headers={'Host':urlsplit(cfg['origins'][app]).netloc})
             for attempt in range(20):
                 try:
-                    with urllib.request.urlopen(request,timeout=2) as response:
-                        if response.status==200:break
+                    if checked_ingress(ingress.probe,self.path,self.instance,cfg,app,path):break
                 except OSError:pass
                 time.sleep(.25)
             else:raise Failure('Published entry is not healthy: '+app)
@@ -439,6 +481,9 @@ class Deployment:
         elif not policy.same_schema(old['contract'],new['contract']):
             state=self.schema_state()
             if not state or state['status']=='migrating' or any(v['contract']['schema'] not in state['compatibleSchemas'] for v in [old,new]):raise Failure('No compatible application recovery path')
+        # Certificate failure must leave writers stopped, with a repairable
+        # pending record rather than starting an unreachable business service.
+        self.preflight(old,for_migration=True)
         self.configure(old)
         if evidence:
             self.start_databases()
@@ -484,7 +529,7 @@ def verify_snapshot(directory):
     for key in ['postgres','redis']: validate_tar(directory/(key+'.tar'))
     return manifest
 
-def initialize(directory, config, release, ports, subnet=None):
+def initialize(directory, config, release, ports, subnet=None, tls_sources=None):
     directory=Path(directory).absolute()
     if directory.exists() or directory.is_symlink(): raise Failure('Deployment destination already exists')
     validate_release(release)
@@ -499,7 +544,10 @@ def initialize(directory, config, release, ports, subnet=None):
         write(directory/'release.json',release)
         write(directory/'instance.json',{'format':1,'id':uuid.uuid4().hex[:16],'ports':ports,'subnet':str(subnet),'ingressSubnet':available_subnet([subnet])})
         prepare_private_files(directory)
-        dep=Deployment(directory); dep.configure(); dep.preflight()
+        dep=Deployment(directory)
+        if tls_sources:checked_ingress(ingress.install,directory,tls_sources,lambda v:dep.preflight(ingress_override=v),write)
+        else:dep.preflight()
+        dep.configure()
     except BaseException:
         shutil.rmtree(directory); raise
     return dep
@@ -512,7 +560,7 @@ def prepare_private_files(directory):
     sql="CREATE ROLE weknow_owner LOGIN PASSWORD '"+s['weknowDatabase']+"';\nCREATE DATABASE weknow OWNER weknow_owner;\n"
     with open(directory/'init.sql','w',opener=lambda p,f:os.open(p,f,0o600)) as f:f.write(sql)
 
-def restore(directory, backup):
+def restore(directory, backup, tls_sources=None):
     backup=Path(backup).absolute(); manifest=verify_snapshot(backup); validate_release(manifest['release'])
     directory=Path(directory).absolute()
     if directory.exists() or directory.is_symlink(): raise Failure('Restore requires a new empty destination')
@@ -522,7 +570,10 @@ def restore(directory, backup):
         write(directory/'release.json',manifest['release'])
         instance=read(backup/'instance.json'); instance['id']=uuid.uuid4().hex[:16];instance['subnet']=available_subnet();instance['ingressSubnet']=available_subnet([instance['subnet']]);write(directory/'instance.json',instance)
         prepare_private_files(directory)
-        dep=Deployment(directory);dep.preflight();dep.configure();dep.check_owned()
+        dep=Deployment(directory)
+        if tls_sources:checked_ingress(ingress.install,directory,tls_sources,lambda v:dep.preflight(ingress_override=v),write)
+        else:dep.preflight()
+        dep.configure();dep.check_owned()
         # Create containers/volumes without starting any database or application.
         dep.compose('create','--pull','never')
         for key in ['postgres','redis']:
@@ -537,6 +588,14 @@ def restore(directory, backup):
         raise
     return dep
 
+def tls_arguments(args):
+    requested=any(value is not None for value in [args.tls_cert,args.tls_key,args.tls_ca])
+    if requested or args.action=='tls-configure':
+        if not args.tls_cert or not args.tls_key or args.tls_ca is not None and not args.tls_ca:
+            raise Failure('Provide nonempty --tls-cert and --tls-key together, with optional --tls-ca')
+        return {'cert.pem':args.tls_cert,'key.pem':args.tls_key,**({'ca.pem':args.tls_ca} if args.tls_ca else {})}
+    return None
+
 def main():
     os.umask(0o077)
     parser=argparse.ArgumentParser(description=__doc__)
@@ -546,11 +605,17 @@ def main():
     p=sub.add_parser('init');p.add_argument('directory');p.add_argument('--release',required=True);p.add_argument('--config');p.add_argument('--ports',default='8080,8081,8082');p.add_argument('--subnet')
     p=sub.add_parser('restore');p.add_argument('directory');p.add_argument('--backup',required=True)
     p=sub.add_parser('verify-backup');p.add_argument('directory')
-    for action in ['up','stop','down','status','backup','upgrade','rollback','recover','recover-owner','schema-status']:
+    for action in ['up','stop','down','status','backup','upgrade','rollback','recover','recover-owner','schema-status','tls-configure']:
         p=sub.add_parser(action);p.add_argument('directory')
         if action=='backup':p.add_argument('--output',required=True)
         if action=='upgrade':p.add_argument('--release',required=True)
+    for action in ['init','restore','tls-configure']:
+        target=sub.choices[action]
+        for kind in ['cert','key','ca']:target.add_argument('--tls-'+kind)
     args=parser.parse_args()
+    tls_sources=None
+    if args.action in ['init','restore','tls-configure']:
+        tls_sources=tls_arguments(args)
     if args.action=='migration-sql':
         entries=checked_policy(policy.generated_files,read(args.plan));directory=Path(args.output)
         if directory.is_symlink():raise Failure('Migration directory must not be a link')
@@ -574,8 +639,8 @@ def main():
             'origins':{k:'http://127.0.0.1:'+str(v) for k,v in ports.items()},'modules':['platform','kick','makit','weknow'],
             'identity':{'providers':['local'],'sessionDays':30,'selfRegistration':False},
             'integrations':dict.fromkeys(['feishu','github','mail','ai'],False),'delivery':{'externalMessages':False}}
-        initialize(args.directory,cfg,read(args.release),ports,args.subnet);print('Deployment initialized; run up to start');return
-    if args.action=='restore':restore(args.directory,args.backup);print('Restored into a new stopped deployment; run up after freeing its ports');return
+        initialize(args.directory,cfg,read(args.release),ports,args.subnet,tls_sources);print('Deployment initialized; run up to start');return
+    if args.action=='restore':restore(args.directory,args.backup,tls_sources);print('Restored into a new stopped deployment; run up after freeing its ports');return
     dep=Deployment(args.directory)
     with dep.lock():
         if (dep.path/'restore-failed.json').exists() and args.action not in ['status','down','stop']:raise Failure('Partial restore cannot start')
@@ -585,6 +650,7 @@ def main():
         elif args.action=='status':print(dep.status())
         elif args.action=='recover-owner':print(json.dumps(dep.recover_owner()))
         elif args.action=='schema-status':print(json.dumps(dep.schema_state() or {'status':'base','actualSchema':dep.release['contract']['schema']},indent=2))
+        elif args.action=='tls-configure':print(json.dumps(dep.configure_tls(tls_sources)))
         else:getattr(dep,args.action)();print(args.action+' completed')
 
 if __name__=='__main__':

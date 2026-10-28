@@ -1,0 +1,658 @@
+{
+  "schemaVersion": 1,
+  "version": "0.6.0-dev.0",
+  "date": "2026-10-28",
+  "baseRevision": "b6814298f5a4e23ca371755c14a3d87f89b2e947",
+  "directionReview": "docs/HTTPS-PLAN.md",
+  "scope": "Local Linux arm64 managed TLS, strict certificate validation, full collaboration and migration recovery over HTTPS, stopped certificate rotation, expired pending repair and replacement-certificate restore; isolated browser cookie/callback acceptance",
+  "productionModified": false,
+  "realExternalMessages": false,
+  "systemTrustOrDNSModified": false,
+  "personalBrowserProfileUsed": false,
+  "environment": {
+    "dockerEngine": "29.4.3",
+    "compose": "5.1.3",
+    "containerNode": "24.21.0",
+    "hostTestNode": "24.15.0",
+    "hostPython": "3.9.6",
+    "testOpenSSL": "LibreSSL 3.3.6",
+    "architecture": "arm64",
+    "browser": "156.0.8078.73"
+  },
+  "regressions": {
+    "suite": 54,
+    "makit": 30,
+    "makitMigrationScripts": 8,
+    "weknow": 39,
+    "deploymentAndMigrationAndTLS": 35,
+    "totalPassed": 166,
+    "failed": 0
+  },
+  "profiles": {
+    "httpsFull": {
+      "format": 1,
+      "transport": "https",
+      "profile": "full-deployment",
+      "productionAccess": false,
+      "externalMessages": false,
+      "checks": [
+        "invalid hostname TLS material rejected before creating application resources",
+        "invalid expired TLS material rejected before creating application resources",
+        "invalid private-key TLS material rejected before creating application resources",
+        "invalid ca TLS material rejected before creating application resources",
+        "fresh Linux core starts with generated secrets",
+        "platform published HTTPS verifies CA and public hostname over loopback",
+        "platform rejects an untrusted CA without disabling verification",
+        "platform rejects the wrong certificate hostname",
+        "platform rejects wrong Host despite forged proxy headers",
+        "platform TLS port does not silently serve plaintext",
+        "makit published HTTPS verifies CA and public hostname over loopback",
+        "makit rejects an untrusted CA without disabling verification",
+        "makit rejects the wrong certificate hostname",
+        "makit rejects wrong Host despite forged proxy headers",
+        "makit TLS port does not silently serve plaintext",
+        "weknow published HTTPS verifies CA and public hostname over loopback",
+        "weknow rejects an untrusted CA without disabling verification",
+        "weknow rejects the wrong certificate hostname",
+        "weknow rejects wrong Host despite forged proxy headers",
+        "weknow TLS port does not silently serve plaintext",
+        "complete backup manifest and checksums verify",
+        "complete snapshot includes private TLS key and descriptor inventory",
+        "backup returns the original service to healthy running state",
+        "reject tampered snapshot before creating restore target",
+        "reject missing snapshot before creating restore target",
+        "reject symlink snapshot before creating restore target",
+        "restore cannot overwrite existing deployment",
+        "restore creates a stopped isolated deployment",
+        "Redis state restored",
+        "sealed release retains its immutable image after the working tag is removed",
+        "compatible image upgrade succeeds",
+        "running container uses the new immutable image",
+        "rollback selects the previous immutable image",
+        "failed upgrade automatically restores old application image",
+        "failed candidate writes are retained rather than overwritten by old snapshot",
+        "unknown migration rejected before stopping current service",
+        "stored runtime contract also rejects an incompatible direct start",
+        "interrupted upgrade has explicit recover path",
+        "platform/Kick-only module selection starts",
+        "makit disabled port is not published",
+        "weknow disabled port is not published",
+        "module re-enable preserves shared identity, files and new document",
+        "real generated table/column/index migration completed",
+        "legacy rollback uses the exact previously verified immutable 0.4 image",
+        "immutable 0.4 application runs after the additive migration",
+        "application rollback retains new table data",
+        "actual database schema and active binary compatibility are recorded separately",
+        "divergent schema branch rejected before stopping the application",
+        "a committed prefix is reconciled after an actual SQL failure",
+        "SQL failure restores the compatible previous application",
+        "committed first migration remains",
+        "failed file rolls back its earlier DDL in the same transaction",
+        "backup restore preserves partial schema, compatibility and committed data",
+        "repair cannot rewrite an already-committed migration prefix",
+        "a new retained candidate repairs only the unapplied suffix",
+        "repair does not rerun the committed prefix",
+        "repair retains the data written before recovery",
+        "killed after-commit operation retains its durable journal",
+        "recovery reconciles after-commit against real PostgreSQL history",
+        "transactional DDL survives only a committed migration",
+        "killed before-history operation retains its durable journal",
+        "uncertain history leaves business consumers stopped",
+        "recovery reconciles before-history against real PostgreSQL history",
+        "transactional DDL survives only a committed migration",
+        "all migration failures and interruptions preserve existing business data",
+        "live certificate replacement refuses changes before stopping services",
+        "failed certificate replacement retains the old committed descriptor",
+        "valid certificate replacement stays stopped until explicit startup",
+        "certificate replacement commits a new private generation",
+        "platform published HTTPS verifies CA and public hostname over loopback",
+        "platform rejects an untrusted CA without disabling verification",
+        "platform rejects the wrong certificate hostname",
+        "platform rejects wrong Host despite forged proxy headers",
+        "platform TLS port does not silently serve plaintext",
+        "makit published HTTPS verifies CA and public hostname over loopback",
+        "makit rejects an untrusted CA without disabling verification",
+        "makit rejects the wrong certificate hostname",
+        "makit rejects wrong Host despite forged proxy headers",
+        "makit TLS port does not silently serve plaintext",
+        "weknow published HTTPS verifies CA and public hostname over loopback",
+        "weknow rejects an untrusted CA without disabling verification",
+        "weknow rejects the wrong certificate hostname",
+        "weknow rejects wrong Host despite forged proxy headers",
+        "weknow TLS port does not silently serve plaintext",
+        "expired TLS blocks pending recovery without clearing its journal",
+        "failed TLS recovery leaves every business writer stopped",
+        "stopped pending recovery permits certificate repair without starting apps or granting schema compatibility",
+        "explicit recovery succeeds after certificate repair",
+        "restore with expired certificate remains marked failed",
+        "expired-certificate restore creates no application containers",
+        "replacement-certificate restore leaves the source snapshot unchanged",
+        "owner recovery writes only a private local file"
+      ],
+      "stages": [
+        {
+          "name": "core-e2e",
+          "exitCode": 0,
+          "assertions": 133
+        },
+        {
+          "name": "attachment-seed",
+          "exitCode": 0,
+          "assertions": 7
+        },
+        {
+          "name": "restart",
+          "exitCode": 0,
+          "assertions": 11
+        },
+        {
+          "name": "restart-session-files",
+          "exitCode": 0,
+          "assertions": 3
+        },
+        {
+          "name": "restored-core",
+          "exitCode": 0,
+          "assertions": 11
+        },
+        {
+          "name": "restored-session-files",
+          "exitCode": 0,
+          "assertions": 3
+        },
+        {
+          "name": "upgrade-new-write",
+          "exitCode": 0,
+          "assertions": 5
+        },
+        {
+          "name": "rollback-retains-writes",
+          "exitCode": 0,
+          "assertions": 4
+        },
+        {
+          "name": "failed-upgrade-retains-data",
+          "exitCode": 0,
+          "assertions": 4
+        },
+        {
+          "name": "interrupted-upgrade-recovery",
+          "exitCode": 0,
+          "assertions": 4
+        },
+        {
+          "name": "reenabled-modules-data",
+          "exitCode": 0,
+          "assertions": 4
+        },
+        {
+          "name": "migration-new-write",
+          "exitCode": 0,
+          "assertions": 4
+        },
+        {
+          "name": "migration-legacy-rollback",
+          "exitCode": 0,
+          "assertions": 4
+        },
+        {
+          "name": "migration-partial-old-app",
+          "exitCode": 0,
+          "assertions": 4
+        },
+        {
+          "name": "migration-partial-restored",
+          "exitCode": 0,
+          "assertions": 4
+        },
+        {
+          "name": "migration-forward-repair",
+          "exitCode": 0,
+          "assertions": 4
+        },
+        {
+          "name": "migration-crash-after-commit-recovered",
+          "exitCode": 0,
+          "assertions": 4
+        },
+        {
+          "name": "migration-crash-inside-transaction-recovered",
+          "exitCode": 0,
+          "assertions": 4
+        },
+        {
+          "name": "https-rotated-session-files",
+          "exitCode": 0,
+          "assertions": 4
+        },
+        {
+          "name": "https-pending-transport-repair",
+          "exitCode": 0
+        },
+        {
+          "name": "https-pending-recover",
+          "exitCode": 0
+        },
+        {
+          "name": "https-pending-recovered-files",
+          "exitCode": 0,
+          "assertions": 4
+        },
+        {
+          "name": "https-new-cert-restored-files",
+          "exitCode": 0,
+          "assertions": 4
+        },
+        {
+          "name": "https-browser",
+          "exitCode": 0,
+          "assertions": 25
+        }
+      ],
+      "baselineImage": "sha256:b70666e7dc5f458c60d8c49aadcd6432ccff4f80ffb8dcf36502639c1346c03c",
+      "passed": true,
+      "ownedResourcesRemoved": true,
+      "otherRunningContainersPreserved": true,
+      "serviceAssertions": 254,
+      "lifecycleAssertions": 92,
+      "totalAssertions": 346
+    },
+    "httpCore": {
+      "format": 1,
+      "transport": "http",
+      "profile": "core",
+      "productionAccess": false,
+      "externalMessages": false,
+      "checks": [
+        "fresh Linux core starts with generated secrets",
+        "owner recovery writes only a private local file"
+      ],
+      "stages": [
+        {
+          "name": "core-e2e",
+          "exitCode": 0,
+          "assertions": 133
+        },
+        {
+          "name": "attachment-seed",
+          "exitCode": 0,
+          "assertions": 7
+        }
+      ],
+      "baselineImage": "sha256:b70666e7dc5f458c60d8c49aadcd6432ccff4f80ffb8dcf36502639c1346c03c",
+      "passed": true,
+      "ownedResourcesRemoved": true,
+      "otherRunningContainersPreserved": true,
+      "serviceAssertions": 140,
+      "lifecycleAssertions": 2,
+      "totalAssertions": 142
+    },
+    "httpsFocused": {
+      "format": 1,
+      "transport": "https",
+      "profile": "tls-lifecycle",
+      "productionAccess": false,
+      "externalMessages": false,
+      "checks": [
+        "invalid hostname TLS material rejected before creating application resources",
+        "invalid expired TLS material rejected before creating application resources",
+        "invalid private-key TLS material rejected before creating application resources",
+        "invalid ca TLS material rejected before creating application resources",
+        "fresh Linux core starts with generated secrets",
+        "platform published HTTPS verifies CA and public hostname over loopback",
+        "platform rejects an untrusted CA without disabling verification",
+        "platform rejects the wrong certificate hostname",
+        "platform rejects wrong Host despite forged proxy headers",
+        "platform TLS port does not silently serve plaintext",
+        "makit published HTTPS verifies CA and public hostname over loopback",
+        "makit rejects an untrusted CA without disabling verification",
+        "makit rejects the wrong certificate hostname",
+        "makit rejects wrong Host despite forged proxy headers",
+        "makit TLS port does not silently serve plaintext",
+        "weknow published HTTPS verifies CA and public hostname over loopback",
+        "weknow rejects an untrusted CA without disabling verification",
+        "weknow rejects the wrong certificate hostname",
+        "weknow rejects wrong Host despite forged proxy headers",
+        "weknow TLS port does not silently serve plaintext",
+        "live certificate replacement refuses changes before stopping services",
+        "failed certificate replacement retains the old committed descriptor",
+        "valid certificate replacement stays stopped until explicit startup",
+        "certificate replacement commits a new private generation",
+        "platform published HTTPS verifies CA and public hostname over loopback",
+        "platform rejects an untrusted CA without disabling verification",
+        "platform rejects the wrong certificate hostname",
+        "platform rejects wrong Host despite forged proxy headers",
+        "platform TLS port does not silently serve plaintext",
+        "makit published HTTPS verifies CA and public hostname over loopback",
+        "makit rejects an untrusted CA without disabling verification",
+        "makit rejects the wrong certificate hostname",
+        "makit rejects wrong Host despite forged proxy headers",
+        "makit TLS port does not silently serve plaintext",
+        "weknow published HTTPS verifies CA and public hostname over loopback",
+        "weknow rejects an untrusted CA without disabling verification",
+        "weknow rejects the wrong certificate hostname",
+        "weknow rejects wrong Host despite forged proxy headers",
+        "weknow TLS port does not silently serve plaintext",
+        "expired TLS blocks pending recovery without clearing its journal",
+        "failed TLS recovery leaves every business writer stopped",
+        "stopped pending recovery permits certificate repair without starting apps or granting schema compatibility",
+        "explicit recovery succeeds after certificate repair",
+        "restore with expired certificate remains marked failed",
+        "expired-certificate restore creates no application containers",
+        "replacement-certificate restore leaves the source snapshot unchanged",
+        "owner recovery writes only a private local file"
+      ],
+      "stages": [
+        {
+          "name": "core-e2e",
+          "exitCode": 0,
+          "assertions": 133
+        },
+        {
+          "name": "attachment-seed",
+          "exitCode": 0,
+          "assertions": 7
+        },
+        {
+          "name": "https-rotated-session-files",
+          "exitCode": 0,
+          "assertions": 3
+        },
+        {
+          "name": "https-pending-transport-repair",
+          "exitCode": 0
+        },
+        {
+          "name": "https-pending-recover",
+          "exitCode": 0
+        },
+        {
+          "name": "https-pending-recovered-files",
+          "exitCode": 0,
+          "assertions": 3
+        },
+        {
+          "name": "https-new-cert-restored-files",
+          "exitCode": 0,
+          "assertions": 3
+        },
+        {
+          "name": "https-browser",
+          "exitCode": 0,
+          "assertions": 25
+        }
+      ],
+      "baselineImage": "sha256:b70666e7dc5f458c60d8c49aadcd6432ccff4f80ffb8dcf36502639c1346c03c",
+      "passed": true,
+      "ownedResourcesRemoved": true,
+      "otherRunningContainersPreserved": true,
+      "serviceAssertions": 174,
+      "lifecycleAssertions": 47,
+      "totalAssertions": 221
+    }
+  },
+  "overlapNote": "Profiles repeat core cases; totals are per profile, not a deduplicated sum.",
+  "browserAcceptance": {
+    "passed": true,
+    "checks": 25,
+    "browserVersion": "156.0.8078.73",
+    "scope": "isolated Chromium HTTPS cookie and callback acceptance",
+    "certificateTrust": "exact test SPKI pin; independent CA checks run separately",
+    "systemTrustModified": false,
+    "scopeLimit": "Only identity, real cookie handling, callback, context persistence and logout. Positive browser uses exact test SPKI; independent clients validate the CA chain. No public DNS/CA or full business-UI acceptance."
+  },
+  "artifact": {
+    "immutableImageId": "sha256:b70666e7dc5f458c60d8c49aadcd6432ccff4f80ffb8dcf36502639c1346c03c",
+    "sizeBytesReportedByDocker": 438063650,
+    "published": false,
+    "retainedLocalImage": true,
+    "legacyRollbackImageId": "sha256:e3087db4342167b33a68c8956c9cfcb8b70872667445dbf1b27b729e3e20df07"
+  },
+  "cleanup": {
+    "ownedTestContainersNetworksVolumesAndFixtureImagesRemoved": true,
+    "otherRunningContainersPreserved": true,
+    "headlessBrowserClosed": true,
+    "persistentHostPreviewStarted": false
+  },
+  "earlierFailedAttempts": [
+    "First full backend rehearsal completed, but Playwright expected an unavailable bundled browser; not counted as full acceptance. Explicit existing Chrome then passed focused and final full rehearsals.",
+    "LibreSSL expired-certificate fixture uses explicit historical dates rather than negative days."
+  ],
+  "limitations": [
+    "Ports remain loopback-only; target public DNS, CA, firewall and device trust not accepted",
+    "No automatic certificate issuance or renewal; historical private generations remain in protected backups",
+    "No physical power-loss acceptance; filesystem fault paths covered by unit tests",
+    "No cross-host/engine/architecture conversion, arbitrary schema migration, historical identity/data conversion, full business UI or optional-module release acceptance",
+    "No complete inherited-source security/license audit or public release"
+  ],
+  "evidence": [
+    {
+      "localLog": ".local/https-build.log",
+      "sha256": "ce0d398628f5b6e6ad4cb663c8fac618ad1c7c71dd8cb945b62bfda0d8145400"
+    },
+    {
+      "localLog": ".local/https-e2e.log",
+      "sha256": "e3461cdfafaa53cbb9a7e833aa5c4a4cb73c5206a4ddbd878b08ff85dfac01b7"
+    },
+    {
+      "localLog": ".local/https-focused.log",
+      "sha256": "c08a2ebe81d92bc0efe558cfad18825106b26d496ea649be5219aab73357fe18"
+    },
+    {
+      "localLog": ".local/https-http-regression.log",
+      "sha256": "6069a5b2722cbd0cf2a27c31020724016ed106f198591bf1cc71aa2dc8abf754"
+    },
+    {
+      "localLog": ".local/https-verify.log",
+      "sha256": "cc98a9aec57f243aea147a2712dac24e2a3bd667c170ec02a51e9a5a6cf422e7"
+    },
+    {
+      "localLog": ".local/https-unit.log",
+      "sha256": "d9c565a7935e4723c02beb7ace0960c6a708e99fe43304cd899e1563663e1291"
+    },
+    {
+      "localLog": ".local/https-makit-tests.log",
+      "sha256": "80197255fbb01c5652e64b07744222c464da0a14f9c0d91edaa9f287fafd7074"
+    },
+    {
+      "localLog": ".local/https-sql-tests.log",
+      "sha256": "acdf6ceddcd53161e82f5f8e7e04db32bcef05d9b7ecf1ed655a77d54676a0b5"
+    },
+    {
+      "localLog": ".local/https-weknow-tests.log",
+      "sha256": "0655bf6157b3e3bcb90fbc313d74089743af9fc49a5f7da3d26843cc7e27b11b"
+    },
+    {
+      "localLog": ".local/https-full-attempt-1.json",
+      "sha256": "82dc9e543d4f6ec2530099ed03adc0886f03e99ded97e884d5a238f009dfa48a"
+    },
+    {
+      "localLog": ".local/https-full-attempt-1.log",
+      "sha256": "80ed408cc4b5745a6dd20180bdb162a341f7fc2222f4a7bd2255c80178d9456a"
+    },
+    {
+      "localLog": ".local/https-browser-attempt-1.private.log",
+      "sha256": "6af194a505df284d76d272cd3954607190cce6749230b7966f061aa942d5452c"
+    },
+    {
+      "localLog": ".local/https-expired-pending.private.log",
+      "sha256": "410baa1c0777f5fd9132c02cc59d29adf790220c626a5f67dfd2dabbd9fa205d"
+    },
+    {
+      "localLog": ".local/https-migration-interrupt-crash-after-commit.private.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "localLog": ".local/https-migration-interrupt-crash-inside-transaction.private.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "localLog": ".local/deployment-https-core-e2e.private.log",
+      "sha256": "589ba6caf2eedce3489f91b3d9cc5c4528aec5a2227963a897b9bbf817b7f711"
+    },
+    {
+      "localLog": ".local/deployment-https-attachment-seed.private.log",
+      "sha256": "26afa813a807f6f52c51c66bf2df525075e9e59e8942c485bf9543aadf99bff0"
+    },
+    {
+      "localLog": ".local/deployment-https-restart.private.log",
+      "sha256": "e413ae7cf5316336648e6e57746739ffd6cae0ecebae53d39a1094c85f9e62a9"
+    },
+    {
+      "localLog": ".local/deployment-https-restart-session-files.private.log",
+      "sha256": "6d4932901cc715926dc2ceb45f7aaf00bc3873389cafd210969397fa47a10da4"
+    },
+    {
+      "localLog": ".local/deployment-https-restored-core.private.log",
+      "sha256": "e413ae7cf5316336648e6e57746739ffd6cae0ecebae53d39a1094c85f9e62a9"
+    },
+    {
+      "localLog": ".local/deployment-https-restored-session-files.private.log",
+      "sha256": "6d4932901cc715926dc2ceb45f7aaf00bc3873389cafd210969397fa47a10da4"
+    },
+    {
+      "localLog": ".local/deployment-https-upgrade-new-write.private.log",
+      "sha256": "63944d431858012c71ec9194885ee19f7a270bb7f79b786feff77c729fb3be69"
+    },
+    {
+      "localLog": ".local/deployment-https-rollback-retains-writes.private.log",
+      "sha256": "f1869514f485243dcbc25a614a0eddafc1d54160423ca7c06063032872c17ce2"
+    },
+    {
+      "localLog": ".local/deployment-https-failed-upgrade-retains-data.private.log",
+      "sha256": "f1869514f485243dcbc25a614a0eddafc1d54160423ca7c06063032872c17ce2"
+    },
+    {
+      "localLog": ".local/deployment-https-interrupted-upgrade-recovery.private.log",
+      "sha256": "f1869514f485243dcbc25a614a0eddafc1d54160423ca7c06063032872c17ce2"
+    },
+    {
+      "localLog": ".local/deployment-https-reenabled-modules-data.private.log",
+      "sha256": "f1869514f485243dcbc25a614a0eddafc1d54160423ca7c06063032872c17ce2"
+    },
+    {
+      "localLog": ".local/deployment-https-migration-new-write.private.log",
+      "sha256": "f1869514f485243dcbc25a614a0eddafc1d54160423ca7c06063032872c17ce2"
+    },
+    {
+      "localLog": ".local/deployment-https-migration-legacy-rollback.private.log",
+      "sha256": "f1869514f485243dcbc25a614a0eddafc1d54160423ca7c06063032872c17ce2"
+    },
+    {
+      "localLog": ".local/deployment-https-migration-partial-old-app.private.log",
+      "sha256": "f1869514f485243dcbc25a614a0eddafc1d54160423ca7c06063032872c17ce2"
+    },
+    {
+      "localLog": ".local/deployment-https-migration-partial-restored.private.log",
+      "sha256": "f1869514f485243dcbc25a614a0eddafc1d54160423ca7c06063032872c17ce2"
+    },
+    {
+      "localLog": ".local/deployment-https-migration-forward-repair.private.log",
+      "sha256": "f1869514f485243dcbc25a614a0eddafc1d54160423ca7c06063032872c17ce2"
+    },
+    {
+      "localLog": ".local/deployment-https-migration-crash-after-commit-recovered.private.log",
+      "sha256": "f1869514f485243dcbc25a614a0eddafc1d54160423ca7c06063032872c17ce2"
+    },
+    {
+      "localLog": ".local/deployment-https-migration-crash-inside-transaction-recovered.private.log",
+      "sha256": "f1869514f485243dcbc25a614a0eddafc1d54160423ca7c06063032872c17ce2"
+    },
+    {
+      "localLog": ".local/deployment-https-https-rotated-session-files.private.log",
+      "sha256": "f1869514f485243dcbc25a614a0eddafc1d54160423ca7c06063032872c17ce2"
+    },
+    {
+      "localLog": ".local/deployment-https-https-pending-transport-repair.private.log",
+      "sha256": "eb38f1da8a3ee7318f020e4b3c5c7f471273b2370eb7ac38fea0e87a8552f6ed"
+    },
+    {
+      "localLog": ".local/deployment-https-https-pending-recover.private.log",
+      "sha256": "58cc93e17a1dc758391eb851c59caf506aa847f05361d64f909c204593a655c5"
+    },
+    {
+      "localLog": ".local/deployment-https-https-pending-recovered-files.private.log",
+      "sha256": "f1869514f485243dcbc25a614a0eddafc1d54160423ca7c06063032872c17ce2"
+    },
+    {
+      "localLog": ".local/deployment-https-https-new-cert-restored-files.private.log",
+      "sha256": "f1869514f485243dcbc25a614a0eddafc1d54160423ca7c06063032872c17ce2"
+    },
+    {
+      "localLog": ".local/deployment-https-https-browser.private.log",
+      "sha256": "ab6051e46999ea6a8bb8115e156226982a15c7ac07d11b917cd18da9d8f5880a"
+    },
+    {
+      "localLog": ".local/deployment-https-focused-core-e2e.private.log",
+      "sha256": "589ba6caf2eedce3489f91b3d9cc5c4528aec5a2227963a897b9bbf817b7f711"
+    },
+    {
+      "localLog": ".local/deployment-https-focused-attachment-seed.private.log",
+      "sha256": "26afa813a807f6f52c51c66bf2df525075e9e59e8942c485bf9543aadf99bff0"
+    },
+    {
+      "localLog": ".local/deployment-https-focused-https-rotated-session-files.private.log",
+      "sha256": "6d4932901cc715926dc2ceb45f7aaf00bc3873389cafd210969397fa47a10da4"
+    },
+    {
+      "localLog": ".local/deployment-https-focused-https-pending-transport-repair.private.log",
+      "sha256": "122573898aa60a3ee01a18bf493928d882b2ac587197dc47cdfaaa81b560e8a1"
+    },
+    {
+      "localLog": ".local/deployment-https-focused-https-pending-recover.private.log",
+      "sha256": "58cc93e17a1dc758391eb851c59caf506aa847f05361d64f909c204593a655c5"
+    },
+    {
+      "localLog": ".local/deployment-https-focused-https-pending-recovered-files.private.log",
+      "sha256": "6d4932901cc715926dc2ceb45f7aaf00bc3873389cafd210969397fa47a10da4"
+    },
+    {
+      "localLog": ".local/deployment-https-focused-https-new-cert-restored-files.private.log",
+      "sha256": "6d4932901cc715926dc2ceb45f7aaf00bc3873389cafd210969397fa47a10da4"
+    },
+    {
+      "localLog": ".local/deployment-https-focused-https-browser.private.log",
+      "sha256": "48b31f9ac8de915e9170a469804fa2f67e193c5f7ecbacc54943138a5c19afa5"
+    },
+    {
+      "localLog": ".local/deployment-http-core-core-e2e.private.log",
+      "sha256": "589ba6caf2eedce3489f91b3d9cc5c4528aec5a2227963a897b9bbf817b7f711"
+    },
+    {
+      "localLog": ".local/deployment-http-core-attachment-seed.private.log",
+      "sha256": "26afa813a807f6f52c51c66bf2df525075e9e59e8942c485bf9543aadf99bff0"
+    },
+    {
+      "localLog": ".local/https-release.log",
+      "sha256": "fe518da06398f7119d172bdc3b8ecbcc4e7a8b0866d4a482dedb503de75ef052"
+    }
+  ],
+  "implementationSha256": {
+    "README.md": "b7cf604d59ac8d7e72ef5a62234bc441452258d5c82dd754ee73dbe96f60219e",
+    "deploy/README.md": "8e97da14cc41c9dbe934fd356f046755bd4b91568692097ada7180368b1a01c9",
+    "deploy/ingress.py": "d58ee92a8ecf460d5463a55712a1cb0fdae548c3d770cf1e709de01f32a2d1f1",
+    "deploy/runtime/check-tls.mjs": "0b51092bed83f1a08301ca765741754741236680042c12f5d399b85871407bc1",
+    "deploy/suite.py": "07ae98581c99be99881f67d8c7a054c1ffeb010718a709658deaf2a5e500ba1b",
+    "deploy/test_ingress.py": "2a203a23cdeffd90686d98bb41612ae57581f5b4585551f81b116279fbd6dacc",
+    "docs/HTTPS-PLAN.md": "582d2126eaa361bd0bd7eb8e5912f16a984832ef65984e56e307ba9be18b95bd",
+    "docs/LOCAL-RUNTIME.md": "3328f945dec2fb84ec6f8b69a8010660076d0e4263e8b46d19b1f3d7c5c23c74",
+    "docs/REVIEW.md": "4fdb33aab7f923298d81293cfab2a6480f9927b380f461bebea4632a30554385",
+    "docs/ROADMAP.md": "a4f25203afe363f37ef88900eeccec8c44025837c75acc2e894ad2cea28962b6",
+    "docs/VERIFICATION.md": "2abf537276239062a34a4f9fa5fdaee5aba2cbf9de4c0a4643917e84f9f98a89",
+    "package.json": "471ca8910f2e9bdb3e65301eb5795ba41590118a0e3f2777ebfacd7d2cc1d21f",
+    "release-blockers.json": "84cddf66a40489b01499bdf6edd7fa6ad7c970a173ef03014274450eb2d9edde",
+    "suite.json": "d58cfdc7dab8e524b0c25ebf242911ec7d9f61eafcb7299354ad11217a9e82d2",
+    "tests/https-browser.mjs": "130f800f1c99ae8658550478df450419f74e7be392320a933e5d82f25a7a9829",
+    "tests/https-fixture.mjs": "a2f1053f9552d811ce47241f6c61a0834e6be45cd618622c1979240265c3e69d",
+    "tools/deployment_migration_checks.py": "6b7ade3b378ff994c2afc1549498f0f054966b2ce9e64558b58376f964de8d79",
+    "tools/https_deployment_checks.py": "2fafdd1a9f298b61895095d13d61bdf60fe9823405e82c919d932b5b509667dd",
+    "tools/test_deployment.py": "eba3263bbdd51de9e5b22eaf5f12007b161f5fbaf0ced82be0bdac0e8f8a50ed",
+    "tools/tls_fixture.py": "ccfbbcd89154ba49bf8da1f9baf4976ceea230517df4b2fa2d6da108b94c19b1"
+  },
+  "publicReleaseGate": {
+    "ready": false,
+    "expectedExitCode": 2,
+    "productionDeploymentPerformed": false,
+    "actualExitCode": 2
+  }
+}
