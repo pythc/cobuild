@@ -16,6 +16,7 @@ function visit(directory) {
 for(const name of readdirSync('apps/platform/server').filter(n=>n.endsWith('-store.mjs')).sort()) {
   const path='apps/platform/server/'+name;files[path]=sha(readFileSync(path));
 }
+for(const path of ['packages/operations/sqlite-store.mjs']) { if(existsSync(path))files[path]=sha(readFileSync(path)); }
 visit('apps/makit/migrations');
 visit('integrations/weknow/source/apps/server/dist/database/migrations');
 for(const path of ['apps/makit/scripts/selfhost/migrate.cjs','apps/makit/scripts/selfhost/set-runtime-password.cjs'])files[path]=sha(readFileSync(path));

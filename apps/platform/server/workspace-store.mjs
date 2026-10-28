@@ -1,3 +1,6 @@
+import {operationStore} from '../../../packages/operations/sqlite-store.mjs';
+import {ContractError} from '../../../packages/contracts/index.mjs';
+import {capabilities} from '../../../packages/config/index.mjs';
 import {suiteConfig} from '../../../packages/config/runtime.mjs';
 import {projectKnowledgeStore} from './project-knowledge-store.mjs';
 // Workspace project store for the 110lab portal.
@@ -345,7 +348,7 @@ function tightenSidecars(path) {
 
 // ---------- Public factory ----------
 
-export function openWorkspaceStore({directory, now = Date.now, syncProjects = false}) {
+export function openWorkspaceStore({directory, now = Date.now, syncProjects = false, organizationId = null}) {
   if (typeof directory !== 'string' || directory.length === 0)
     throw new WorkspaceError(500, 'invalid_directory');
   if (typeof now !== 'function')
@@ -498,7 +501,8 @@ export function openWorkspaceStore({directory, now = Date.now, syncProjects = fa
 
   const knowledgeSpaces = projectKnowledgeStore(db,{now});
   const catalog = projectCatalogStore(db,{now});
-  const requirementsSync = projectSyncStore(db, {enabled:syncProjects,now});
+  const operations = organizationId ? operationStore(db, {registry:capabilities, now}) : null;
+  const requirementsSync = projectSyncStore(db, {enabled:syncProjects,now,operations});
 
   function rowToProject(row, actor) {
     let members, links;
@@ -631,7 +635,7 @@ export function openWorkspaceStore({directory, now = Date.now, syncProjects = fa
       try {
         return fn.apply(this, args);
       } catch (e) {
-        if (e instanceof WorkspaceError) throw e;
+        if (e instanceof WorkspaceError || e instanceof ContractError) throw e;
         // Internal SQL / unexpected failures become a generic 503 so the HTTP
         // layer never leaks raw driver errors. Zod errors already surfaced
         // via E(400,...).
@@ -710,7 +714,58 @@ export function openWorkspaceStore({directory, now = Date.now, syncProjects = fa
     });
   }
 
+  function authorizeProjectCommand(actor, id) {
+    requireActor(actor);
+    const row = loadProjectOrFail(id);
+    if (row.owner_subject !== actor.subject && !isAdmin(actor)) E(403, 'forbidden');
+  }
+
+  function projectCommand(actor, id, requestId, action, input, mutate) {
+    const resource = {organizationId, appId:'kick', type:'project', id};
+    const operation = operations.execute({subject:actor.subject, requestId, action, resource, input}, {
+      authorize: () => authorizeProjectCommand(actor, id),
+      mutate: () => {
+        const before = loadProjectOrFail(id), project = mutate();
+        const event = before.name === project.name ? {type:'kick.project.updated.v1',data:{}} : {
+          type:'kick.project.renamed.v1', data:{previousName:before.name, name:project.name},
+        };
+        const generation = syncProjects ? requirementsSync.generation(id) : 0;
+        return {revision:project.revision, event,
+          projections:event && generation ? [{consumer:'makit.project-snapshot.v1', key:id, generation}] : []};
+      },
+    });
+    // Never return stale project content from a replayed receipt.
+    return {...get(actor,id), operation};
+  }
+
   function update(actor, id, input) {
+    requireActor(actor);
+    if (!operations) return performUpdate(actor,id,input);
+    const parsed = parse(updateInputSchema.extend({requestId:z.uuid().optional()}),input);
+    const {requestId=randomUUID(), ...data} = parsed;
+    return projectCommand(actor,id,requestId,'kick.project.update',data,()=>performUpdate(actor,id,data));
+  }
+
+  function rename(actor, id, input) {
+    requireActor(actor);
+    if (!operations) E(404,'not_found');
+    const {requestId,...data}=parse(z.object({requestId:z.uuid(),revision:revisionSchema,name:projectNameSchema}).strict(),input);
+    return projectCommand(actor,id,requestId,'kick.project.rename',data,()=>{
+      const row=loadProjectOrFail(id);
+      return performUpdate(actor,id,{...data,summary:row.summary,members:JSON.parse(row.members_json),links:JSON.parse(row.links_json)});
+    });
+  }
+
+  function operation(actor, id) {
+    requireActor(actor);
+    if (!operations) E(404,'not_found');
+    return operations.get(id, value => {
+      if(value.resource.organizationId!==organizationId || value.resource.appId!=='kick' || value.resource.type!=='project') E(404,'not_found');
+      authorizeProjectCommand(actor,value.resource.id);
+    });
+  }
+
+  function performUpdate(actor, id, input) {
     requireActor(actor);
     const data = parse(updateInputSchema, input);
     if(knowledgeSpaces.get(id)?.state==='awaiting_approval' && data.name.trim().length<2)E(400,'invalid_input');
@@ -1045,6 +1100,8 @@ export function openWorkspaceStore({directory, now = Date.now, syncProjects = fa
     get: wrapInternal(get),
     create: wrapInternal(create),
     update: wrapInternal(update),
+    rename: wrapInternal(rename),
+    operation: wrapInternal(operation),
     apply: wrapInternal(apply),
     review: wrapInternal(review),
     archive: wrapInternal(archive),

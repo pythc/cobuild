@@ -60,6 +60,11 @@
       "currentSha256": "d2520a4ef33a773cc64acc10b7e6122ca4fa0e6229ddc76a77a14f49184c6473"
     },
     {
+      "path": "apps/platform/server/project-sync-store.mjs",
+      "baselineSha256": "06ad883b1c8f9007cae9f2dcf6a25c0c699d2361151aebfabe63b5154d6302e6",
+      "currentSha256": "fc7572e8c636e5b0b6666e15325bde2205fa728665f454ac6094005dd1f2d13d"
+    },
+    {
       "path": "apps/platform/server/recruitment-test-http.mjs",
       "baselineSha256": "576ec3137f1994b83eedb55fe860164574d7731a5a37c5b9b5f6ab95036a3c2f",
       "currentSha256": "b01d851f99bcf543408f951ff986de96af136d7d675a42ff5119cac768546b3f"
@@ -82,12 +87,12 @@
     {
       "path": "apps/platform/server/workspace-http.mjs",
       "baselineSha256": "9d9c1ade9d545dc6634ebba07ec826ff9a5df3bdc49067124fc54ea82c7e8821",
-      "currentSha256": "3e1d8296882aaef35a4cd1d9ddd58e150ad4f76840de146fd834cf8a528b6c85"
+      "currentSha256": "ad430b4d779c136a7c767fc99cb20d1eea0c72ddbd2afb8b68b0c79442f633ad"
     },
     {
       "path": "apps/platform/server/workspace-store.mjs",
       "baselineSha256": "b847a21809bbcfbf8388e16639dbd4fdd4db297739d6024955a3db43432a43bb",
-      "currentSha256": "64ec36b7fa9f7f31b0ff7a700a3866d96ec4c90d4605f543cb446e05c02b65d4"
+      "currentSha256": "50ac8b187b471bb8b0709245488f653c6639d2b5c2a6a3ef31583d441cb5d909"
     },
     {
       "path": "apps/platform/src/lab-session.js",
@@ -127,7 +132,7 @@
     {
       "path": "apps/platform/src/workspace.js",
       "baselineSha256": "6d0884f56c2dceaf951b80ace4ec65def32e618d2ef6b8d1e277797fb77838ed",
-      "currentSha256": "55f4cf0d3efce7c58499f97d05a32d34a17f6f198bd96d46d3bb63595d6905d9"
+      "currentSha256": "4de5197910f664f8164053f47d402032e6e6c4b3e130abd2b09d62e9782b8c90"
     },
     {
       "path": "apps/makit/client/src/components/CoBuildBrand.tsx",
@@ -973,7 +978,7 @@
     {
       "rule": "lab-service-address",
       "path": "apps/platform/server/workspace-store.mjs",
-      "line": 165
+      "line": 168
     },
     {
       "rule": "lab-service-address",
@@ -1378,7 +1383,7 @@
     {
       "rule": "lab-service-address",
       "path": "apps/platform/src/workspace.js",
-      "line": 1071
+      "line": 1080
     },
     {
       "rule": "lab-service-address",

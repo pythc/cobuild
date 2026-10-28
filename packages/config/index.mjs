@@ -1,6 +1,8 @@
 import { readFileSync } from 'node:fs';
+import { createModuleRegistry } from '../contracts/index.mjs';
 
 export const registry = freeze(JSON.parse(readFileSync(new URL('../../suite.json', import.meta.url))));
+export const capabilities = createModuleRegistry(registry.modules);
 const modules = new Map(registry.modules.map(module => [module.id, module]));
 const providers = new Set(['local', 'oidc', 'feishu']);
 const loopbacks = new Set(['localhost', '127.0.0.1', '[::1]']);
@@ -74,6 +76,7 @@ export function planConfig(input) {
     runnable: false,
     organization: config.organization.slug,
     enabledModules: config.modules,
+    retainedSourceModules: registry.retainedModules.map(module => module.id),
     disabledModules: registry.modules.filter(module => !config.modules.includes(module.id)).map(module => module.id),
     sourceComponents: [...new Set(config.modules.map(id => modules.get(id).source))],
     externalMessages: config.delivery.externalMessages,

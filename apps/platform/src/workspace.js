@@ -714,7 +714,7 @@ function openProjectDialog(project) {
   $('ws-field-create-knowledge').checked = false;
   $('ws-create-knowledge-option').hidden = !!project && !project.unconfigured;
   $('ws-field-link-demo').value = links.demo || '';
-  openDialog('ws-dialog-project', { project, requestId: project && !project.unconfigured ? null : crypto.randomUUID() });
+  openDialog('ws-dialog-project', { project, requestId: crypto.randomUUID() });
   const fields = dlg.querySelector('.ws-project-fields');
   if (fields) fields.scrollTop = 0;
   $('ws-field-name').focus({ preventScroll: true });
@@ -815,7 +815,16 @@ function submitProjectForm(e) {
     const parsed = collectProjectForm();
     if (parsed.error) return parsed;
     if(ctx.project?.unconfigured)return {path:'projects',data:{...parsed,classificationId:ctx.project.id,requestId:ctx.requestId},status:'立项信息已完善'};
-    if (ctx.project) return { path: 'projects/' + encodeURIComponent(ctx.project.id) + '/update', data: { revision: ctx.project.revision, ...parsed }, status: '项目已更新' };
+    if (ctx.project) {
+      const data = {revision:ctx.project.revision,...parsed};
+      // Same submission keeps its key after a lost response; editing the form
+      // creates a new command rather than reusing a key with different content.
+      const signature=JSON.stringify(data);
+      if(ctx.submittedSignature && ctx.submittedSignature!==signature)ctx.requestId=crypto.randomUUID();
+      ctx.submittedSignature=signature;
+      if(globalThis.__COBUILD__)data.requestId=ctx.requestId;
+      return {path:'projects/'+encodeURIComponent(ctx.project.id)+'/update',data,status:'项目已更新'};
+    }
     return { path: 'projects', data: { ...parsed, requestId: ctx.requestId }, status: '项目已创建' };
   }, () => loadProjects());
 }

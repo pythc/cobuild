@@ -181,39 +181,13 @@ test(
         r.value.result.structuredContent.items.some((p) => p.id === projectId),
       );
       await stop();
-      await start(["platform", "kick", "honors", "hiflow", "publishing"]);
-      assert.equal(
-        (await api("/api/auth/session")).status,
-        200,
-        "login survives restart",
-      );
-      assert.equal(
-        (await api("/api/workspace/projects/" + projectId)).status,
-        200,
-        "projects survive restart",
-      );
-      for (const path of [
-        "/honors",
-        "/recruitment",
-        "/api/honors/session",
-        "/api/recruitment-admin/session",
-        "/api/admin/session",
-      ])
-        assert.equal((await api(path)).status, 200, path);
-      r = await rpc({
-        jsonrpc: "2.0",
-        id: 4,
-        method: "tools/list",
-        params: {},
-      });
-      assert.ok(r.value.result.tools.some((t) => t.name === "lab_honors_list"));
-      assert.ok(
-        r.value.result.tools.some((t) => t.name === "lab_candidates_list"),
-      );
-      const files = readdirSync(data, { recursive: true }).filter(
-        (n) => typeof n === "string" && /honor|recruitment/.test(n),
-      );
-      assert.ok(files.length > 0, "enabled modules open their own stores");
+      await start(["platform", "kick"]);
+      assert.equal((await api("/api/auth/session")).status,200,"login survives restart");
+      assert.equal((await api("/api/workspace/projects/"+projectId)).status,200,"project survives restart");
+      for(const path of ["/honors","/recruitment","/api/honors/session","/api/admin/session"])
+        assert.equal((await api(path)).status,404,path);
+      const files=readdirSync(data,{recursive:true}).filter(n=>typeof n==='string'&&/honor|recruitment/.test(n));
+      assert.equal(files.length,0,"excluded modules never open stores");
       await stop();
       await start(["platform"]);
       for (const path of [
@@ -268,13 +242,13 @@ test(
         "cannot grant disabled scope",
       );
       await stop();
-      await start(["platform", "kick", "honors"]);
+      await start(["platform", "kick"]);
       assert.equal(
         (await api("/api/workspace/projects/" + projectId)).status,
         200,
         "off/on never deletes business data",
       );
-      assert.equal((await api("/api/honors/session")).status, 200);
+      assert.equal((await api("/api/honors/session")).status, 404);
     } finally {
       await stop();
       rmSync(directory, { recursive: true, force: true });

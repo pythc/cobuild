@@ -1,5 +1,12 @@
 # 验证记录
 
+## 0.7.0-dev.0 · 项目命令契约首批 · 2026-10-29
+
+本地完成资源和能力注册、事务操作/事件、Kick 编辑与改名、Makit 快照回执适配。116 个指定回归、35 个部署策略单元测试通过；真实三服务协作 140、集合持久化 7、重启 15 个断言通过。平台构建通过；未运行本批真实浏览器表单验收或 0.7 容器升级。
+
+范围、review、兼容边界与未完成项见 [第一批实施记录](design/collaboration-framework/IMPLEMENTATION-01.md)，机器可读证据见 [framework-contracts-checks.json](../provenance/framework-contracts-checks.json)。新增平台 schema 纳入指纹，现有跨 schema 发布门禁保持拦截。没有触碰线上、公开推送或真实外发。
+
+
 ## 0.6.0-dev.0 · HTTPS 入口与浏览器会话 · 2026-10-28
 
 本轮先 review 0.5 的部署证据，按 `docs/HTTPS-PLAN.md` 确认方向，再接入部署层 TLS。只操作本地隔离组织、数据卷和临时浏览器。原应用业务源码、数据库迁移及线上服务未修改。

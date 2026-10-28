@@ -3,7 +3,7 @@ import {randomUUID} from 'node:crypto';
 // The project and its outbox entry commit in the same workspace transaction.
 // V2 uses a separate outbox so a still-running V1 worker cannot acknowledge
 // a snapshot it never uploaded. Old releases ignore this additive table; rollback never removes queued work.
-export function projectSyncStore(db, {enabled=false, now=Date.now}={}) {
+export function projectSyncStore(db, {enabled=false, now=Date.now, operations=null}={}) {
   db.exec(`CREATE TABLE IF NOT EXISTS requirement_project_sync_v2(
     project_id TEXT PRIMARY KEY REFERENCES projects(id),
     name TEXT NOT NULL, summary TEXT NOT NULL,
@@ -17,6 +17,16 @@ export function projectSyncStore(db, {enabled=false, now=Date.now}={}) {
   const columns=new Set(db.prepare('PRAGMA table_info(requirement_project_sync_v2)').all().map(c=>c.name));
   if(!columns.has('payload_json'))db.exec('ALTER TABLE requirement_project_sync_v2 ADD COLUMN payload_json TEXT');
   if(!columns.has('generation'))db.exec('ALTER TABLE requirement_project_sync_v2 ADD COLUMN generation INTEGER NOT NULL DEFAULT 0');
+  if(operations){
+    // Older writers ignore the additive ledger. Reconcile their durable snapshot
+    // receipts on return; never reset a success or invent a remote acknowledgement.
+    const states={queued:'queued',syncing:'running',retrying:'retry_wait',blocked:'blocked',synced:'succeeded'};
+    for(const row of db.prepare('SELECT * FROM requirement_project_sync_v2 WHERE generation>0').all()){
+      if(row.state==='synced'&&(!row.remote_id||!row.remote_url))continue;
+      operations.project('makit.project-snapshot.v1',row.project_id,row.generation,states[row.state],
+        row.state==='synced'?{mode:'snapshot-converged',throughGeneration:row.generation,projectId:row.remote_id,url:row.remote_url}:null);
+    }
+  }
   const value=row=>row?{
     state:row.state, projectName:row.name, projectId:row.remote_id||null,
     url:row.remote_url||null, attempts:row.attempts, errorCode:row.error_code||null,
@@ -27,7 +37,7 @@ export function projectSyncStore(db, {enabled=false, now=Date.now}={}) {
     enqueue(id,name,summary,snapshot) {
       if(!enabled)return;
       const payload=snapshot?JSON.stringify(snapshot):null;
-      db.prepare(`INSERT INTO requirement_project_sync_v2
+      const changed=db.prepare(`INSERT INTO requirement_project_sync_v2
         (project_id,name,summary,payload_json,generation,state,created_at,updated_at)
         VALUES(?,?,?,?,1,'queued',?,?)
         ON CONFLICT(project_id) DO UPDATE SET name=excluded.name,summary=excluded.summary,
@@ -35,9 +45,14 @@ export function projectSyncStore(db, {enabled=false, now=Date.now}={}) {
         state='queued',lease=NULL,lease_until=0,next_attempt=0,error_code=NULL,updated_at=excluded.updated_at
         WHERE requirement_project_sync_v2.name<>excluded.name OR requirement_project_sync_v2.summary<>excluded.summary
         OR requirement_project_sync_v2.payload_json IS NOT excluded.payload_json`)
-        .run(id,name,summary,payload,now(),now());
+        .run(id,name,summary,payload,now(),now()).changes;
+      if(changed&&operations){
+        const generation=db.prepare('SELECT generation FROM requirement_project_sync_v2 WHERE project_id=?').get(id).generation;
+        operations.project('makit.project-snapshot.v1',id,generation,'queued');
+      }
     },
     get(id){return value(db.prepare('SELECT * FROM requirement_project_sync_v2 WHERE project_id=?').get(id));},
+    generation(id){return db.prepare('SELECT generation FROM requirement_project_sync_v2 WHERE project_id=?').get(id)?.generation || 0;},
     claim() {
       db.exec('SAVEPOINT project_sync_claim');
       try {
@@ -55,6 +70,7 @@ export function projectSyncStore(db, {enabled=false, now=Date.now}={}) {
         const lease=randomUUID();
         db.prepare(`UPDATE requirement_project_sync_v2 SET state='syncing',lease=?,lease_until=?,
           attempts=attempts+1,updated_at=? WHERE project_id=?`).run(lease,time+120000,time,row.project_id);
+        operations?.project('makit.project-snapshot.v1',row.project_id,row.generation,'running');
         db.exec('RELEASE project_sync_claim');
         return {id:row.project_id,name:row.name,summary:row.summary,ownerSubject:row.owner_subject,
           attempts:row.attempts+1,lease,previousUrl:row.remote_url,revision:row.payload_json?row.generation:undefined,snapshot:row.payload_json?JSON.parse(row.payload_json):undefined};
@@ -68,6 +84,9 @@ export function projectSyncStore(db, {enabled=false, now=Date.now}={}) {
           WHERE project_id=? AND state='syncing' AND lease=? AND lease_until>?`)
           .run(projectId,url,now(),job.id,job.lease,now());
         if(done.changes) {
+          operations?.project('makit.project-snapshot.v1',job.id,job.revision,'succeeded',{
+            mode:'snapshot-converged',throughGeneration:job.revision,projectId,url,
+          });
           // A user-supplied link is retained. Compare against the current row,
           // rather than an old snapshot, to avoid overwriting an edit in flight.
           db.prepare(`UPDATE projects SET links_json=json_set(links_json,'$.requirements',?),
@@ -82,15 +101,26 @@ export function projectSyncStore(db, {enabled=false, now=Date.now}={}) {
     },
     fail(job,{code='TEMPORARILY_UNAVAILABLE',permanent=false}={}) {
       const delay=Math.min(300000,10000*2**Math.min(job.attempts-1,5));
-      return db.prepare(`UPDATE requirement_project_sync_v2 SET state=?,next_attempt=?,
+      db.exec('SAVEPOINT project_sync_failure');
+      try {
+      const changed = db.prepare(`UPDATE requirement_project_sync_v2 SET state=?,next_attempt=?,
         lease=NULL,lease_until=0,error_code=?,updated_at=?
         WHERE project_id=? AND state='syncing' AND lease=? AND lease_until>?`)
         .run(permanent?'blocked':'retrying',now()+delay,code,now(),job.id,job.lease,now()).changes>0;
+      if(changed)operations?.project('makit.project-snapshot.v1',job.id,job.revision,permanent?'blocked':'retry_wait',{code});
+      db.exec('RELEASE project_sync_failure');return changed;
+      }catch(e){db.exec('ROLLBACK TO project_sync_failure; RELEASE project_sync_failure');throw e;}
     },
     retry(id) {
-      return db.prepare(`UPDATE requirement_project_sync_v2 SET state='queued',next_attempt=0,
+      db.exec('SAVEPOINT project_sync_retry');
+      try {
+      const changed = db.prepare(`UPDATE requirement_project_sync_v2 SET state='queued',next_attempt=0,
         error_code=NULL,updated_at=? WHERE project_id=? AND state IN ('blocked','retrying')`)
         .run(now(),id).changes>0;
+      const generation=db.prepare('SELECT generation FROM requirement_project_sync_v2 WHERE project_id=?').get(id)?.generation;
+      if(changed)operations?.project('makit.project-snapshot.v1',id,generation,'queued');
+      db.exec('RELEASE project_sync_retry');return changed;
+      }catch(e){db.exec('ROLLBACK TO project_sync_retry; RELEASE project_sync_retry');throw e;}
     },
   };
 }

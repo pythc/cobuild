@@ -399,6 +399,25 @@ const action = (action, input, requestId = randomUUID(), jar = "owner") =>
     jar,
     body: { projectId, requestId, action, input },
   });
+// Contract-backed rename traverses the existing durable snapshot consumer.
+const renameInput={requestId:randomUUID(),revision:project.revision,name:'Renamed portable project'};
+result=await post('/api/workspace/projects/'+projectId+'/rename',renameInput,member.csrf,'member');
+check(result.status===403,'project member cannot invoke rename command');
+result=await post('/api/workspace/projects/'+projectId+'/rename',renameInput,owner.csrf);
+check(result.status===200 && result.data.operation.resource.id===projectId,'rename commits stable resource and operation');
+const renameOperationId=result.data.operation.id;
+result=await post('/api/workspace/projects/'+projectId+'/rename',renameInput,owner.csrf);
+check(result.status===200 && result.data.operation.id===renameOperationId && result.data.operation.replayed,'HTTP rename replay retains operation');
+result=await post('/api/workspace/projects/'+projectId+'/rename',{...renameInput,name:'Conflicting reuse'},owner.csrf);
+check(result.status===409 && result.data.code==='REQUEST_CONFLICT','changed request key is rejected');
+project=await pollProject(projectId,p=>p.name===renameInput.name && p.requirementsSync.state==='synced');
+result=await request(base+'/api/workspace/projects/operations/'+renameOperationId);
+check(result.status===200 && result.data.state==='succeeded' && result.data.deliveries[0].receipt.mode==='snapshot-converged','remote acknowledgement settles durable operation');
+result=await request(base+'/api/workspace/projects/operations/'+renameOperationId,{jar:'member'});
+check(result.status===403,'operation detail uses current project authority');
+result=await request(config.origins.makit+'/api/workspace/project-management');
+projected=(result.data?.data||result.data)?.projects?.find(p=>p.projectId===projectId);
+check(projected?.projectName===renameInput.name,'Makit projects the new name under the same UUID');
 result = await action(
   "milestone_add",
   { title: "Ship local collaboration", assignee: member.subject, dueAt: null },
@@ -453,7 +472,7 @@ check(result.status === 409, "stale milestone update rejected");
 result = await request(config.origins.makit + "/api/workspace/requirements", {
   body: {
     title: "Local integration requirement",
-    project: projectInput.name,
+    project: project.name,
     type: "产品需求",
     introduction: "No external delivery",
     acceptanceCriteria: "Local workflow can be verified",
@@ -810,6 +829,7 @@ writeFileSync(
   process.env.COBUILD_FLOW_RECEIPT,
   JSON.stringify({
     projectId,
+    renameOperationId,
     requirementId: requirement,
     pageId: page.id,
     spaceId: project.knowledgeSpace.spaceId,

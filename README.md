@@ -2,15 +2,17 @@
 
 面向实验室和小型研发团队的自部署协作套件。以项目为主线，连接项目发起、需求推进与知识沉淀。
 
-**当前阶段：HTTPS 入口与会话验收（0.6.0-dev.0）。尚未达到公开发行条件。** 不依赖飞书的登录、成员邀请、账号恢复、所有权转让和目录同步已接入。Kick → Makit → WeKnow 完整协作、Linux 容器部署恢复及受控 Makit 增量迁移已有验证。本轮接入部署者提供的 TLS 证书，检查 HTTPS 下的协作、恢复、浏览器 Cookie 和回调；具体结果见 [验证记录](docs/VERIFICATION.md)。目标环境公网 HTTPS、跨机器恢复、平台与 WeKnow 的结构迁移、外部交付集成和既有数据迁移仍待验收。
+**当前阶段：协作框架首批契约实现（0.7.0-dev.0），仅本地验证，尚未达到公开发行条件。** 已将项目编辑/改名接入通用资源、命令、持久事件和同步回执；保留现有三应用身份与数据模型。四个核心模块之外的源码留存，运行配置拒绝启用。详见 [本批实施与验证](docs/design/collaboration-framework/IMPLEMENTATION-01.md) 和 [整体方案](docs/design/collaboration-framework/README.md)。
+
+0.6 的 HTTPS、备份恢复和受控 Makit 迁移记录仍是历史基线。0.7 新增平台 SQLite 表，现有部署器会拒绝跨该 schema 升级；**本次未构建发行镜像、未授予升级兼容声明、未发布线上**。正式平台迁移方案与 WeKnow 项目生命周期仍待后续实现。
 
 ## 产品范围
 
 | 层级 | 内容 |
 | --- | --- |
 | 默认核心 | CoBuild 工作台、组织与权限、统一身份、Kick、Makit、WeKnow |
-| 可选业务 | HiFlow、Evalab、Relay、荣誉、动态发布 |
-| 配套能力 | 邮箱、飞书、GitHub、AI、Pulse 运维 |
+| 仅保留历史源码 | HiFlow、Evalab、Relay、荣誉、动态发布；不接受运行配置启用 |
+| 后续连接器 | OIDC、飞书、GitHub、通知渠道、管理员运维；当前默认关闭 |
 | 本仓库不包含的产品 | 110lab 桌面插件、CoBuild 品牌首页、需求监控／催办工程、智评学堂／批改系统 |
 
 ## 当前目录
@@ -18,11 +20,13 @@
 ```text
 apps/platform/             门户与内部模块，暂保留一个服务的现有边界
 apps/makit/                需求与研发协作
-apps/evalab/               考核源码，可选
-apps/relay/                咨询与反馈源码，可选
+apps/evalab/               考核历史源码，不进入当前发行范围
+apps/relay/                咨询与反馈历史源码，待专用连接器适配
 integrations/weknow/       Docmost 派生源码及许可边界
 packages/config/           通用目标配置与模块依赖校验
 packages/service/          核心服务之间的签名请求协议
+packages/contracts/        资源与内置模块能力契约
+packages/operations/       同业务库事务的操作与事件回执
 config/                    无凭据的配置示例
 deploy/                    容器构建、部署管理、备份恢复、升级与回退
 docs/                      产品、架构、改造顺序与验证记录
@@ -30,7 +34,7 @@ provenance/                来源、基线文件哈希、修改记录与只含�
 tools/                     配置、导入、检查与发行门禁
 ```
 
-HiFlow、邮箱、荣誉等目前仍在 `apps/platform` 中。`suite.json` 描述产品模块和数据归属，不意味着已拆成独立进程。WeKnow 保留为有独立许可和上游版本的派生组件。
+HiFlow、邮箱、荣誉等目前仍在 `apps/platform` 中。`suite.json.modules` 描述可启用核心，`retainedModules` 记录留存源码，不意味着已拆成独立进程或完全裁剪构建依赖。WeKnow 保留为有独立许可和上游版本的派生组件。
 
 ## 检查本次整理成果
 

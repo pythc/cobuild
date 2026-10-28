@@ -9,8 +9,8 @@ test('core plan enables only the four core modules and never claims runtime read
   assert.deepEqual(plan.enabledModules, ['platform', 'kick', 'makit', 'weknow']);
   assert.equal(plan.runnable, false);
   assert.equal(plan.externalMessages, false);
-  assert.ok(plan.disabledModules.includes('hiflow'));
-  assert.ok(plan.disabledModules.includes('evalab'));
+  assert.ok(plan.retainedSourceModules.includes('hiflow'));
+  assert.ok(plan.retainedSourceModules.includes('evalab'));
 });
 test('config is copied and frozen so later mutations cannot enable delivery', () => {
   const input = example(), config = validateConfig(input);
@@ -47,11 +47,13 @@ for (const [name, change] of [
   ['path in origin', c => { c.origins.platform += '/auth'; }],
   ['fragment in origin', c => { c.origins.platform += '#secret'; }]
 ]) test(`rejects ${name}`, () => { const c = example(); change(c); assert.throws(() => validateConfig(c)); });
-test('optional applications require explicit selection and preserve their own data ownership', () => {
-  const config = example(); config.modules.push('hiflow', 'evalab'); config.origins.evalab = 'https://exam.example.com';
-  assert.ok(validateConfig(config));
-  assert.equal(registry.modules.filter(m => m.owns.includes('project')).length, 1);
-  assert.equal(registry.modules.find(m => m.id === 'evalab').dependsOn.includes('hiflow'), false);
+test('retained business sources cannot be enabled by configuration', () => {
+  for(const module of registry.retainedModules) {
+    const config=example();config.modules.push(module.id);
+    assert.throws(()=>validateConfig(config));
+  }
+  assert.equal(registry.modules.filter(m=>m.owns.includes('project')).length,1);
+  assert.deepEqual(registry.modules.map(m=>m.id),['platform','kick','makit','weknow']);
 });
 test('secret values never appear in invalid configuration errors', () => {
   const config = example(); config.origins.platform = 'https://user:very-private-value@example.com';

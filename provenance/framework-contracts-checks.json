@@ -1,0 +1,100 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-29",
+  "version": "0.7.0-dev.0",
+  "baseCommit": "bc20bb27c81ef0fd3e9a109fb36dcf54434b3ea3",
+  "scope": "D0 runtime scope and D1 first project command slice, isolated local only",
+  "productionAccess": false,
+  "externalMessages": false,
+  "publicReleaseReady": false,
+  "checks": {
+    "regression": {
+      "passed": 116,
+      "failed": 0
+    },
+    "deploymentPolicyUnits": {
+      "passed": 35,
+      "failed": 0
+    },
+    "nativeCore": {
+      "passed": true,
+      "checks": 140,
+      "scope": "native identity + directory + Kick/Makit/WeKnow collaboration",
+      "externalMessages": false
+    },
+    "collections": {
+      "passed": true,
+      "checks": 7,
+      "scope": "native collection restart preservation and fail-closed initialization"
+    },
+    "restart": {
+      "passed": true,
+      "checks": 15,
+      "scope": "three-service restart and account password revocation"
+    },
+    "nativeRun": {
+      "productionAccess": false,
+      "stages": [
+        {
+          "name": "makit-migrations",
+          "exitCode": 0
+        },
+        {
+          "name": "makit-role",
+          "exitCode": 0
+        },
+        {
+          "name": "core-e2e",
+          "exitCode": 0
+        },
+        {
+          "name": "collections",
+          "exitCode": 0
+        },
+        {
+          "name": "restart-e2e",
+          "exitCode": 0
+        }
+      ],
+      "passed": true,
+      "ownedContainersRemoved": true
+    },
+    "verifyExitCode": 0,
+    "releaseCheckExitCode": 2,
+    "platformBuildExitCode": 0
+  },
+  "notRun": [
+    "0.7 container image build and upgrade",
+    "real browser form acceptance",
+    "production deployment",
+    "cross-machine restore",
+    "external extension isolation",
+    "WeKnow managed-space lifecycle and ACL"
+  ],
+  "reviewFindingsResolved": [
+    "disabled recruitment store initialization",
+    "live permission check after body/directory await",
+    "receipt reconciliation after compatibility writer",
+    "package schema included in deployment fingerprint"
+  ],
+  "sourceSha256": {
+    "apps/platform/server/project-sync-store.mjs": "fc7572e8c636e5b0b6666e15325bde2205fa728665f454ac6094005dd1f2d13d",
+    "apps/platform/server/workspace-http.mjs": "ad430b4d779c136a7c767fc99cb20d1eea0c72ddbd2afb8b68b0c79442f633ad",
+    "apps/platform/server/workspace-store.mjs": "50ac8b187b471bb8b0709245488f653c6639d2b5c2a6a3ef31583d441cb5d909",
+    "apps/platform/src/workspace.js": "4de5197910f664f8164053f47d402032e6e6c4b3e130abd2b09d62e9782b8c90",
+    "apps/platform/tests/project-commands.test.mjs": "323f16b0fd2116317e08bcfcfca879a6f9de736832059da870cf0731e216a833",
+    "deploy/runtime/contract.mjs": "d133572f25e0fcaafe0d5f76615a461d4bf986d9abf81e0fd2b5e261c9b6117c",
+    "deploy/runtime/schema-inspect.mjs": "36c4f84daf6912f26778b9dada160e579757e879a1e128961761d8817cfd4817",
+    "package.json": "d57109a04fd246f9c236680833268cfe16cdaf0b58a0517b878eef4b9e7fe334",
+    "packages/config/index.mjs": "bbee1a4c805223dc39002c706560d4872da56051f03c51ec3c126203bdf90cac",
+    "packages/config/runtime.mjs": "0f20d0bf5cdb3ffb9ec8569e0a0743e3053851f362bf2f97e9e8933d8ad70c34",
+    "packages/contracts/index.mjs": "e8be90e83cad938f79b8ad1e22b171469f1e6359a7d7b7d95d410c383d7f7af3",
+    "packages/operations/sqlite-store.mjs": "a6ba3e65046007ac108d2aa6cab53c91d0e133e5e8c85f0441331ce027cc9c48",
+    "suite.json": "dd7a2f43875b4d439f0a209f9995a663224d3096b83a03d104bbbd6e1caea37f",
+    "tests/collaboration-contracts.test.mjs": "03b18183934ed386875494ed5c7edd6d791d4b561c8f4ea1ebf0beb20c2032df",
+    "tests/config.test.mjs": "2ea372056a8740b4ff4e48bd7e2a00445c6d0a636bfc3bf135ff9ebd9335675c",
+    "tests/local-core-e2e.mjs": "8224fdcadc3e4677601cb42c389045297042f531fdf5eda47aafe4209f7e0e2b",
+    "tests/local-core-restart.mjs": "cc24a1dce59f806766eca469dfff40ade90835daf6b0df20199fa32074db5c72",
+    "tests/suite-runtime.test.mjs": "c7fd11b3f6ad77f3a9b20ef7dac2c404c0f50564c08a98e328f3d52937f66149"
+  }
+}

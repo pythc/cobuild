@@ -1,6 +1,6 @@
 {
   "name": "cobuild-suite",
-  "version": "0.6.0-dev.0",
+  "version": "0.7.0-dev.0",
   "private": true,
   "type": "module",
   "engines": {
@@ -11,7 +11,7 @@
     "config:check": "node tools/config.mjs check config/cobuild.example.json",
     "plan": "node tools/config.mjs plan config/cobuild.example.json",
     "audit": "python3 tools/audit.py",
-    "verify": "npm test && npm run config:check && python3 tools/audit.py --check",
+    "verify": "npm test && npm run test:project-contracts && npm run config:check && python3 tools/audit.py --check",
     "release:check": "python3 tools/release_check.py",
     "local:init": "node tools/local-init.mjs",
     "local:platform": "node --require ./tools/local-network-guard.cjs tools/serve-platform.mjs",
@@ -21,6 +21,7 @@
     "test:migrations": "python3 tools/test_deployment.py --with-migrations",
     "test:https": "python3 tools/test_deployment.py --https",
     "test:https-browser": "python3 tools/test_deployment.py --https --with-browser",
-    "test:deployment-unit": "python3 -m unittest discover -s deploy -p 'test_*.py'"
+    "test:deployment-unit": "python3 -m unittest discover -s deploy -p 'test_*.py'",
+    "test:project-contracts": "node --test apps/platform/tests/project-commands.test.mjs apps/platform/tests/project-sync.test.mjs apps/platform/tests/workspace-store.test.mjs apps/platform/tests/workspace-http.test.mjs apps/platform/tests/workspace-ui.test.mjs"
   }
 }

@@ -76,6 +76,10 @@ check(
   r.status === 200 && r.data.knowledgeSpace.spaceId === saved.spaceId,
   "project and knowledge receipt persisted",
 );
+if(saved.renameOperationId){
+  r=await req(base+'/api/workspace/projects/operations/'+saved.renameOperationId);
+  check(r.status===200&&r.data.state==='succeeded'&&r.data.resource.id===saved.projectId,'operation and projection receipt survive three-service restart');
+}
 r = await req(
   cfg.origins.makit + "/api/workspace/requirements/" + saved.requirementId,
 );

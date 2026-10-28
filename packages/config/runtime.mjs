@@ -1,21 +1,13 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { validateConfig, registry } from "./index.mjs";
+import { validateConfig, registry, capabilities } from "./index.mjs";
 
 const filename = process.env.COBUILD_CONFIG;
 export const suiteConfig = filename
   ? validateConfig(JSON.parse(readFileSync(resolve(filename), "utf8")))
   : null;
 export const suiteEnabled = Boolean(suiteConfig);
-export const nativeRuntimeModules = Object.freeze([
-  "platform",
-  "kick",
-  "makit",
-  "weknow",
-  "hiflow",
-  "honors",
-  "publishing",
-]);
+export const nativeRuntimeModules = capabilities.ids;
 export function assertNativeRuntime(config = suiteConfig) {
   if (!config) return;
   const pending = config.modules.filter(
@@ -42,11 +34,7 @@ export function assertNativeRuntime(config = suiteConfig) {
     );
 }
 export const applicationModules = Object.freeze({
-  workbench: "platform",
-  organization: "platform",
-  projects: "kick",
-  requirements: "makit",
-  knowledge: "weknow",
+  ...Object.fromEntries(registry.modules.flatMap(m => m.applications.map(id => [id,m.id]))),
   "recruitment-test": "hiflow",
   recruitment: "hiflow",
   assessment: "evalab",

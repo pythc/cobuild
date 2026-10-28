@@ -1,4 +1,5 @@
-import {suiteConfig,portalHost,portalRequestOrigin} from '../../../packages/config/runtime.mjs';
+import {ContractError} from '../../../packages/contracts/index.mjs';
+import {suiteConfig,moduleEnabled,portalHost,portalRequestOrigin} from '../../../packages/config/runtime.mjs';
 import {verifyProjectBridge,runProjectBridge} from './project-action-bridge.mjs';
 import {projectKnowledgeWorker} from './project-knowledge-worker.mjs';
 import {z} from 'zod';
@@ -29,8 +30,8 @@ async function body(req){
 
 export function createWorkspaceHttp({mail,knowledgeWorkerEnabled=true,apps=appConfig.apps,recruitment,honorsTodos=()=>[],localTest=false,now=Date.now,directory=mail?.workspaceDirectory,projectSyncEnabled=process.env.PORTAL_PROJECT_SYNC_ENABLED==='true',projectSyncClient,knowledgeProjectClient,projectBridgeSecret}={}){
   const enabled=!!mail?.enabled&&!!directory;
-  const store=enabled?openWorkspaceStore({directory,now,syncProjects:projectSyncEnabled}):null;
-  let inbox;try{inbox=enabled?openWorkspaceRecruitment({directory,source:()=>recruitment.labInbox(),canManage:a=>recruitment.store?.canManage?.(a)||['admin','super_admin'].includes(a.role),now}):null;}catch(e){store?.close();throw e;}
+  const store=enabled?openWorkspaceStore({directory,now,syncProjects:projectSyncEnabled,organizationId:mail.auth?.organizationId}):null;
+  let inbox;try{inbox=enabled&&moduleEnabled('hiflow')?openWorkspaceRecruitment({directory,source:()=>recruitment.labInbox(),canManage:a=>recruitment.store?.canManage?.(a)||['admin','super_admin'].includes(a.role),now}):null;}catch(e){store?.close();throw e;}
   let preferences;try{preferences=enabled?openWorkbenchPreferencesStore({directory,allowedAppIds:apps.map(app=>app.id),now}):null;}catch(e){inbox?.close();store?.close();throw e;}
   const projectSync=store?projectSyncWorker({store,mail,client:projectSyncClient,enabled:projectSyncEnabled}):null;
   const knowledgeWorker=store&&knowledgeWorkerEnabled?projectKnowledgeWorker({store,client:knowledgeProjectClient}):null;
@@ -71,12 +72,23 @@ export function createWorkspaceHttp({mail,knowledgeWorkerEnabled=true,apps=appCo
       const embedded=path.startsWith('/api/workspace/embedded/'),route=path.slice(embedded?24:15),write=req.method==='POST';
       if(write){const origin=req.headers.origin;const ok=portalRequestOrigin(req,localTest);
         if(!ok||req.headers['sec-fetch-site']&&req.headers['sec-fetch-site']!=='same-origin')throw new WorkspaceError(403,'请通过工作台操作');}
+      const projectActor=async()=>{
+        const first=mail.identity(req,{embedded,write});
+        await mail.authorizeApplication?.(first,'projects');
+        const current=mail.identity(req,{embedded,write});
+        mail.assertApplication?.(current,'projects');
+        return current;
+      };
       let actor=mail.identity(req,{embedded,write});
+      if (/^(?:projects(?:\/|$)|members$)/.test(route)) {
+        actor=await projectActor();
+      }
       if(!write){
         if(route==='session')json(res,200,actor);
         else if(route==='preferences')json(res,200,{...preferences.get(actor),subject:actor.subject});
         else if(route==='members')json(res,200,await mail.projectMembers(actor.subject));
         else if(route==='projects')json(res,200,store.list(actor));
+        else if(/^projects\/operations\/[a-f0-9-]+$/.test(route))json(res,200,store.operation(actor,route.split('/')[2]));
         else if(route==='todos'){
           const allowed={};for(const id of ['projects','honors','recruitment-test']){try{await mail.authorizeApplication?.(actor,id);allowed[id]=true;}catch(e){if(e.status!==403)throw e;allowed[id]=false;}}
           actor=mail.identity(req,{embedded});for(const id of Object.keys(allowed))if(allowed[id]){try{mail.assertApplication?.(actor,id);}catch(e){if(e.status!==403)throw e;allowed[id]=false;}}
@@ -87,13 +99,14 @@ export function createWorkspaceHttp({mail,knowledgeWorkerEnabled=true,apps=appCo
           json(res,200,match[2]?{events:store.audit(actor,match[1])}:store.get(actor,match[1]));}
       }else{
         throttle(actor);const input=await body(req);
+        if(/^projects(?:\/|$)/.test(route))actor=await projectActor();
         if(route==='preferences'){actor=mail.identity(req,{embedded,write:true});json(res,200,{...preferences.update(actor,input),subject:actor.subject});return true;}
         if(route==='projects'){
           if(!input||typeof input!=='object'||Array.isArray(input))throw new WorkspaceError(400,'invalid_input');
           const {requestId,...fields}=input;
           if(suiteConfig&&!knowledgeWorkerEnabled&&fields.createKnowledgeSpace)throw new WorkspaceError(503,'自动创建 WeKnow 空间的连接尚未启用');
           if(requestId!==undefined&&!z.uuid().safeParse(requestId).success)throw new WorkspaceError(400,'invalid_input');
-          const canonical=await canonicalMembers(actor,fields);actor=mail.identity(req,{embedded,write:true});
+          const canonical=await canonicalMembers(actor,fields);actor=await projectActor();
           const value=requestId?store.durable(actor,requestId,'web_project_create',fields,()=>store.create(actor,canonical)):store.create(actor,canonical);
           // A replay returns the same project but its latest synchronization state.
           json(res,201,store.get(actor,value.id));return true;
@@ -110,18 +123,19 @@ export function createWorkspaceHttp({mail,knowledgeWorkerEnabled=true,apps=appCo
           const p=store.get(actor,retry[1]);if(p.archived||p.ownerSubject!==actor.subject&&!['admin','super_admin'].includes(actor.role))throw new WorkspaceError(403,'forbidden');
           store.requirementsSync.retry(p.id);json(res,200,store.get(actor,p.id));return true;
         }
-        const m=/^projects\/([\w-]+)\/(update|apply|review|archive|milestones)(?:\/([\w-]+))?$/.exec(route);
+        const m=/^projects\/([\w-]+)\/(update|rename|apply|review|archive|milestones)(?:\/([\w-]+))?$/.exec(route);
         if(!m||m[3]&&m[2]!=='milestones')throw new WorkspaceError(404,'Not found');
         const [,id,action,mid]=m;
         const canonical=action==='update'?await canonicalMembers(actor,input,store.get(actor,id).members):input;
-        actor=mail.identity(req,{embedded,write:true});
+        actor=await projectActor();
         const value=action==='milestones'?(mid?store.setMilestone(actor,id,mid,input):store.addMilestone(actor,id,input)):
           store[action](actor,id,canonical);
         json(res,200,value);
       }
     }catch(e){
       req.resume();if(res.headersSent||res.destroyed)return true;
-      if(e?.code==='REQUEST_CONFLICT'&&e.status===409)json(res,409,{error:'这次创建请求的内容已改变，请重新打开新建项目后提交'});
+      if(e instanceof ContractError)json(res,e.status,{error:e.code==='REQUEST_CONFLICT'?'同一请求编号的内容已改变，请重新提交':e.code==='OPERATION_NOT_FOUND'?'操作记录不存在':'操作请求无效',code:e.code});
+      else if(e?.code==='REQUEST_CONFLICT'&&e.status===409)json(res,409,{error:'这次创建请求的内容已改变，请重新打开新建项目后提交'});
       else if(e instanceof WorkbenchPreferencesError)json(res,e.status,{error:e.message,code:e.code});
       else if(e instanceof WorkspaceError||e instanceof MailAuthError)json(res,e.status,{error:messages[e.message]||(/^[a-z_]+$/.test(e.message)?'操作未完成 请检查内容后重试':e.message)});
       else if(e instanceof MailAccessError)json(res,e.status,{error:'实验室身份或权限已变更 请重新登录'});

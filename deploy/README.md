@@ -2,6 +2,8 @@
 
 本入口部署一个组织的 Platform / Kick、Makit、WeKnow、PostgreSQL 17、Redis 与入口代理。飞书、邮件、GitHub、AI 等集成默认关闭。公开发行仍受仓库许可、可移植性及其他发行门禁限制。
 
+> 当前工作树为 0.7 契约开发版，新增平台 schema。以下 0.6 的生命周期验证不能直接当作 0.7 的升级证据；现有部署器将拒绝此跨 schema 更新。仅在新建隔离环境验证，不对已有部署替换镜像。
+
 ## 构建与初始化
 
 部署机器需要本机 Docker、Compose v2、Python 3.9+。构建访问公共 npm registry；运行时业务网络禁止出网。工具拒绝远程 Docker 上下文及 Docker 环境覆盖。
