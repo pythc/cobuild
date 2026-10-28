@@ -1,0 +1,233 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-29",
+  "version": "0.7.0-dev.0",
+  "baseCommit": "285b83ef133a0639ee6c7c791c021260090dc6ff",
+  "scope": "reviewed platform migration and new WeKnow managed-space access; isolated local only",
+  "productionAccess": false,
+  "externalMessages": false,
+  "publicReleaseReady": false,
+  "checks": {
+    "regression": {
+      "passed": 119,
+      "failed": 0
+    },
+    "deploymentPolicyUnits": {
+      "passed": 38,
+      "failed": 0
+    },
+    "weknowTargeted": {
+      "passed": 33,
+      "failed": 0
+    },
+    "nativeCore": {
+      "passed": true,
+      "checks": 178,
+      "scope": "native identity + directory + Kick/Makit/WeKnow collaboration",
+      "externalMessages": false
+    },
+    "nativeBulkAcl": {
+      "passed": true,
+      "checks": 4,
+      "scope": "native bulk ACL SQL; transaction rolled back"
+    },
+    "collections": {
+      "passed": true,
+      "checks": 7,
+      "scope": "native collection restart preservation and fail-closed initialization"
+    },
+    "restart": {
+      "passed": true,
+      "checks": 15,
+      "scope": "three-service restart and account password revocation"
+    },
+    "nativeRun": {
+      "productionAccess": false,
+      "stages": [
+        {
+          "name": "makit-migrations",
+          "exitCode": 0
+        },
+        {
+          "name": "makit-role",
+          "exitCode": 0
+        },
+        {
+          "name": "core-e2e",
+          "exitCode": 0
+        },
+        {
+          "name": "managed-native-queries",
+          "exitCode": 0
+        },
+        {
+          "name": "collections",
+          "exitCode": 0
+        },
+        {
+          "name": "restart-e2e",
+          "exitCode": 0
+        }
+      ],
+      "passed": true,
+      "ownedContainersRemoved": true
+    },
+    "upgrade": {
+      "format": 1,
+      "productionAccess": false,
+      "externalMessages": false,
+      "checks": [
+        "baseline seed",
+        "partial SQLite commit recorded after PG failure",
+        "unsafe old binary remains stopped with pending recovery",
+        "partial core schema authorizes no binary",
+        "commit survives controller exception after candidate activation",
+        "controller interruption leaves writers stopped",
+        "resume reuses both committed steps and starts candidate",
+        "old runtime excluded after managed boundary is installed",
+        "persistent authenticated data and new writes",
+        "legacy mapping is not silently converted; only new space managed",
+        "rollback rejection leaves healthy current runtime running",
+        "persistent authenticated data and new writes",
+        "persistent authenticated data and new writes",
+        "persistent authenticated data and new writes",
+        "restore retains migration state and safety barrier"
+      ],
+      "stages": [
+        {
+          "passed": true,
+          "checks": 8,
+          "scope": "baseline seed"
+        },
+        {
+          "passed": true,
+          "checks": 11,
+          "scope": "upgrade persistence"
+        },
+        {
+          "passed": true,
+          "checks": 7,
+          "scope": "upgrade persistence"
+        },
+        {
+          "passed": true,
+          "checks": 7,
+          "scope": "upgrade persistence"
+        },
+        {
+          "passed": true,
+          "checks": 7,
+          "scope": "upgrade persistence"
+        }
+      ],
+      "images": {
+        "base": "sha256:b70666e7dc5f458c60d8c49aadcd6432ccff4f80ffb8dcf36502639c1346c03c",
+        "candidate": "sha256:92f257d08a577489d48c141baf4f01b943cd70cc915e798542657fe260bb2f12"
+      },
+      "injectedMigrationFailure": "Core security migration committed; old runtime remains stopped. Repair the candidate and use resume-upgrade; data and backup are retained.",
+      "passed": true,
+      "unrelatedServicesUnchanged": true
+    },
+    "upgradeLifecycleChecks": 15,
+    "upgradeStageAssertions": 40,
+    "verifyExitCode": 0,
+    "weknowBuildExitCode": 0
+  },
+  "limits": [
+    "exact reviewed baseline and candidate only; no arbitrary platform migration",
+    "old shared spaces not converted",
+    "no automatic WeKnow rename or ownership transfer",
+    "resume uses original candidate; replacement-candidate repair not implemented",
+    "incoming collaboration messages rechecked; idle checks every 5 seconds plus network timeout, not instantaneous outbound revocation",
+    "current interruption injection is an exception after actual candidate activation, not SIGKILL",
+    "no production, browser visual, cross-host restore, capacity or outbound notification acceptance"
+  ],
+  "reviewFindingsResolved": [
+    "actual platform SQLite path",
+    "WAL sidecar permission during read-only inspection",
+    "WeKnow migration ownership matches runtime owner",
+    "resume exceptions stop activated writers",
+    "recipient permission filter uses one SQL query instead of per-user queries"
+  ],
+  "sourceSha256": {
+    "apps/platform/server/suite-identity.mjs": "c2307f8a9494294274856b40eb3e78b0ecebdd3c042a5fe5b2f940da5dbea0f1",
+    "deploy/README.md": "87eabf3d8312e18ccb4707c707b36a54ee2325423b966785fae267c4a7104b4a",
+    "deploy/migration_policy.py": "924044ff3896530e9fc4e3ce5a190a839603b3fb02b1ef66da2aef0ed5093833",
+    "deploy/migrations/core-managed-v1.json": "1e593281e96b0b0e10d298ba42cbbf6f6d95271fc7815b8abde81e336c7a23c1",
+    "deploy/runtime/contract.mjs": "f506760c1b57af5876980623880e1d2899ef8cfbf03f16fea441e5211fe67027",
+    "deploy/runtime/core-migrate.mjs": "3d07667987491a533dfb34fffbc1ac8c941b2eed3c1a0096b295ee66db08a3ec",
+    "deploy/runtime/migrate.mjs": "4c865013a54be731f2f4c20aecd54811fbf1b4e241149ce79f4af34b32ec0e93",
+    "deploy/runtime/schema-inspect.mjs": "18531a49e87451c24f7382e80e0cffade8406e06fd4a031661aa28092d67948b",
+    "deploy/suite.py": "7a475ad315b2e4a69f78f5e113921d4de3a60388489fa4639cca500a5e49f18a",
+    "deploy/test_core_migration.py": "377e4ebe6e5414a1bf7bef53381dd8ddf047cbb120d2d49bb5a363838fc13687",
+    "integrations/weknow/source/apps/server/src/collaboration/extensions/authentication.extension.ts": "fdf036ac2d74c01fb8f4a5700e5464f6c0c10e57af71c0011ba8124ce4cbee0b",
+    "integrations/weknow/source/apps/server/src/core/auth/feishu/suite-collaboration.service.ts": "1a3e43ac3c311b9825e37104e8c3f642aa4a920d04b6958d411e956866c016a6",
+    "integrations/weknow/source/apps/server/src/core/auth/feishu/suite-managed-access.ts": "828b89ea060ff32576564dae77a87cb2fe347c00c794ff05fbc8657853baaa51",
+    "integrations/weknow/source/apps/server/src/core/session/native-session.service.ts": "24d1a3eb7ecb01aa0a497bf02e3da6ec30986165e665f2883de34b81d377d9ad",
+    "integrations/weknow/source/apps/server/src/core/share/share.service.ts": "153f6f3f83dd21e8ac815450a0ae06b2cd352653d6843f35b56a4e537d5294bf",
+    "integrations/weknow/source/apps/server/src/core/space/services/space.service.ts": "8b79e0241de51a8ad97ea2b8c23552cd05c757f0a328f752d4e2e699b2df8c28",
+    "integrations/weknow/source/apps/server/src/database/migrations/20261029T120000-suite-managed-spaces.ts": "05eaadc1d61a6e925a0709bf5f187aa0862c1fec9899e84cc4a97783f81e96a2",
+    "integrations/weknow/source/apps/server/src/database/repos/public-space/public-space.repo.ts": "94c132acfa2bebd26845c8465eeb7868bd1b2e73fd1bca0768da1247a0619531",
+    "integrations/weknow/source/apps/server/src/database/repos/space/space-member.repo.ts": "611a35143aa2ab84c982e1ad08ef9d995f1bf48415815aef7908b571378c521c",
+    "integrations/weknow/source/apps/server/src/database/repos/space/space.repo.ts": "9d4d7df08b55ed20c47d4c32d3b256b6ef2696da5e5e9318e7225b6af81820f5",
+    "integrations/weknow/source/apps/server/src/database/repos/space/suite-managed-policy.ts": "4c07e4970d08bc38d02bfaf3cd49555a412b35cd1996a230dbeaba35705506a9",
+    "integrations/weknow/source/apps/server/src/ws/ws.gateway.ts": "1c6acb72fa4276a091e2576997c71979fbbf8c1c3827ca2fd701bea4614d6421",
+    "package.json": "2ddd2bdde5bf3a8b33e9eb4bfb9d027f078f2eadecf23501961ccb1f071a20d7",
+    "packages/operations/migrations.mjs": "c5a745244c6e5ca6fb77eda152eea7602c22c502b29a3c7ab43e2880c12e9fa9",
+    "packages/operations/migrations/0001_operations.sql": "79d56d1e854ee5c66503edee1686effcc3fda4e74c71bdcb181a82a433c0d36f",
+    "packages/operations/sqlite-store.mjs": "66e343021202f6ce4fb0085c81e47e2562bdc06f9c671b1a5c4f64b21314e222",
+    "tests/core-upgrade-fixture.mjs": "c5a29a8d517e7893b576d2884a69da1184595e21d7a16ae1bc6302aea4786ee0",
+    "tests/local-core-e2e.mjs": "eb06927324094fb460a8ebce608b813be19c6632caaa7213d3042a6b2d83f878",
+    "tests/managed-collaboration.mjs": "79089f39401180ec5cbbc87e3b657deb2cd20174db0b1f0ccf0a6b9922fe2fda",
+    "tests/managed-native-queries.cjs": "761781c718020c9e19cbaef76cba95f1324cdc2c41b9fc260ba3169330a3ad4d",
+    "tests/platform-migrations.test.mjs": "86fbe0aed59e31724a7195acf38720edf8ba837a16f47eb08455078493a5848b",
+    "tools/test_core_upgrade.py": "c3b1240f968fb12702d03e72995a1274e155e21b1220bd49d4ef343031aab298",
+    "tools/test_local_suite.py": "44cafc3b9d96dd800d691aa7f8f9163d999e5f6a77b1c3eb0a805096ef52e2a5"
+  },
+  "rawEvidence": [
+    {
+      "localLog": ".local/managed-verify.log",
+      "sha256": "e2ad71c1058256e96680e67dd06518a11bc73c2ac0ac21986116058fd6337453"
+    },
+    {
+      "localLog": ".local/core-upgrade-unit.log",
+      "sha256": "0b2122a03a98155cf4a504a5b96c59a586f72aa508afc6c1b9edcd5da4824951"
+    },
+    {
+      "localLog": ".local/managed-weknow-tests.log",
+      "sha256": "35bd31894ac523ccef47d7e966afaac76eaace02ecdb492cfa18d04445d65656"
+    },
+    {
+      "localLog": ".local/managed-weknow-build.log",
+      "sha256": "b603385863ab2d317ba0105d93d45c2b6079b2b34bc6d26ab0c83f22ff38fc3d"
+    },
+    {
+      "localLog": ".local/managed-image-build.log",
+      "sha256": "94c19e52a4ac8cc53e06ef1b7335d28fce67face3b114fee37bf78735e098d2a"
+    },
+    {
+      "localLog": ".local/managed-native.log",
+      "sha256": "fdb148f4040867e5fd8d84fdb3e4364cc59173daa140637d6a9f4b6f9cab80b6"
+    },
+    {
+      "localLog": ".local/native-core-e2e.log",
+      "sha256": "c559b9e5ff39f6ba984d9b9100774410da995f9896d21b7b9b17cc7d1287586f"
+    },
+    {
+      "localLog": ".local/native-managed-native-queries.log",
+      "sha256": "e9db4d1f4b04b2cd21ac6d0b6675896ebf6b5ab919cd9fda026c71243a5c04d1"
+    },
+    {
+      "localLog": ".local/native-collections.log",
+      "sha256": "bdbd9c3e126c4d67ff8153c102854f743a6f3d5e840bcbb29ace9dc5d575e909"
+    },
+    {
+      "localLog": ".local/native-restart-e2e.log",
+      "sha256": "7542b464a8e491e0fba0af8aae0c4e92a3b7544a673d49524350128bda059795"
+    },
+    {
+      "localLog": ".local/core-upgrade-report.json",
+      "sha256": "90c482834e5c01fc8a9d2dc6ca1dd78a953ef99d04acf5e62dc8faf5868a4380"
+    }
+  ]
+}

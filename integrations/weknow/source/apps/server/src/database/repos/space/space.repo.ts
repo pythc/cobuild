@@ -1,3 +1,4 @@
+import { unmanagedSpace } from './suite-managed-policy';
 import { Injectable } from '@nestjs/common';
 import { InjectKysely } from 'nestjs-kysely';
 import { KyselyDB, KyselyTransaction } from '@docmost/db/types/kysely.types';
@@ -184,6 +185,7 @@ export class SpaceRepo {
       .select((eb) => this.withIsPublished(eb))
       .where('workspaceId', '=', workspaceId)
       .where('isPersonal', '=', false)
+      .where(unmanagedSpace(sql.ref('spaces.id')))
       .where('deletedAt', 'is', null);
 
     if (pagination.query) {

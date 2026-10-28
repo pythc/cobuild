@@ -281,7 +281,7 @@ export function createSuiteIdentity({ config, directory, now = Date.now }) {
         const url = new URL(req.url, config.origins.platform);
         if (path.startsWith("/api/suite/services/")) {
           const match =
-            /^\/api\/suite\/services\/(makit|weknow)\/(directory|member|actions|project)$/.exec(
+            /^\/api\/suite\/services\/(makit|weknow)\/(directory|member|actions|project|project-access)$/.exec(
               path,
             );
           if (!match || req.method !== "POST" || !keys[match[1]])
@@ -309,6 +309,16 @@ export function createSuiteIdentity({ config, directory, now = Date.now }) {
           }
           if (action === "directory") {
             json(res, 200, auth.directorySnapshot());
+            return true;
+          }
+          if (action === "project-access" && app === "weknow") {
+            const member = auth.profile(payload.subject);
+            await checkApp(member, "knowledge");
+            const projects = config.modules.includes("kick") && workspace
+              ? workspace.store.list(member).projects.filter(p => p.phase === "active" && !p.archived &&
+                  (p.ownerSubject === member.subject || p.members.some(m => m.subject === member.subject)))
+                .map(p => ({ id: p.id, revision: p.revision, role: p.ownerSubject === member.subject ? "admin" : "writer" })) : [];
+            json(res, 200, { organizationId: auth.organizationId, subject: member.subject, projects });
             return true;
           }
           if (!config.modules.includes("kick") || !workspace)

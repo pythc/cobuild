@@ -280,6 +280,11 @@
       "currentSha256": "e026a8afd75cecc36678e5419f39213551d07f54e38550ac2515354039e9caec"
     },
     {
+      "path": "integrations/weknow/source/apps/server/src/collaboration/extensions/authentication.extension.ts",
+      "baselineSha256": "4c9beec0db574dbedb75bf94856aaf55eedd1c0dea2af1e7a68e560611671067",
+      "currentSha256": "fdf036ac2d74c01fb8f4a5700e5464f6c0c10e57af71c0011ba8124ce4cbee0b"
+    },
+    {
       "path": "integrations/weknow/source/apps/server/src/common/helpers/constants.ts",
       "baselineSha256": "7db2b23898383b16f486f8c64d0eba4d35884b63aa9f119911c981d9af8f11fb",
       "currentSha256": "7b754ee9bca81d292312ce73f57b77ac560717d99129a642bd87a1ef977f7faa"
@@ -332,7 +337,32 @@
     {
       "path": "integrations/weknow/source/apps/server/src/core/session/native-session.service.ts",
       "baselineSha256": "168ee0086c318b95719ce92a06b5fb8a79b211e4c62fa2cee69d9022e1676956",
-      "currentSha256": "25ee37c8e516fcbb9c2020b50631ee121f742e46400f1f44226b4332e3bc3b9c"
+      "currentSha256": "24d1a3eb7ecb01aa0a497bf02e3da6ec30986165e665f2883de34b81d377d9ad"
+    },
+    {
+      "path": "integrations/weknow/source/apps/server/src/core/share/share.service.ts",
+      "baselineSha256": "5a6aa015258d8477f1fdb803133c5ac2525f7094ae0e5063e58f461672fded94",
+      "currentSha256": "153f6f3f83dd21e8ac815450a0ae06b2cd352653d6843f35b56a4e537d5294bf"
+    },
+    {
+      "path": "integrations/weknow/source/apps/server/src/core/space/services/space.service.ts",
+      "baselineSha256": "f40d247d5b81ef04fcfe817ac993a30a19985b988ddad09117ea1a5b9ccd072e",
+      "currentSha256": "8b79e0241de51a8ad97ea2b8c23552cd05c757f0a328f752d4e2e699b2df8c28"
+    },
+    {
+      "path": "integrations/weknow/source/apps/server/src/database/repos/public-space/public-space.repo.ts",
+      "baselineSha256": "30ca32de5373922247b35f82dff3d0e89b9bab51085308e822154ec5fde3bf32",
+      "currentSha256": "94c132acfa2bebd26845c8465eeb7868bd1b2e73fd1bca0768da1247a0619531"
+    },
+    {
+      "path": "integrations/weknow/source/apps/server/src/database/repos/space/space-member.repo.ts",
+      "baselineSha256": "ea8574322ab60e9f89404e95353c3fffdd0912510dc1054102a8207b9c644121",
+      "currentSha256": "611a35143aa2ab84c982e1ad08ef9d995f1bf48415815aef7908b571378c521c"
+    },
+    {
+      "path": "integrations/weknow/source/apps/server/src/database/repos/space/space.repo.ts",
+      "baselineSha256": "ba6bf209150e39a2b754b1c6e947b3652653a13b4267179a83976c968bd47bfe",
+      "currentSha256": "9d4d7df08b55ed20c47d4c32d3b256b6ef2696da5e5e9318e7225b6af81820f5"
     },
     {
       "path": "integrations/weknow/source/apps/server/src/database/repos/user/user.repo.ts",
@@ -348,6 +378,11 @@
       "path": "integrations/weknow/source/apps/server/src/main.ts",
       "baselineSha256": "013ecafcd44ccc10c9a23911aa0282ff03b88eea678530ec8956d26e18ff8c1e",
       "currentSha256": "77d06d425ea225512ccb70129f46cc33c7b2ec79a1b2e963ef6fdb559e15c149"
+    },
+    {
+      "path": "integrations/weknow/source/apps/server/src/ws/ws.gateway.ts",
+      "baselineSha256": "5be15b4d3dabf45ce91dc5ce6db1ffc4d1a45b9d6bfb60d70c611d6cc978bee4",
+      "currentSha256": "1c6acb72fa4276a091e2576997c71979fbbf8c1c3827ca2fd701bea4614d6421"
     },
     {
       "path": "integrations/weknow/source/apps/server/test/jest-e2e.json",

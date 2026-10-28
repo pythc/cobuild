@@ -1,0 +1,31 @@
+{
+  "format": 1,
+  "kind": "core-managed-v1",
+  "rollbackCompatible": false,
+  "changes": {
+    "apps/platform/server/project-sync-store.mjs": {
+      "before": "06ad883b1c8f9007cae9f2dcf6a25c0c699d2361151aebfabe63b5154d6302e6",
+      "after": "fc7572e8c636e5b0b6666e15325bde2205fa728665f454ac6094005dd1f2d13d"
+    },
+    "apps/platform/server/workspace-store.mjs": {
+      "before": "64ec36b7fa9f7f31b0ff7a700a3866d96ec4c90d4605f543cb446e05c02b65d4",
+      "after": "50ac8b187b471bb8b0709245488f653c6639d2b5c2a6a3ef31583d441cb5d909"
+    },
+    "integrations/weknow/source/apps/server/dist/database/migrations/20261029T120000-suite-managed-spaces.js": {
+      "before": null,
+      "after": "c512ac219c99bc4213795eeef7fa90efb182480a9e670582d970597ea3105334"
+    },
+    "packages/operations/migrations.mjs": {
+      "before": null,
+      "after": "c5a745244c6e5ca6fb77eda152eea7602c22c502b29a3c7ab43e2880c12e9fa9"
+    },
+    "packages/operations/migrations/0001_operations.sql": {
+      "before": null,
+      "after": "79d56d1e854ee5c66503edee1686effcc3fda4e74c71bdcb181a82a433c0d36f"
+    },
+    "packages/operations/sqlite-store.mjs": {
+      "before": null,
+      "after": "66e343021202f6ce4fb0085c81e47e2562bdc06f9c671b1a5c4f64b21314e222"
+    }
+  }
+}

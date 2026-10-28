@@ -2,7 +2,7 @@
 
 本入口部署一个组织的 Platform / Kick、Makit、WeKnow、PostgreSQL 17、Redis 与入口代理。飞书、邮件、GitHub、AI 等集成默认关闭。公开发行仍受仓库许可、可移植性及其他发行门禁限制。
 
-> 当前工作树为 0.7 契约开发版，新增平台 schema。以下 0.6 的生命周期验证不能直接当作 0.7 的升级证据；现有部署器将拒绝此跨 schema 更新。仅在新建隔离环境验证，不对已有部署替换镜像。
+> 当前工作树新增显式核心迁移协议。它只接受下述经审核的精确基线与候选清单，不代表任意旧版本均可升级。受管空间安装后禁止回退到不执行新权限边界的旧二进制。验证范围见 [本批实现记录](../docs/design/collaboration-framework/IMPLEMENTATION-02.md)。
 
 ## 构建与初始化
 
@@ -12,7 +12,7 @@
 
 ```sh
 docker build -f deploy/Dockerfile -t cobuild-suite:local .
-python3 deploy/suite.py seal --image cobuild-suite:local --version 0.6.0-local.1 --output release-local.json
+python3 deploy/suite.py seal --image cobuild-suite:local --version 0.7.0-core-local --output release-local.json
 python3 deploy/suite.py init /srv/cobuild/team --release release-local.json
 python3 deploy/suite.py up /srv/cobuild/team
 ```
@@ -113,9 +113,9 @@ python3 deploy/suite.py upgrade /srv/cobuild/team --release release-next.json
 python3 deploy/suite.py rollback /srv/cobuild/team
 ```
 
-先预检候选并自动完整备份，再停止旧进程，启动候选并检查健康；健康后提交版本记录。任何时刻最多运行一套消费者。schema 相同的应用可以直接切换；schema 不同仅接受下一节声明的 Makit 增量方案。数据库镜像、架构、平台和 WeKnow 结构变更仍不接受。
+先预检候选并自动完整备份，再停止旧进程，启动候选并检查健康；健康后提交版本记录。任何时刻最多运行一套消费者。schema 相同的应用可以直接切换；schema 不同仅接受已声明的 Makit 增量方案或本文的核心迁移方案。数据库镜像、架构及未审核结构变更仍不接受。
 
-候选失败会停止候选、恢复旧应用镜像，继续使用当前数据库和文件。升级后新写入保留，不恢复旧快照覆盖它们。备份位于部署同级的 `upgrade-backups`，不会在自动回退中消费。
+候选失败会停止候选，仅在历史和权限语义均兼容时恢复旧应用镜像，继续使用当前数据库和文件。核心权限迁移一旦有步骤提交，则保持停止，须向前恢复。升级后新写入保留，不恢复旧快照覆盖它们。备份位于部署同级的 `upgrade-backups`，不会在自动回退中消费。
 
 指纹覆盖平台存储实现与应用迁移文件；清单另外核验原 Makit 迁移驱动。已有文件改写、未知 schema 或数据库镜像 / 架构变化在停服务前拒绝。保留旧二进制只代表结构兼容；开发者仍须评审业务语义兼容，不能据此推断任意版本都能自动回退。
 
@@ -163,6 +163,39 @@ python3 deploy/suite.py schema-status /srv/cobuild/team
 控制进程在事务内或数据库提交后中断时，pending 保留，recover 以数据库记录重新判定进度。事务中未提交的 DDL 回滚；已提交 DDL 保留。数据库历史出现未知文件、缺失基线、错误摘要或非连续前缀时，恢复拒绝，不开放强制跳过。
 
 回退后的应用不能从旧 schema 另开分支迁移；先切回已完整物化 schema 的应用，再声明下一次迁移。也不提供 down migration。数据库主版本迁移、逻辑导出和跨机器恢复仍须独立方案。
+
+## 平台与 WeKnow 受管空间迁移
+
+`deploy/migrations/core-managed-v1.json` 是特定旧镜像到本批候选的审核清单，不是通用 SQL 执行入口。它固定平台存储代码、操作库 SQL、迁移驱动及 WeKnow 新增迁移的前后摘要。源镜像不符、已存在的 WeKnow 迁移被改写、额外 schema 文件变化均拒绝。模块须已启用 Kick 和 WeKnow，并完成过初始化。
+
+```sh
+docker build -f deploy/Dockerfile -t cobuild-suite:managed-migration-candidate .
+python3 deploy/suite.py seal --image cobuild-suite:managed-migration-candidate --version 0.7.0-core-local --base-release release-base.json --migration-plan deploy/migrations/core-managed-v1.json --output release-core.json
+python3 deploy/suite.py upgrade /srv/cobuild/team --release release-core.json
+python3 deploy/suite.py schema-status /srv/cobuild/team
+```
+
+平台 SQLite 与 WeKnow PostgreSQL 不共享事务，不能宣传为跨库原子升级。执行顺序为平台操作库、WeKnow 受管空间表；每个步骤的 DDL 与本库历史同事务提交，再由控制器核对真实历史。平台的旧业务表、空间映射、原生 ACL、文档和附件不回填、不删除。升级助手停止业务写入后运行；SQLite 检查连接只读，但目录允许创建 WAL 共享内存辅助文件。
+
+| 状态 | 本方案允许运行的版本 |
+| --- | --- |
+| not_applied | 原版本 |
+| partial | 不启动业务；保留 pending、数据和备份 |
+| complete | 仅目标 schema；旧版本会绕过权限约束，因此禁止回退 |
+
+提交后启动失败或控制器中断时，修复环境原因后执行：
+
+```sh
+python3 deploy/suite.py resume-upgrade /srv/cobuild/team
+```
+
+此命令只接受 pending 中的**原精确候选**，重新核验镜像、计划及已提交历史，补做未提交步骤；已完成步骤不重复建表，健康后提交版本记录。不要编辑 pending、删迁移历史或手工启动旧镜像。`recover` 在已提交核心步骤时也会保持停止，不自动恢复旧快照。更换成另一个修复镜像的向前迁移入口尚未实现；候选自身有代码缺陷时，须另行制作和审核恢复方案。
+
+控制器被强杀时，候选进程可能仍在运行，pending 并不代表进程已全部停止。`recover` / `resume-upgrade` 都会先停止本部署写进程，再检查实际历史；不要手工并行启动另一套消费者。
+
+已完成升级的完整备份恢复同时保留迁移状态与权限边界。恢复旧备份属于独立的数据恢复操作，有备份之后数据丢失的成本，不能称为无损回退。
+
+核心迁移演练使用 `npm run test:core-upgrade`。需要保留原始 0.6 镜像 `cobuild-suite:deployment-candidate`（证据中 ID 以 `b70666e7` 开头），并将本批候选构建为 `cobuild-suite:managed-migration-candidate`；不要用新构建覆盖基线 tag。脚本使用独立部署、端口和数据，结束后核对其他容器 ID 与启动时间未变。普通新部署不依赖这份测试基线。
 
 ## 本地验证
 

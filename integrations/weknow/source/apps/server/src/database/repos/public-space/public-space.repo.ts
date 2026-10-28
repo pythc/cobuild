@@ -1,3 +1,4 @@
+import { unmanagedSpace } from '../space/suite-managed-policy';
 import { Injectable } from '@nestjs/common';
 import { InjectKysely } from 'nestjs-kysely';
 import { ExpressionBuilder, sql } from 'kysely';
@@ -22,6 +23,7 @@ export class PublicSpaceRepo {
       .selectFrom('publicSpaces')
       .selectAll()
       .where('spaceId', '=', spaceId)
+      .where(unmanagedSpace(sql.ref('publicSpaces.spaceId')))
       .executeTakeFirst();
   }
 
@@ -84,6 +86,7 @@ export class PublicSpaceRepo {
       .select((eb) => this.withCreator(eb))
       .where('workspaceId', '=', workspaceId)
       .where('enabled', '=', true)
+      .where(unmanagedSpace(sql.ref('publicSpaces.spaceId')))
       .where(({ exists, selectFrom }) =>
         exists(
           selectFrom('spaces')

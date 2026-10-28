@@ -214,7 +214,9 @@ export class SuiteCollaborationService
             description: project.summary,
           },
           trx as any,
+          { projectManaged: true },
         );
+        await trx.insertInto("suiteManagedSpaces").values({spaceId:space.id, projectId, organizationId:this.organizationId}).execute();
         await trx
           .insertInto("suiteProjectSpaces")
           .values({

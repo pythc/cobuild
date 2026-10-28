@@ -90,7 +90,7 @@ export class WsGateway
         } catch (error) {
           this.disconnectSession(client, error);
         }
-      }, 30000);
+      }, process.env.COBUILD_IDENTITY_MODE === 'local' ? 5000 : 30000);
       client.data.sessionCheck.unref();
       const userId = token.sub;
       const workspaceId = token.workspaceId;

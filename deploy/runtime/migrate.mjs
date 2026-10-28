@@ -1,3 +1,4 @@
+if (process.argv.includes('--core') || process.argv.includes('--inspect-core')) { await import('./core-migrate.mjs'); process.exit(0); }
 // One-shot migration only. Never starts web servers, queues or consumers.
 import { lstatSync, readFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';

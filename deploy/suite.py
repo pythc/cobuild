@@ -129,7 +129,11 @@ def validate_release(value):
     checked_policy(policy.validate_contract,value['contract'])
     if value.get('migration'):
         approved_runner=digest(ROOT/'deploy/runtime/migrate.mjs')
-        checked_policy(policy.validate_candidate,value['migration'],value['contract'],schema_manifest(value['images']['core']['id']),approved_runner)
+        manifest=schema_manifest(value['images']['core']['id'])
+        checked_policy(policy.validate_candidate,value['migration'],value['contract'],manifest,approved_runner)
+        if value['migration']['kind']=='core-managed-v1':
+            if value['migration']['plan']!=read(ROOT/'deploy/migrations/core-managed-v1.json'):raise Failure('Core plan differs from the reviewed release plan')
+            if manifest.get('coreRunnerDigest')!=digest(ROOT/'deploy/runtime/core-migrate.mjs'):raise Failure('Core runner differs from reviewed implementation')
     return value
 
 def seal(image, version, output, base_release=None, migration_plan=None):
@@ -139,7 +143,7 @@ def seal(image, version, output, base_release=None, migration_plan=None):
     if (base_release is None)!=(migration_plan is None):raise Failure('Base release and migration plan are required together')
     if base_release is not None:
         validate_release(base_release)
-        value['migration']={'format':1,'kind':'makit-additive-v1','fromImage':base_release['images']['core']['id'],'fromContract':base_release['contract'],'plan':migration_plan}
+        value['migration']={'format':1,'kind':migration_plan.get('kind','makit-additive-v1'),'fromImage':base_release['images']['core']['id'],'fromContract':base_release['contract'],'plan':migration_plan}
         value['migration']['planDigest']=policy.digest({'fromImage':value['migration']['fromImage'],'fromContract':base_release['contract'],'toContract':value['contract'],'plan':migration_plan})
         checked_policy(policy.authorize_transition,base_release,value,schema_manifest(base_release['images']['core']['id']),schema_manifest(value['images']['core']['id']))
     validate_release(value)
@@ -390,16 +394,25 @@ class Deployment:
         value=json.loads(result.stdout)[0]
         if (value['Config'].get('Labels') or {}).get('cobuild.deployment')!=self.instance['id']:raise Failure('Migration helper ownership differs')
         docker('rm','-f',name)
-    def migration_history(self):
+    def migration_history(self, release=None):
+        release=release or self.release
+        if release.get('migration',{}).get('kind')=='core-managed-v1':
+            if self.core_running():raise Failure('Stop core writers before inspecting migration state')
+            raw=docker('run','--rm','--network',self.project+'-net','--user',str(os.getuid())+':'+str(os.getgid()),
+                '--cap-drop','ALL','--security-opt','no-new-privileges:true','--memory','512m','--pids-limit','128','--read-only',
+                '--mount','type=bind,src='+str(self.path/'state')+',dst=/state',
+                '--entrypoint','node',release['images']['core']['id'],'deploy/runtime/migrate.mjs','--inspect-core',timeout=60)
+            return json.loads(raw)
+
         query="SELECT COALESCE(json_object_agg(name,sha256),'{}'::json) FROM makit_schema_migration;"
         raw=docker('exec','-i',self.project+'-postgres-1','psql','-X','-A','-t','-v','ON_ERROR_STOP=1','-U','suite_admin','-d','makit',input=query.encode())
         return json.loads(raw)
     def finish_migration_state(self, old, new, evidence):
-        progress=checked_policy(policy.reconcile_history,evidence['baseLedger'],evidence['newLedger'],self.migration_history())
+        progress=checked_policy(policy.reconcile_history,evidence['baseLedger'],evidence['newLedger'],self.migration_history(new))
         state={'format':1,'baseContract':old['contract'],'targetContract':new['contract'],
             'targetImage':new['images']['core']['id'],'transition':new['migration'],**evidence,**progress}
         state['status']='complete' if progress['complete'] else 'partial' if progress['applied'] else 'not_applied'
-        state['compatibleSchemas']=[old['contract']['schema']]+([new['contract']['schema']] if progress['complete'] else [])
+        state['compatibleSchemas']=policy.compatible_schemas(new['migration'],old['contract']['schema'],new['contract']['schema'],progress['applied'],progress['complete'])
         state['actualSchema']=new['contract']['schema'] if progress['complete'] else None if progress['applied'] else old['contract']['schema']
         write(self.path/'state/schema-state.json',state)
         return state
@@ -417,7 +430,8 @@ class Deployment:
         if state and state['status']!='migrating' and release['contract']['schema'] in state['compatibleSchemas']:
             return None
         if not release.get('migration'):raise Failure('Schema change requires an explicit additive migration plan')
-        if 'makit' not in read(self.path/'state/config.json')['modules']:raise Failure('Enable Makit and initialize its database before migrating its schema')
+        if release['migration']['kind']=='core-managed-v1' and not {'kick','weknow'}<=set(read(self.path/'state/config.json')['modules']):raise Failure('Core migration requires initialized Kick and WeKnow')
+        if release['migration']['kind']=='makit-additive-v1' and 'makit' not in read(self.path/'state/config.json')['modules']:raise Failure('Enable Makit and initialize its database before migrating its schema')
         evidence=checked_policy(policy.authorize_transition,self.release,release,schema_manifest(self.release['images']['core']['id']),schema_manifest(release['images']['core']['id']))
         if state:
             if state['status']=='migrating':raise Failure('Migration state needs recovery')
@@ -430,7 +444,7 @@ class Deployment:
         self.start_databases()
         # Check the entire old ledger and any previously committed prefix before
         # executing another statement. Existing migration files are immutable.
-        checked_policy(policy.reconcile_history,evidence['baseLedger'],evidence['newLedger'],self.migration_history())
+        checked_policy(policy.reconcile_history,evidence['baseLedger'],evidence['newLedger'],self.migration_history(new))
         state={'format':1,'status':'migrating','baseContract':old['contract'],'targetContract':new['contract'],
             'targetImage':new['images']['core']['id'],'transition':new['migration'],**evidence,
             'applied':[],'complete':False,'actualSchema':None,'compatibleSchemas':[]}
@@ -441,8 +455,8 @@ class Deployment:
             docker('run','--rm','--name',self.project+'-migration','--label','cobuild.deployment='+self.instance['id'],
                 '--network',self.project+'-net','--user',str(os.getuid())+':'+str(os.getgid()),
                 '--cap-drop','ALL','--security-opt','no-new-privileges:true','--memory','512m','--pids-limit','128','--read-only',
-                '--mount','type=bind,src='+str(self.path/'state')+',dst=/state,readonly',
-                '--entrypoint','node',new['images']['core']['id'],'deploy/runtime/migrate.mjs',timeout=180)
+                '--mount','type=bind,src='+str(self.path/'state')+',dst=/state'+('' if new['migration']['kind']=='core-managed-v1' else ',readonly'),
+                '--entrypoint','node',new['images']['core']['id'],'deploy/runtime/migrate.mjs',*(['--core'] if new['migration']['kind']=='core-managed-v1' else []),timeout=180)
         finally:self.stop_migration()
         state=self.finish_migration_state(old,new,evidence)
         if state['status']!='complete':raise Failure('Candidate did not finish the declared migration history')
@@ -468,6 +482,23 @@ class Deployment:
             # Only validated additive migrations may retain new schema while
             # returning to an older application. Never restore an old snapshot.
             self.recover(); raise
+    def resume_upgrade(self):
+        pending=read(self.path/'pending.json')
+        old=validate_release(pending['previous']);new=validate_release(pending['candidate'])
+        evidence=checked_policy(policy.authorize_transition,old,new,schema_manifest(old['images']['core']['id']),schema_manifest(new['images']['core']['id']))
+        if evidence!=pending.get('migrationEvidence'):raise Failure('Resume evidence differs')
+        self.stop()
+        try:
+            self.preflight(new,for_migration=True);self.configure(new)
+            self.apply_migration(old,new,evidence,pending)
+            self.activate_runtime(new);self.start_wait(new)
+            write(self.path/'previous.json',old);write(self.path/'release.json',new)
+            self.release=new;remove_record(self.path/'pending.json')
+        except BaseException:
+            # A readiness failure can leave partially running writers. Preserve
+            # pending, stop this deployment, and require explicit forward retry.
+            self.stop()
+            raise
     def recover(self):
         pending = read(self.path/'pending.json')
         # A pending controller may have died after starting the candidate.
@@ -487,7 +518,8 @@ class Deployment:
         self.configure(old)
         if evidence:
             self.start_databases()
-            self.finish_migration_state(old,new,evidence)
+            state=self.finish_migration_state(old,new,evidence)
+            if old['contract']['schema'] not in state['compatibleSchemas']:raise Failure('Core security migration committed; old runtime remains stopped. Repair the candidate and use resume-upgrade; data and backup are retained.')
         self.activate_runtime(old);self.start_wait(old)
         write(self.path/'release.json',old); self.release=old; remove_record(self.path/'pending.json')
 
@@ -605,7 +637,7 @@ def main():
     p=sub.add_parser('init');p.add_argument('directory');p.add_argument('--release',required=True);p.add_argument('--config');p.add_argument('--ports',default='8080,8081,8082');p.add_argument('--subnet')
     p=sub.add_parser('restore');p.add_argument('directory');p.add_argument('--backup',required=True)
     p=sub.add_parser('verify-backup');p.add_argument('directory')
-    for action in ['up','stop','down','status','backup','upgrade','rollback','recover','recover-owner','schema-status','tls-configure']:
+    for action in ['up','stop','down','status','backup','upgrade','rollback','recover','recover-owner','resume-upgrade','schema-status','tls-configure']:
         p=sub.add_parser(action);p.add_argument('directory')
         if action=='backup':p.add_argument('--output',required=True)
         if action=='upgrade':p.add_argument('--release',required=True)
@@ -649,6 +681,7 @@ def main():
         elif args.action=='rollback':dep.upgrade(read(dep.path/'previous.json'));print('Compatible application rollback healthy; data retained')
         elif args.action=='status':print(dep.status())
         elif args.action=='recover-owner':print(json.dumps(dep.recover_owner()))
+        elif args.action=='resume-upgrade':dep.resume_upgrade();print('Forward recovery healthy; data retained')
         elif args.action=='schema-status':print(json.dumps(dep.schema_state() or {'status':'base','actualSchema':dep.release['contract']['schema']},indent=2))
         elif args.action=='tls-configure':print(json.dumps(dep.configure_tls(tls_sources)))
         else:getattr(dep,args.action)();print(args.action+' completed')

@@ -19,6 +19,7 @@
     "test:local-suite": "python3 tools/test_local_suite.py",
     "test:deployment": "python3 tools/test_deployment.py",
     "test:migrations": "python3 tools/test_deployment.py --with-migrations",
+    "test:core-upgrade": "python3 tools/test_core_upgrade.py",
     "test:https": "python3 tools/test_deployment.py --https",
     "test:https-browser": "python3 tools/test_deployment.py --https --with-browser",
     "test:deployment-unit": "python3 -m unittest discover -s deploy -p 'test_*.py'",

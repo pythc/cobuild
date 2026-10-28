@@ -1,3 +1,4 @@
+import { refreshManagedAccess } from '../auth/feishu/suite-managed-access';
 import { IdentityInspectionCache } from '../auth/feishu/lab-identity-cache';
 import {
   identityRequest,
@@ -117,6 +118,7 @@ export class NativeSessionService {
       const latest = await this.sessions.findActiveById(sessionId);
       if (!latest) throw new UnauthorizedException();
     }
+    if (this.config.get('COBUILD_IDENTITY_MODE') === 'local') await refreshManagedAccess(this.db, this.config, identity);
     return user;
   }
 }

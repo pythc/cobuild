@@ -2,9 +2,9 @@
 
 面向实验室和小型研发团队的自部署协作套件。以项目为主线，连接项目发起、需求推进与知识沉淀。
 
-**当前阶段：协作框架首批契约实现（0.7.0-dev.0），仅本地验证，尚未达到公开发行条件。** 已将项目编辑/改名接入通用资源、命令、持久事件和同步回执；保留现有三应用身份与数据模型。四个核心模块之外的源码留存，运行配置拒绝启用。详见 [本批实施与验证](docs/design/collaboration-framework/IMPLEMENTATION-01.md) 和 [整体方案](docs/design/collaboration-framework/README.md)。
+**当前阶段：协作框架核心迁移与受管空间实现（0.7.0-dev.0），仅本地验证，尚未达到公开发行条件。** 项目编辑/改名使用通用资源、命令、持久事件和同步回执；新建受管知识空间以项目资格与原生 ACL 交集授权。四个核心模块之外的源码留存，运行配置拒绝启用。详见 [本批实施与验证](docs/design/collaboration-framework/IMPLEMENTATION-02.md)、[首批契约](docs/design/collaboration-framework/IMPLEMENTATION-01.md) 和 [整体方案](docs/design/collaboration-framework/README.md)。
 
-0.6 的 HTTPS、备份恢复和受控 Makit 迁移记录仍是历史基线。0.7 新增平台 SQLite 表，现有部署器会拒绝跨该 schema 升级；**本次未构建发行镜像、未授予升级兼容声明、未发布线上**。正式平台迁移方案与 WeKnow 项目生命周期仍待后续实现。
+0.6 的 HTTPS 记录仍是历史基线。本批构建了本地候选，新增精确审核的跨库迁移及失败后继续升级协议；不支持任意历史版本升级。受管空间迁移提交后，禁止回退到缺少新权限边界的旧镜像。**没有发布线上或公开发行。**
 
 ## 产品范围
 

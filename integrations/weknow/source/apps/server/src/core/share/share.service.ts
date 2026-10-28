@@ -1,3 +1,4 @@
+import { unmanagedSpace } from '../../database/repos/space/suite-managed-policy';
 import {
   BadRequestException,
   Injectable,
@@ -393,6 +394,7 @@ export class ShareService {
       .where('workspaces.id', '=', workspaceId)
       .where('spaces.id', '=', spaceId)
       .where('spaces.isPersonal', '=', false)
+      .where(unmanagedSpace(sql.ref('spaces.id')))
       .where('spaces.deletedAt', 'is', null)
       .executeTakeFirst();
 

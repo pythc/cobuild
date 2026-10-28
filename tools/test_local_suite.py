@@ -71,6 +71,7 @@ def main():
         weknow={**common,**application_env['weknow'],'COBUILD_SERVICE_KEY_FILE':str(data/'weknow.service.key'),'APP_SECRET':secrets.token_hex(32),'DATABASE_URL':f'postgres://suite_owner:{password}@127.0.0.1:{pgport}/weknow','REDIS_URL':f'redis://127.0.0.1:{redisport}','COBUILD_STORAGE_PATH':str(tmp/'files')}
         p=start('weknow',['node','dist/main.js'],ROOT/'integrations/weknow/source/apps/server',weknow);wait(cfg['origins']['weknow']+'/api/auth/identity/status',p)
         run('core-e2e',['node','tests/local-core-e2e.mjs'],ROOT,env)
+        run('managed-native-queries',['node','tests/managed-native-queries.cjs'],ROOT,weknow)
         run('collections',['node','tests/local-collections.cjs'],ROOT,makit)
         for old in reversed(processes):
           if old.poll() is None:old.terminate()

@@ -24,7 +24,7 @@ def validate_contract(value):
 
 def validate_transition(value):
     fields(value,['format','kind','fromImage','fromContract','plan','planDigest'])
-    if type(value['format']) is not int or value['format']!=1 or value['kind']!='makit-additive-v1' or not isinstance(value['fromImage'],str) or not re.fullmatch(r'sha256:[a-f0-9]{64}',value['fromImage']):
+    if type(value['format']) is not int or value['format']!=1 or value['kind'] not in ['makit-additive-v1','core-managed-v1'] or not isinstance(value['fromImage'],str) or not re.fullmatch(r'sha256:[a-f0-9]{64}',value['fromImage']):
         raise PolicyError('Unsupported migration transition')
     validate_contract(value['fromContract'])
 
@@ -90,11 +90,44 @@ def generated_files(plan):
     if list(result)!=sorted(result):raise PolicyError('Migration filenames must be ordered')
     return result
 
+CORE_SQL = 'packages/operations/migrations/0001_operations.sql'
+CORE_WEKNOW = 'integrations/weknow/source/apps/server/dist/database/migrations/20261029T120000-suite-managed-spaces.js'
+
+def core_plan(plan):
+    fields(plan,['format','kind','changes','rollbackCompatible'])
+    if type(plan['format']) is not int or plan['format']!=1 or plan['kind']!='core-managed-v1' or plan['rollbackCompatible'] is not False:raise PolicyError('Invalid reviewed core plan')
+    changes=plan['changes']
+    if not isinstance(changes,dict) or not changes or not {CORE_SQL,CORE_WEKNOW}<=set(changes):raise PolicyError('Missing core schema transition')
+    for path,entry in changes.items():
+        allowed=path in [CORE_SQL,CORE_WEKNOW,'packages/operations/sqlite-store.mjs','packages/operations/migrations.mjs'] or bool(re.fullmatch(r'apps/platform/server/[a-z0-9-]+-store.mjs',path))
+        if not allowed:raise PolicyError('Unreviewable core schema path')
+        fields(entry,['before','after'])
+        if entry['before'] is not None and not re.fullmatch(r'[a-f0-9]{64}',str(entry['before'])):raise PolicyError('Invalid baseline schema hash')
+        if not re.fullmatch(r'[a-f0-9]{64}',str(entry['after'])) or entry['before']==entry['after']:raise PolicyError('Invalid target schema hash')
+    if changes[CORE_WEKNOW]['before'] is not None:raise PolicyError('Existing WeKnow migration cannot be rewritten')
+    return {'platform/0001_operations':changes[CORE_SQL]['after'],'weknow/20261029T120000-suite-managed-spaces':changes[CORE_WEKNOW]['after']}
+
+def expected_ledger(transition):
+    if transition['kind']=='core-managed-v1':return core_plan(transition['plan'])
+    return {name:hashlib.sha256(sql.encode()).hexdigest() for name,sql in generated_files(transition['plan']).items()}
+
+def compatible_schemas(transition,base,target,applied,complete):
+    # Old binaries do not enforce managed ACLs. Once any core step commits, no
+    # automatic downgrade is allowed; a failed candidate requires forward repair.
+    if transition['kind']=='core-managed-v1' and applied:return [target] if complete else []
+    return [base]+([target] if complete else [])
+
 def validate_candidate(migration,contract,manifest,approved_runner=None):
     validate_transition(migration)
     validate_contract(contract)
     if migration['planDigest']!=digest({'fromImage':migration['fromImage'],'fromContract':migration['fromContract'],'toContract':contract,'plan':migration['plan']}):raise PolicyError('Migration plan digest differs')
-    expected=generated_files(migration['plan'])
+    expected=core_plan(migration['plan']) if migration['kind']=='core-managed-v1' else generated_files(migration['plan'])
+    if migration['kind']=='core-managed-v1':
+        for path,entry in migration['plan']['changes'].items():
+            if manifest['files'].get(path)!=entry['after']:raise PolicyError('Candidate core schema differs from reviewed plan')
+        if not manifest.get('coreRunnerDigest'):raise PolicyError('Missing core migration runner')
+        if approved_runner is not None and manifest.get('runnerDigest')!=approved_runner:raise PolicyError('Core dispatcher differs from reviewed runner')
+        return expected
     for name,sql in expected.items():
         path='apps/makit/migrations/selfhost/'+name
         if manifest['files'].get(path)!=hashlib.sha256(sql.encode()).hexdigest():raise PolicyError('Candidate SQL differs from generated migration plan')
@@ -108,6 +141,12 @@ def authorize_transition(old,new,old_manifest,new_manifest):
     expected=validate_candidate(migration,new['contract'],new_manifest)
     if old['images']['core']['id']!=migration['fromImage'] or not same_schema(old['contract'],migration['fromContract']):raise PolicyError('Migration plan is for a different source release')
     old_files=old_manifest['files'];new_files=new_manifest['files']
+    if migration['kind']=='core-managed-v1':
+        actual={path:{'before':old_files.get(path),'after':new_files.get(path)} for path in set(old_files)|set(new_files) if old_files.get(path)!=new_files.get(path)}
+        if actual!=migration['plan']['changes']:raise PolicyError('Unplanned core schema change')
+        if same_schema(old['contract'],new['contract']):raise PolicyError('Core transition must change schema')
+        return {'baseLedger':{},'newLedger':expected}
+
     if any(new_files.get(path)!=sha for path,sha in old_files.items()):raise PolicyError('Existing schema files or migration drivers changed')
     added=set(new_files)-set(old_files)
     declared={'apps/makit/migrations/selfhost/'+name for name in expected}
@@ -140,8 +179,7 @@ def validate_state(value):
         validate_contract(contract)
     if not isinstance(value['targetImage'],str) or not re.fullmatch(r'sha256:[a-f0-9]{64}',value['targetImage']):raise PolicyError('Invalid target image')
     transition=value['transition'];validate_transition(transition);plan=transition['plan']
-    files=generated_files(plan)
-    expected={name:hashlib.sha256(sql.encode()).hexdigest() for name,sql in files.items()}
+    expected=expected_ledger(transition)
     if value['newLedger']!=expected or not same_schema(transition.get('fromContract',{}),value['baseContract']):raise PolicyError('Stored migration evidence differs')
     digest_value=digest({'fromImage':transition.get('fromImage'),'fromContract':transition.get('fromContract'),'toContract':value['targetContract'],'plan':plan})
     if transition.get('planDigest')!=digest_value:raise PolicyError('Stored plan digest differs')
@@ -154,7 +192,7 @@ def validate_state(value):
         complete=len(applied)==len(expected)
         derived='complete' if complete else 'partial' if applied else 'not_applied'
         if status!=derived:raise PolicyError('Stored schema status disagrees with applied history')
-        compatible=[base]+([target] if complete else [])
+        compatible=compatible_schemas(transition,base,target,applied,complete)
         actual=target if complete else None if applied else base
     if value['complete'] is not complete or value['compatibleSchemas']!=compatible or value['actualSchema']!=actual:raise PolicyError('Invalid compatibility grant')
     return value

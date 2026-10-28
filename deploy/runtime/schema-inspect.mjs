@@ -16,7 +16,7 @@ function visit(directory) {
 for(const name of readdirSync('apps/platform/server').filter(n=>n.endsWith('-store.mjs')).sort()) {
   const path='apps/platform/server/'+name;files[path]=sha(readFileSync(path));
 }
-for(const path of ['packages/operations/sqlite-store.mjs']) { if(existsSync(path))files[path]=sha(readFileSync(path)); }
+for(const path of ['packages/operations/sqlite-store.mjs','packages/operations/migrations.mjs','packages/operations/migrations/0001_operations.sql']) { if(existsSync(path))files[path]=sha(readFileSync(path)); }
 visit('apps/makit/migrations');
 visit('integrations/weknow/source/apps/server/dist/database/migrations');
 for(const path of ['apps/makit/scripts/selfhost/migrate.cjs','apps/makit/scripts/selfhost/set-runtime-password.cjs'])files[path]=sha(readFileSync(path));
@@ -27,4 +27,4 @@ for(const name of readdirSync('apps/makit/migrations').filter(n=>/^\d+.*\.sql$/.
   makitLedger['legacy/'+name]=sha(source.replace(/\bworkspace_aadknhjojzqdw\b/g,'public').replace(/^\s*BEGIN;\s*/i,'').replace(/\s*COMMIT;\s*$/i,''));
 }
 const migrationRunner=existsSync('deploy/runtime/migrate.mjs');
-console.log(JSON.stringify({contract,files,makitLedger,migrationRunner,runnerDigest:migrationRunner?sha(readFileSync('deploy/runtime/migrate.mjs')):null}));
+console.log(JSON.stringify({contract,files,makitLedger,migrationRunner,runnerDigest:migrationRunner?sha(readFileSync('deploy/runtime/migrate.mjs')):null,coreRunnerDigest:existsSync('deploy/runtime/core-migrate.mjs')?sha(readFileSync('deploy/runtime/core-migrate.mjs')):null}));

@@ -51,7 +51,7 @@ export class SpaceService {
     workspaceId: string,
     createSpaceDto: CreateSpaceDto,
     trx?: KyselyTransaction,
-    options?: { isPersonal?: boolean },
+    options?: { isPersonal?: boolean; projectManaged?: boolean },
   ): Promise<Space & { memberCount: number }> {
     let space = null;
 
@@ -74,7 +74,7 @@ export class SpaceService {
           trx,
         );
 
-        if (!space.isPersonal) {
+        if (!space.isPersonal && !options?.projectManaged) {
           const everyone = await this.groupRepo.getDefaultGroup(
             workspaceId,
             trx,
@@ -122,7 +122,7 @@ export class SpaceService {
     workspaceId: string,
     createSpaceDto: CreateSpaceDto,
     trx?: KyselyTransaction,
-    options?: { isPersonal?: boolean },
+    options?: { isPersonal?: boolean; projectManaged?: boolean },
   ): Promise<Space> {
     const slugExists = await this.spaceRepo.slugExists(
       createSpaceDto.slug,

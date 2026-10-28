@@ -153,7 +153,7 @@ export class AuthenticationExtension implements Extension {
       } catch (error) {
         this.closeAfterFailure(data, error);
       }
-    }, 30000);
+    }, process.env.COBUILD_IDENTITY_MODE === 'local' ? 5000 : 30000);
     timer.unref();
     this.sessionChecks.set(key, timer);
   }
@@ -171,7 +171,7 @@ export class AuthenticationExtension implements Extension {
   async beforeHandleMessage(data: any) {
     const session = data.context?.nativeSession;
     if (!session) throw new UnauthorizedException();
-    if (Date.now() >= session.nextCheck) {
+    if (process.env.COBUILD_IDENTITY_MODE === 'local' || Date.now() >= session.nextCheck) {
       try {
         await this.refreshAuthorization(data);
         session.nextCheck = Date.now() + 5000;

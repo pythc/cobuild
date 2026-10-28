@@ -88,10 +88,11 @@
         "weknow"
       ],
       "acceptance": "项目只创建一次，显式 ID 关联，改名归档和成员变化可恢复且不重复建空间",
-      "scopeNote": "Stable project and space IDs, approval gating, concurrent/restart retries, milestone/link writes and live permissions verified locally. Full rename/archive/membership lifecycle and historical migration remain open.",
+      "scopeNote": "Stable project IDs and durable command receipts verified. New managed WeKnow spaces enforce live project membership/archive state intersected with native ACL, including native file/search/MCP/collaboration access. Space rename, ownership transfer and deliberate legacy-space conversion remain open.",
       "evidence": [
         "provenance/collaboration-checks.json",
-        "docs/LOCAL-RUNTIME.md"
+        "docs/LOCAL-RUNTIME.md",
+        "provenance/core-managed-checks.json"
       ]
     },
     {
@@ -138,9 +139,10 @@
       "evidence": [
         "provenance/deployment-checks.json",
         "provenance/migration-checks.json",
-        "provenance/https-checks.json"
+        "provenance/https-checks.json",
+        "provenance/core-managed-checks.json"
       ],
-      "scopeNote": "Local cold restore, additive Makit migration/repair, exact legacy binary rollback and real interruption recovery rerun over TLS. Expired-certificate pending repair and replacement-certificate restore verified without restoring old data over new writes. Platform/WeKnow or destructive migrations, historical conversion and cross-host/engine remain open."
+      "scopeNote": "Exact local 0.6 to core candidate migration verified across SQLite/PostgreSQL, including partial commit, controller exception after candidate activation, forward resume, unsafe old-binary refusal and cold restore preserving sessions/documents/attachments/new writes. Generic replacement-candidate repair, other historical baselines and cross-host/engine restore remain open."
     },
     {
       "id": "workflow-acceptance",
@@ -151,10 +153,11 @@
         "weknow"
       ],
       "acceptance": "两个真实测试账号完成项目、文档、需求和交付全流程及越权验证，无实验室服务请求或真实外发",
-      "scopeNote": "Local project, requirement assignment/update/comment/acceptance and knowledge-document flow verified with two synthetic accounts; actual GitHub/AI delivery, attachments and external integrations not accepted.",
+      "scopeNote": "Synthetic local project/requirement/knowledge flow, native ACL narrowing, recipient SQL, OAuth/MCP and live collaboration revocation verified. Actual GitHub/AI delivery, outbound notifications, browser UX and external integrations remain unaccepted.",
       "evidence": [
         "provenance/collaboration-checks.json",
-        "docs/LOCAL-RUNTIME.md"
+        "docs/LOCAL-RUNTIME.md",
+        "provenance/core-managed-checks.json"
       ]
     }
   ]

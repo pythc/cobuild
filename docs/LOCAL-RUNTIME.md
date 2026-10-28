@@ -118,6 +118,8 @@ npm run local:recover-owner
 
 0.7 的项目编辑请求支持 `requestId`；同请求重试返回原操作及当前项目。改名专用端点与事件回执见 [本批实现](design/collaboration-framework/IMPLEMENTATION-01.md)。
 
+新建并审批的 WeKnow 空间已接入项目成员资格；原有共享空间不自动转换。有效资格还须满足 WeKnow 原生 ACL，移出项目后不能凭旧空间角色访问。升级与撤权边界见 [第二批实现](design/collaboration-framework/IMPLEMENTATION-02.md)。
+
 ## 7. 备份与回退边界
 
 - 0.7 增加平台操作/事件表；现有部署器不能批准此跨 schema 升级。源码层兼容适配测试不代表旧镜像升级/回退已通过，部署前须完成独立的平台迁移计划。

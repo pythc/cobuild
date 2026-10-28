@@ -1,3 +1,4 @@
+import { managedAccess } from './suite-managed-policy';
 import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Cache } from 'cache-manager';
@@ -233,11 +234,10 @@ export class SpaceMemberRepo {
     const space = await this.getSpacePrivacy(spaceId);
     if (!space || space.deletedAt) return undefined;
     if (space.isPersonal) return space.creatorId === userId ? [{ userId, role: 'admin' }] : undefined;
-    return withCache(
-      this.cacheManager,
-      CacheKey.SPACE_ROLES(userId, spaceId),
-      PERMISSION_CACHE_TTL_MS,
-      async () => {
+    const qualified = await this.db.selectFrom('spaces').select('id')
+      .where('id','=',spaceId).where(managedAccess(sql.ref('spaces.id'),userId)).executeTakeFirst();
+    if (!qualified) return undefined;
+    const load = async () => {
         const roles = await this.db
           .selectFrom('spaceMembers')
           .select(['userId', 'role'])
@@ -261,8 +261,9 @@ export class SpaceMemberRepo {
           return undefined;
         }
         return roles;
-      },
-    );
+      };
+    const managed = await (this.db as any).selectFrom('suiteManagedSpaces').select('spaceId').where('spaceId','=',spaceId).executeTakeFirst();
+    return managed ? load() : withCache(this.cacheManager, CacheKey.SPACE_ROLES(userId, spaceId), PERMISSION_CACHE_TTL_MS, load);
   }
 
   getSpacePrivacy(spaceId: string) {
@@ -284,17 +285,19 @@ export class SpaceMemberRepo {
       .select('userId')
       .where('userId', 'in', userIds)
       .where('spaceId', '=', spaceId)
+      .where(managedAccess(sql.val(spaceId), sql.ref('spaceMembers.userId')))
       .unionAll(
         this.db
           .selectFrom('spaceMembers')
           .innerJoin('groupUsers', 'groupUsers.groupId', 'spaceMembers.groupId')
           .select('groupUsers.userId')
           .where('groupUsers.userId', 'in', userIds)
-          .where('spaceMembers.spaceId', '=', spaceId),
+          .where('spaceMembers.spaceId', '=', spaceId)
+          .where(managedAccess(sql.val(spaceId), sql.ref('groupUsers.userId'))),
       )
       .execute();
 
-    return new Set(rows.map((r) => r.userId));
+    return new Set(rows.map(r=>r.userId));
   }
 
   async getSpaceIdsByGroupId(groupId: string): Promise<string[]> {
@@ -314,6 +317,7 @@ export class SpaceMemberRepo {
       .select('spaces.id')
       .where('userId', '=', userId)
       .where('spaces.deletedAt', 'is', null)
+      .where(managedAccess(sql.ref('spaces.id'),userId))
       .where(eb => eb.or([eb('spaces.isPersonal', '=', false), eb('spaces.creatorId', '=', userId)]))
       .union(
         this.db
@@ -323,6 +327,7 @@ export class SpaceMemberRepo {
           .select('spaces.id')
           .where('groupUsers.userId', '=', userId)
           .where('spaces.deletedAt', 'is', null)
+      .where(managedAccess(sql.ref('spaces.id'),userId))
           .where('spaces.isPersonal', '=', false),
       );
   }

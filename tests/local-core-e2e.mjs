@@ -1,3 +1,4 @@
+import { managedCollaboration } from './managed-collaboration.mjs';
 // Executed only by tools/test_local_suite.py with disposable loopback services.
 import { serviceRequest } from "../packages/service/channel.mjs";
 import assert from "node:assert/strict";
@@ -22,10 +23,10 @@ async function request(
       ...(cookies.size
         ? { Cookie: [...cookies].map(([k, v]) => k + "=" + v).join("; ") }
         : {}),
-      ...(body ? { "Content-Type": "application/json", Origin: origin } : {}),
+      ...(body ? { ...(body instanceof FormData ? {} : { "Content-Type": "application/json" }), Origin: origin } : {}),
       ...headers,
     },
-    body: body ? JSON.stringify(body) : undefined,
+    body: body instanceof FormData ? body : body ? JSON.stringify(body) : undefined,
     signal: AbortSignal.timeout(15000),
   });
   for (const c of r.headers.getSetCookie()) {
@@ -658,6 +659,93 @@ result = await request(config.origins.weknow + "/api/pages/info", {
   body: { pageId: page.id },
 });
 check(result.status === 200, "owner reads member project document");
+// Managed scope is enforced below native roles, before pagination and on file URLs.
+const wk = (path, body, jar='member') => request(config.origins.weknow + path, {body,jar});
+const spaceId=project.knowledgeSpace.spaceId;
+const wkMember=(weknowMember.data || weknowMember).user.id;
+result=await wk('/api/spaces/members',{spaceId,limit:100},'owner');
+const initialMembers=(result.data.data||result.data).items;
+check(result.status===200 && Array.isArray(initialMembers) && initialMembers.length>0 && initialMembers.every(m=>m.type==='user'),'new managed space never grants Everyone');
+result=await wk('/api/spaces/create',{name:'Legacy shared fixture',slug:'legacy-shared-fixture'},'owner');
+const shared=(result.data.data||result.data).id;
+check(result.status===200 && shared,'ordinary space preserves shared policy');
+const form=new FormData();form.append('pageId',page.id);form.append('file',new Blob(['managed access proof'],{type:'text/plain'}),'managed-proof.txt');
+result=await wk('/api/files/upload',form);
+check(result.status===200 && (result.data.data||result.data).id,'member uploads managed attachment');
+const filePath='/api/files/'+(result.data.data||result.data).id+'/managed-proof.txt';
+check((await wk(filePath)).status===200,'member reads managed attachment');
+result=await wk('/api/spaces/members/change-role',{spaceId,userId:wkMember,role:'reader'},'owner');
+check(result.status===200,'owner narrows native role');
+check((await wk('/api/pages/create',{spaceId,title:'Should not write'})).status===403,'project qualification cannot bypass native read-only ACL');
+check((await wk('/api/pages/info',{pageId:page.id})).status===200,'native reader retains managed read');
+result=await wk('/api/spaces/members/change-role',{spaceId,userId:wkMember,role:'writer'},'owner');
+check(result.status===200,'owner restores writer');
+result=await wk('/api/spaces/members/remove',{spaceId,userId:wkMember},'owner');
+check(result.status===200,'owner removes native space membership');
+for(let attempt=0;attempt<2;attempt++)check([403,404].includes((await wk('/api/pages/info',{pageId:page.id})).status),'active project qualification does not restore a removed native role');
+result=await wk('/api/spaces/members/add',{spaceId,userIds:[wkMember],groupIds:[],role:'writer'},'owner');
+check(result.status===200,'native role restored explicitly');
+result=await wk('/api/spaces/members',{spaceId:shared,limit:100},'owner');
+const everyone=(result.data.data||result.data).items?.find(m=>m.type==='group' && m.isDefault);
+check(result.status===200 && everyone,'ordinary shared space retains Everyone');
+result=await wk('/api/spaces/members/add',{spaceId,userIds:[],groupIds:[everyone.id],role:'reader'},'owner');
+check(result.status===200,'native group grant added for eligibility intersection test');
+async function setMembers(members) {
+  const p=(await request(base+'/api/workspace/projects/'+projectId)).data;
+  const r=await post('/api/workspace/projects/'+projectId+'/update',{requestId:randomUUID(),revision:p.revision,name:p.name,summary:p.summary,members,links:p.links},owner.csrf);
+  check(r.status===200,'project membership change commits '+r.status+' '+JSON.stringify(r.data));
+}
+// A separate OAuth grant must obey live membership even with a valid read scope.
+const wkOrigin=config.origins.weknow,callback='http://127.0.0.1:49151/callback';
+result=await wk('/api/knowledge/oauth/register',{client_name:'Managed access fixture',redirect_uris:[callback],token_endpoint_auth_method:'none',scope:'knowledge:read'});
+check([200,201].includes(result.status),'register isolated knowledge OAuth client');
+const clientId=result.data.client_id,knowledgeVerifier=randomBytes(32).toString('base64url');
+const authQuery=new URLSearchParams({client_id:clientId,response_type:'code',redirect_uri:callback,resource:wkOrigin+'/mcp',scope:'knowledge:read',code_challenge:createHash('sha256').update(knowledgeVerifier).digest('base64url'),code_challenge_method:'S256'});
+result=await wk('/api/knowledge/oauth/authorize?'+authQuery);
+check(result.status===302,'knowledge OAuth authorization request');
+const authorizationId=new URL(result.headers.get('location')).searchParams.get('request');
+result=await wk('/api/knowledge/oauth/requests/'+authorizationId+'/resolve',{approve:true,scopes:['knowledge:read']});
+check(result.status===200,'synthetic member authorizes knowledge read');
+const authResult=result.data.data||result.data;
+result=await wk('/api/knowledge/oauth/token',{grant_type:'authorization_code',client_id:clientId,code:new URL(authResult.redirectUrl).searchParams.get('code'),redirect_uri:callback,resource:wkOrigin+'/mcp',code_verifier:knowledgeVerifier});
+check(result.status===200 && result.data.access_token,'knowledge token issued');
+const knowledgeToken=result.data.access_token;
+const kbRead=()=>request(wkOrigin+'/mcp',{jar:'oauth-client',body:{jsonrpc:'2.0',id:21,method:'tools/call',params:{name:'kb_document_get',arguments:{pageId:page.id}}},headers:{Authorization:'Bearer '+knowledgeToken,Accept:'application/json, text/event-stream'}});
+result=await kbRead();
+check(result.status===200 && result.data.result && !result.data.result.isError,'MCP reads allowed managed document '+result.status);
+result=await wk('/api/auth/collab-token',{});
+check(result.status===200,'managed member gets collaboration token');
+const collabToken=(result.data.data||result.data).token;
+const liveCollaboration=await managedCollaboration(wkOrigin,page.id,collabToken);
+check(true,'real managed document WebSocket authenticates');
+await setMembers([]);
+await liveCollaboration.revoked();
+check(true,'existing collaboration connection rejects revoked writes and closes');
+result=await kbRead();
+check(result.status===200 && (result.data.result?.isError || result.data.error) || [403,404].includes(result.status),'existing MCP OAuth grant cannot bypass member removal');
+check([403,404].includes((await wk('/api/pages/info',{pageId:page.id})).status),'revoked member denied direct native page');
+check([403,404].includes((await wk(filePath)).status),'revoked member denied previously downloaded file URL');
+check([403,404].includes((await wk('/api/pages/create',{spaceId,title:'Denied'})).status),'revoked member denied write despite native grant');
+result=await wk('/api/spaces',{limit:100});
+check(result.status===200 && !JSON.stringify(result.data).includes(spaceId),'revoked space omitted before list pagination');
+result=await wk('/api/search',{query:'Project design'});
+check(result.status===200 && !JSON.stringify(result.data).includes(page.id),'search results do not leak revoked page');
+check((await wk('/api/spaces/info',{spaceId:shared})).status===200,'legacy shared access survives project removal');
+await post('/api/organization/users/'+member.id,{role:'admin'},owner.csrf);
+check([403,404].includes((await wk('/api/pages/info',{pageId:page.id})).status),'organization administrator cannot bypass project scope');
+await post('/api/organization/users/'+member.id,{role:'member'},owner.csrf);
+await setMembers(projectInput.members);
+check((await wk('/api/pages/info',{pageId:page.id})).status===200,'rejoining project restores qualified access');
+result=await wk('/api/shares/create',{pageId:page.id},'owner');
+check([403,404].includes(result.status),'managed page cannot be published by native space administrator '+result.status+' '+JSON.stringify(result.data));
+for(const archived of [true,false]) {
+  const p=(await request(base+'/api/workspace/projects/'+projectId)).data;
+  result=await post('/api/workspace/projects/'+projectId+'/archive',{revision:p.revision,archived},owner.csrf);
+  check(result.status===200,'project archive state changes');
+  result=await wk('/api/pages/info',{pageId:page.id});
+  check(archived?[403,404].includes(result.status):result.status===200,'managed access follows current project archive state');
+}
+
 // HTTP service routes must not accept a browser request or an unsigned body.
 result = await request(base + "/api/suite/services/makit/directory", {
   body: { organizationId: owner.organizationId },
