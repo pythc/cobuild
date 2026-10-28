@@ -8,6 +8,11 @@ export function environment(root = '/state') {
   assertNativeRuntime(config);
   if (existsSync(root + '/runtime.json') && JSON.stringify(JSON.parse(readFileSync(root + '/runtime.json'))) !== JSON.stringify(contract))
     throw Error('Stored schema contract differs; an explicit migration is required');
+  if (existsSync(root + '/schema-state.json')) {
+    const state=JSON.parse(readFileSync(root+'/schema-state.json'));
+    if(state.format!==1 || state.status==='migrating' || !Array.isArray(state.compatibleSchemas) || !state.compatibleSchemas.includes(contract.schema))
+      throw Error('Database migration is incomplete or this application is incompatible');
+  }
   const stat = lstatSync(root + '/secrets.json');
   if (!stat.isFile() || stat.isSymbolicLink() || stat.mode & 0o077) throw Error('Unsafe deployment secrets file');
   const secrets = JSON.parse(readFileSync(root + '/secrets.json'));

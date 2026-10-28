@@ -134,9 +134,10 @@
       ],
       "acceptance": "验证备份恢复、兼容升级、迁移失败处理，不默认用旧数据库覆盖新写入",
       "evidence": [
-        "provenance/deployment-checks.json"
+        "provenance/deployment-checks.json",
+        "provenance/migration-checks.json"
       ],
-      "scopeNote": "Complete same-engine cold restore, schema-identical image upgrades, retained new writes, failed-candidate rollback and interrupted recovery verified. Unknown schemas rejected before shutdown. Forward schema migration execution and cross-schema compatibility remain open."
+      "scopeNote": "Same-engine cold restore, schema-identical rollout, constrained additive Makit migrations, partial-prefix restore/forward repair, immutable 0.4 binary rollback and real transaction/after-commit interruption recovery verified locally. No data snapshot rollback. Platform/WeKnow or destructive migrations, historical conversion, cross-host/engine and public HTTPS remain open."
     },
     {
       "id": "workflow-acceptance",

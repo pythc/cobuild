@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
   "name": "CoBuild",
-  "version": "0.4.0-dev.0",
+  "version": "0.5.0-dev.0",
   "distribution": "self-hosted",
-  "stage": "isolated-deployment-rehearsal",
+  "stage": "controlled-additive-migrations",
   "modules": [
     {"id":"platform","name":"CoBuild","tier":"core","source":"apps/platform","dependsOn":[],"owns":["identity","organization","application-access","workbench"]},
     {"id":"kick","name":"Kick","tier":"core","source":"apps/platform","dependsOn":["platform"],"owns":["project","project-membership","milestone"]},

@@ -21,6 +21,9 @@ import tarfile
 import tempfile
 import time
 import uuid
+from functools import lru_cache
+sys.path.insert(0,str(Path(__file__).resolve().parent))
+import migration_policy as policy
 
 ROOT = Path(__file__).resolve().parents[1]
 PG = 'postgres:17-alpine@sha256:b0f9560a2de083e2cc7382e75f808c7381a32852a7ec49117deedb300e552b24'
@@ -90,6 +93,15 @@ def image_info(ref):
     value = json.loads(docker('image', 'inspect', ref))[0]
     return { 'id': value['Id'], 'architecture': value['Architecture'], 'os': value['Os'] }
 
+@lru_cache(maxsize=64)
+def schema_manifest(image):
+    script=(ROOT/'deploy/runtime/schema-inspect.mjs').read_bytes()
+    return json.loads(docker('run','--rm','-i','--network','none','--entrypoint','node',image,'--input-type=module',input=script))
+
+def checked_policy(function,*args):
+    try:return function(*args)
+    except policy.PolicyError as error:raise Failure(str(error)) from error
+
 def available_subnet(exclude=()):
     ids=docker('network','ls','-q').decode().split()
     networks=json.loads(docker('network','inspect',*ids)) if ids else []
@@ -109,12 +121,22 @@ def validate_release(value):
         raise Failure('Unsupported database image; use an explicit database migration')
     actual = json.loads(docker('run','--rm','--network','none', '--entrypoint','node', value['images']['core']['id'], 'deploy/runtime/contract.mjs'))
     if value.get('contract') != actual: raise Failure('Release contract differs from the pinned image')
+    checked_policy(policy.validate_contract,value['contract'])
+    if value.get('migration'):
+        approved_runner=digest(ROOT/'deploy/runtime/migrate.mjs')
+        checked_policy(policy.validate_candidate,value['migration'],value['contract'],schema_manifest(value['images']['core']['id']),approved_runner)
     return value
 
-def seal(image, version, output):
+def seal(image, version, output, base_release=None, migration_plan=None):
     if Path(output).exists(): raise Failure('Release manifest already exists')
     value = {'format':1,'version':version,'images':{'core':image_info(image),'postgres':image_info(PG),'redis':image_info(REDIS),'gateway':image_info(GATEWAY)},
              'contract': json.loads(docker('run','--rm','--network','none','--entrypoint','node',image,'deploy/runtime/contract.mjs'))}
+    if (base_release is None)!=(migration_plan is None):raise Failure('Base release and migration plan are required together')
+    if base_release is not None:
+        validate_release(base_release)
+        value['migration']={'format':1,'kind':'makit-additive-v1','fromImage':base_release['images']['core']['id'],'fromContract':base_release['contract'],'plan':migration_plan}
+        value['migration']['planDigest']=policy.digest({'fromImage':value['migration']['fromImage'],'fromContract':base_release['contract'],'toContract':value['contract'],'plan':migration_plan})
+        checked_policy(policy.authorize_transition,base_release,value,schema_manifest(base_release['images']['core']['id']),schema_manifest(value['images']['core']['id']))
     validate_release(value)
     value['retainedImages']={}
     for role,info in value['images'].items():
@@ -174,7 +196,7 @@ class Deployment:
             try: yield
             finally: fcntl.flock(stream,fcntl.LOCK_UN)
     def check_owned(self):
-        for kind, names in [('container',[self.project+'-'+s+'-1' for s in ['core','postgres','redis','gateway']]),
+        for kind, names in [('container',[self.project+'-'+s+'-1' for s in ['core','postgres','redis','gateway']]+[self.project+'-migration']),
                             ('volume',[self.project+'-'+s for s in ['postgres','redis']]),('network',[self.project+'-net',self.project+'-ingress'])]:
             for name in names:
                 result = subprocess.run(['docker',kind,'inspect',name],stdout=subprocess.PIPE,stderr=subprocess.DEVNULL)
@@ -195,6 +217,7 @@ class Deployment:
     def status(self):
         return self.compose('ps','-a','--format','json').decode()
     def stop(self, require_clean=False):
+        self.stop_migration()
         self.compose('stop',timeout=180)
         for service in ['core','postgres','redis','gateway']:
             name=self.project+'-'+service+'-1'
@@ -203,16 +226,42 @@ class Deployment:
             state=json.loads(result.stdout)[0]['State']
             if state['Running'] or require_clean and (state.get('OOMKilled') or state['ExitCode'] not in [0,143]):
                 raise Failure('Service did not stop cleanly: '+service+'; inspect its private logs')
-    def preflight(self, release=None):
+    def schema_state(self):
+        path=self.path/'state/schema-state.json'
+        if not path.exists():return None
+        private(path)
+        value=read(path)
+        checked_policy(policy.validate_state,value)
+        return value
+    def schema_allowed(self, release):
+        state=self.schema_state()
+        if state:
+            if state['status']=='migrating' or release['contract']['schema'] not in state['compatibleSchemas']:
+                raise Failure('Database schema is not compatible with this application; recover or complete its migration')
+        elif not policy.same_schema(release['contract'],self.release['contract']):
+            raise Failure('Schema change requires an explicit migration plan')
+        elif (self.path/'state/runtime.json').exists() and not policy.same_schema(read(self.path/'state/runtime.json'),self.release['contract']):
+            raise Failure('Stored runtime contract differs from the active release')
+    def preflight(self, release=None, for_migration=False):
         release = validate_release(release or self.release)
         private(self.path/'state'); private(self.path/'state/secrets.json')
-        docker('run','--rm','--network','none','--user',str(os.getuid())+':'+str(os.getgid()),
-               '--mount','type=bind,src='+str(self.path/'state')+',dst=/state,readonly',
-               '--entrypoint','node',release['images']['core']['id'],'deploy/runtime/start.mjs','--check')
+        if not for_migration:self.schema_allowed(release)
+        # Static validation must not edit the live compatibility grant. It also
+        # works with the immutable 0.4 runtime, which checks exact contracts.
+        with tempfile.TemporaryDirectory(prefix='.cobuild-preflight-',dir=self.path.parent) as tmp:
+            tmp=Path(tmp);os.chmod(tmp,0o700)
+            for name in ['config.json','secrets.json']:shutil.copyfile(self.path/'state'/name,tmp/name);os.chmod(tmp/name,0o600)
+            write(tmp/'runtime.json',release['contract'])
+            docker('run','--rm','--network','none','--user',str(os.getuid())+':'+str(os.getgid()),
+                   '--mount','type=bind,src='+str(tmp)+',dst=/state,readonly',
+                   '--entrypoint','node',release['images']['core']['id'],'deploy/runtime/start.mjs','--check')
     def up(self):
         if (self.path/'pending.json').exists(): raise Failure('Interrupted upgrade: run recover before starting')
-        self.preflight(); self.configure(); self.start_wait()
-    def start_wait(self):
+        self.preflight(); self.configure(); self.activate_runtime(self.release); self.start_wait()
+    def activate_runtime(self,release):
+        self.schema_allowed(release)
+        write(self.path/'state/runtime.json',release['contract'])
+    def start_databases(self):
         self.compose('up','-d','--pull','never','--wait','--wait-timeout','90','postgres','redis',timeout=120)
         # Initialize only absent database/role, never change existing credentials.
         s=read(self.path/'state/secrets.json')
@@ -220,6 +269,9 @@ class Deployment:
         if not re.fullmatch(r'[a-f0-9]{64}',password): raise Failure('Invalid database secret')
         sql="SELECT 'CREATE ROLE weknow_owner LOGIN PASSWORD ''"+password+"''' WHERE NOT EXISTS(SELECT FROM pg_roles WHERE rolname='weknow_owner');\n\\gexec\nSELECT 'CREATE DATABASE weknow OWNER weknow_owner' WHERE NOT EXISTS(SELECT FROM pg_database WHERE datname='weknow');\n\\gexec\n"
         docker('exec','-i',self.project+'-postgres-1','psql','-v','ON_ERROR_STOP=1','-U','suite_admin','-d','makit',input=sql.encode())
+    def start_wait(self, release=None):
+        self.schema_allowed(release or self.release)
+        self.start_databases()
         self.compose('up','-d','--pull','never','--wait','--wait-timeout','210',timeout=240)
         import urllib.request
         cfg=read(self.path/'state/config.json')
@@ -234,7 +286,9 @@ class Deployment:
                 except OSError:pass
                 time.sleep(.25)
             else:raise Failure('Published entry is not healthy: '+app)
-    def down(self): self.compose('down', '--timeout','40',timeout=180)
+    def down(self):
+        self.stop_migration()
+        self.compose('down', '--timeout','40',timeout=180)
     def snapshot(self, output, resume=True):
         output = Path(output).absolute()
         if output.exists() or output.is_relative_to(self.path): raise Failure('Backup destination must be new and outside the deployment')
@@ -287,28 +341,109 @@ class Deployment:
         name=result.get('recoveryFile','')
         if not re.fullmatch(r'/state/platform/owner-recovery-[0-9]+\.private\.txt',name):raise Failure('Unexpected recovery receipt')
         return {'recoveryFile':str(self.path/name.lstrip('/')),'expiresAt':result['expiresAt']}
+    def stop_migration(self):
+        name=self.project+'-migration'
+        result=subprocess.run(['docker','container','inspect',name],stdout=subprocess.PIPE,stderr=subprocess.DEVNULL)
+        if result.returncode:return
+        value=json.loads(result.stdout)[0]
+        if (value['Config'].get('Labels') or {}).get('cobuild.deployment')!=self.instance['id']:raise Failure('Migration helper ownership differs')
+        docker('rm','-f',name)
+    def migration_history(self):
+        query="SELECT COALESCE(json_object_agg(name,sha256),'{}'::json) FROM makit_schema_migration;"
+        raw=docker('exec','-i',self.project+'-postgres-1','psql','-X','-A','-t','-v','ON_ERROR_STOP=1','-U','suite_admin','-d','makit',input=query.encode())
+        return json.loads(raw)
+    def finish_migration_state(self, old, new, evidence):
+        progress=checked_policy(policy.reconcile_history,evidence['baseLedger'],evidence['newLedger'],self.migration_history())
+        state={'format':1,'baseContract':old['contract'],'targetContract':new['contract'],
+            'targetImage':new['images']['core']['id'],'transition':new['migration'],**evidence,**progress}
+        state['status']='complete' if progress['complete'] else 'partial' if progress['applied'] else 'not_applied'
+        state['compatibleSchemas']=[old['contract']['schema']]+([new['contract']['schema']] if progress['complete'] else [])
+        state['actualSchema']=new['contract']['schema'] if progress['complete'] else None if progress['applied'] else old['contract']['schema']
+        write(self.path/'state/schema-state.json',state)
+        return state
+    def migration_for(self, release):
+        before=after=None
+        if release['images']['core']['id']!=self.release['images']['core']['id']:
+            before=schema_manifest(self.release['images']['core']['id']);after=schema_manifest(release['images']['core']['id'])
+            drivers=['apps/makit/scripts/selfhost/migrate.cjs','apps/makit/scripts/selfhost/set-runtime-password.cjs']
+            if any(before['files'].get(p)!=after['files'].get(p) for p in drivers):raise Failure('Migration drivers changed without a reviewed lifecycle update')
+        if policy.same_schema(release['contract'],self.release['contract']):
+            if before is not None:
+                if before['files']!=after['files']:raise Failure('Schema inventory or migration drivers changed without an explicit supported transition')
+            self.schema_allowed(release);return None
+        state=self.schema_state()
+        if state and state['status']!='migrating' and release['contract']['schema'] in state['compatibleSchemas']:
+            return None
+        if not release.get('migration'):raise Failure('Schema change requires an explicit additive migration plan')
+        if 'makit' not in read(self.path/'state/config.json')['modules']:raise Failure('Enable Makit and initialize its database before migrating its schema')
+        evidence=checked_policy(policy.authorize_transition,self.release,release,schema_manifest(self.release['images']['core']['id']),schema_manifest(release['images']['core']['id']))
+        if state:
+            if state['status']=='migrating':raise Failure('Migration state needs recovery')
+            if state['status']=='partial':
+                checked_policy(policy.validate_repair,state,evidence)
+            elif state['actualSchema']!=self.release['contract']['schema']:
+                raise Failure('First return to the application matching the materialized database schema')
+        return evidence
+    def apply_migration(self, old, new, evidence, pending):
+        self.start_databases()
+        # Check the entire old ledger and any previously committed prefix before
+        # executing another statement. Existing migration files are immutable.
+        checked_policy(policy.reconcile_history,evidence['baseLedger'],evidence['newLedger'],self.migration_history())
+        state={'format':1,'status':'migrating','baseContract':old['contract'],'targetContract':new['contract'],
+            'targetImage':new['images']['core']['id'],'transition':new['migration'],**evidence,
+            'applied':[],'complete':False,'actualSchema':None,'compatibleSchemas':[]}
+        write(self.path/'state/schema-state.json',state)
+        write(self.path/'state/schema-release.json',new)
+        pending['phase']='migrating';write(self.path/'pending.json',pending)
+        try:
+            docker('run','--rm','--name',self.project+'-migration','--label','cobuild.deployment='+self.instance['id'],
+                '--network',self.project+'-net','--user',str(os.getuid())+':'+str(os.getgid()),
+                '--cap-drop','ALL','--security-opt','no-new-privileges:true','--memory','512m','--pids-limit','128','--read-only',
+                '--mount','type=bind,src='+str(self.path/'state')+',dst=/state,readonly',
+                '--entrypoint','node',new['images']['core']['id'],'deploy/runtime/migrate.mjs',timeout=180)
+        finally:self.stop_migration()
+        state=self.finish_migration_state(old,new,evidence)
+        if state['status']!='complete':raise Failure('Candidate did not finish the declared migration history')
+        pending['phase']='migrated';write(self.path/'pending.json',pending)
     def upgrade(self, release):
         release = validate_release(release)
         if (self.path/'pending.json').exists(): raise Failure('Another upgrade needs recovery')
-        if release['contract'] != self.release['contract'] or any(release['images'][k] != self.release['images'][k] for k in ['postgres','redis']):
-            raise Failure('Schema or database image changed; automatic upgrade/rollback is not approved for this release')
-        self.preflight(release)
+        if any(release['images'].get(k) != self.release['images'].get(k) for k in ['postgres','redis','gateway']):raise Failure('Infrastructure image changes need a separate migration')
+        evidence=self.migration_for(release)
+        self.preflight(release,for_migration=evidence is not None)
         previous = self.release
         backups=self.path.parent/'upgrade-backups';backups.mkdir(exist_ok=True,mode=0o700);private(backups)
         backup=self.snapshot(backups/(self.instance['id']+'-'+str(time.time_ns())),resume=False)
-        write(self.path/'pending.json',{'previous':previous,'candidate':release,'phase':'prepared','backup':str(backup)})
+        pending={'previous':previous,'candidate':release,'phase':'prepared','backup':str(backup),'migrationEvidence':evidence}
+        write(self.path/'pending.json',pending)
         try:
-            self.stop(); self.configure(release); self.start_wait()
+            self.stop(); self.configure(release)
+            if evidence:self.apply_migration(previous,release,evidence,pending)
+            self.activate_runtime(release);self.start_wait(release)
             write(self.path/'previous.json',previous); write(self.path/'release.json',release)
             self.release=release; remove_record(self.path/'pending.json')
         except BaseException:
-            # Schema is identical; preserve all state, including candidate writes.
+            # Only validated additive migrations may retain new schema while
+            # returning to an older application. Never restore an old snapshot.
             self.recover(); raise
     def recover(self):
         pending = read(self.path/'pending.json')
+        # A pending controller may have died after starting the candidate.
+        # Quiesce owned consumers even if its artifacts or evidence now fail validation.
+        self.stop()
         old=validate_release(pending['previous']); new=validate_release(pending['candidate'])
-        if old['contract'] != new['contract']: raise Failure('Unsafe automatic rollback; stopped recovery requires explicit migration')
-        self.stop(); self.configure(old); self.start_wait()
+        evidence=pending.get('migrationEvidence')
+        if evidence:
+            expected=checked_policy(policy.authorize_transition,old,new,schema_manifest(old['images']['core']['id']),schema_manifest(new['images']['core']['id']))
+            if evidence!=expected:raise Failure('Recovery migration evidence differs')
+        elif not policy.same_schema(old['contract'],new['contract']):
+            state=self.schema_state()
+            if not state or state['status']=='migrating' or any(v['contract']['schema'] not in state['compatibleSchemas'] for v in [old,new]):raise Failure('No compatible application recovery path')
+        self.configure(old)
+        if evidence:
+            self.start_databases()
+            self.finish_migration_state(old,new,evidence)
+        self.activate_runtime(old);self.start_wait(old)
         write(self.path/'release.json',old); self.release=old; remove_record(self.path/'pending.json')
 
 def copy_private_tree(source, target):
@@ -406,18 +541,31 @@ def main():
     os.umask(0o077)
     parser=argparse.ArgumentParser(description=__doc__)
     sub=parser.add_subparsers(dest='action',required=True)
-    p=sub.add_parser('seal');p.add_argument('--image',required=True);p.add_argument('--version',required=True);p.add_argument('--output',required=True)
+    p=sub.add_parser('seal');p.add_argument('--image',required=True);p.add_argument('--version',required=True);p.add_argument('--output',required=True);p.add_argument('--base-release');p.add_argument('--migration-plan')
+    p=sub.add_parser('migration-sql');p.add_argument('--plan',required=True);p.add_argument('--output',required=True)
     p=sub.add_parser('init');p.add_argument('directory');p.add_argument('--release',required=True);p.add_argument('--config');p.add_argument('--ports',default='8080,8081,8082');p.add_argument('--subnet')
     p=sub.add_parser('restore');p.add_argument('directory');p.add_argument('--backup',required=True)
     p=sub.add_parser('verify-backup');p.add_argument('directory')
-    for action in ['up','stop','down','status','backup','upgrade','rollback','recover','recover-owner']:
+    for action in ['up','stop','down','status','backup','upgrade','rollback','recover','recover-owner','schema-status']:
         p=sub.add_parser(action);p.add_argument('directory')
         if action=='backup':p.add_argument('--output',required=True)
         if action=='upgrade':p.add_argument('--release',required=True)
     args=parser.parse_args()
+    if args.action=='migration-sql':
+        entries=checked_policy(policy.generated_files,read(args.plan));directory=Path(args.output)
+        if directory.is_symlink():raise Failure('Migration directory must not be a link')
+        for name,sql in entries.items():
+            path=directory/name
+            if path.is_symlink() or path.exists() and path.read_text()!=sql:raise Failure('Migration source already exists and differs')
+        directory.mkdir(parents=True,exist_ok=True,mode=0o700)
+        for name,sql in entries.items():
+            path=directory/name
+            if not path.exists():
+                with open(path,'x',opener=lambda p,f:os.open(p,f,0o600)) as stream:stream.write(sql)
+        print('Generated '+str(len(entries))+' append-only SQL migration files');return
     if args.action=='verify-backup':verify_snapshot(args.directory);print('Backup integrity verified');return
     daemon()
-    if args.action=='seal':seal(args.image,args.version,args.output);print('Release manifest sealed');return
+    if args.action=='seal':seal(args.image,args.version,args.output,read(args.base_release) if args.base_release else None,read(args.migration_plan) if args.migration_plan else None);print('Release manifest sealed');return
     if args.action=='init':
         values=list(map(int,args.ports.split(',')))
         if len(values)!=3:raise Failure('Provide platform, Makit and WeKnow ports')
@@ -436,6 +584,7 @@ def main():
         elif args.action=='rollback':dep.upgrade(read(dep.path/'previous.json'));print('Compatible application rollback healthy; data retained')
         elif args.action=='status':print(dep.status())
         elif args.action=='recover-owner':print(json.dumps(dep.recover_owner()))
+        elif args.action=='schema-status':print(json.dumps(dep.schema_state() or {'status':'base','actualSchema':dep.release['contract']['schema']},indent=2))
         else:getattr(dep,args.action)();print(args.action+' completed')
 
 if __name__=='__main__':

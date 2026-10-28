@@ -1,0 +1,24 @@
+{
+  "format": 1,
+  "steps": [
+    {
+      "file": "0091_upgrade_example.sql",
+      "changes": [
+        {
+          "kind": "create_table",
+          "table": "cobuild_upgrade_example",
+          "columns": [
+            { "name": "id", "type": "text", "primary": true },
+            { "name": "note", "type": "text" }
+          ]
+        },
+        {
+          "kind": "create_index",
+          "name": "cobuild_upgrade_example_note_idx",
+          "table": "cobuild_upgrade_example",
+          "columns": ["note"]
+        }
+      ]
+    }
+  ]
+}

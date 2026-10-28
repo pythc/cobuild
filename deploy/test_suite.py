@@ -42,17 +42,17 @@ class SnapshotTests(unittest.TestCase):
             self.assertFalse((root/'copy').exists())
     def test_compatibility_gate_precedes_stop_and_backup(self):
         with tempfile.TemporaryDirectory() as tmp:
-            dep=object.__new__(suite.Deployment);dep.path=Path(tmp);dep.release={'contract':{'schema':'old'},'images':{}}
-            candidate={'contract':{'schema':'new'},'images':{}}
+            dep=object.__new__(suite.Deployment);dep.path=Path(tmp);dep.release={'contract':{'schema':'old'},'images':{'core':{'id':'same'}}}
+            candidate={'contract':{'schema':'new'},'images':{'core':{'id':'same'}}}
             with patch.object(suite,'validate_release',return_value=candidate),patch.object(dep,'stop') as stop,patch.object(dep,'snapshot') as backup:
                 with self.assertRaises(suite.Failure):dep.upgrade(candidate)
                 stop.assert_not_called();backup.assert_not_called()
     def test_upgrade_failure_rolls_back_image_without_restoring_database(self):
         with tempfile.TemporaryDirectory() as tmp:
             dep=object.__new__(suite.Deployment);dep.path=Path(tmp);dep.instance={'id':'a'*16}
-            old={'contract':{'schema':'same'},'images':{'postgres':{},'redis':{}},'version':'v1'}
+            old={'contract':{'schema':'same'},'images':{'core':{'id':'same'},'postgres':{},'redis':{}},'version':'v1'}
             new={**old,'version':'v2'};dep.release=old
-            with patch.object(suite,'validate_release',side_effect=lambda v:v),patch.object(dep,'preflight'),patch.object(dep,'snapshot',return_value=Path(tmp)/'backup'),patch.object(dep,'stop'),patch.object(dep,'configure') as configure,patch.object(dep,'start_wait',side_effect=[suite.Failure('unhealthy'),None]):
+            with patch.object(suite,'validate_release',side_effect=lambda v:v),patch.object(dep,'preflight'),patch.object(dep,'activate_runtime'),patch.object(dep,'snapshot',return_value=Path(tmp)/'backup'),patch.object(dep,'stop'),patch.object(dep,'configure') as configure,patch.object(dep,'start_wait',side_effect=[suite.Failure('unhealthy'),None]):
                 with self.assertRaises(suite.Failure):dep.upgrade(new)
                 self.assertEqual(dep.release,old)
                 self.assertFalse((Path(tmp)/'pending.json').exists())
@@ -75,5 +75,26 @@ class SnapshotTests(unittest.TestCase):
                 with self.assertRaises(suite.Failure):suite.seal('working','v1',Path(tmp)/'release.json')
                 self.assertFalse(any(c.args and c.args[0]=='tag' for c in docker.call_args_list))
             self.assertFalse((Path(tmp)/'release.json').exists())
+
+    def test_changed_migration_driver_is_rejected_even_for_compatible_schema(self):
+        dep=object.__new__(suite.Deployment)
+        dep.release={'contract':{'schema':'same'},'images':{'core':{'id':'old'}}}
+        candidate={'contract':{'schema':'same'},'images':{'core':{'id':'new'}}}
+        path='apps/makit/scripts/selfhost/migrate.cjs'
+        with patch.object(suite,'schema_manifest',side_effect=[{'files':{path:'old'}},{'files':{path:'new'}}]),patch.object(dep,'schema_state') as state:
+            with self.assertRaises(suite.Failure):dep.migration_for(candidate)
+            state.assert_not_called()
+
+    def test_pending_recovery_stops_consumers_before_rejecting_unavailable_artifacts(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            dep=object.__new__(suite.Deployment);dep.path=Path(tmp)
+            suite.write(dep.path/'pending.json',{'previous':{},'candidate':{}})
+            order=[]
+            def reject(value):
+                order.append('validate');raise suite.Failure('Artifact unavailable')
+            with patch.object(dep,'stop',side_effect=lambda:order.append('stop')),patch.object(suite,'validate_release',side_effect=reject):
+                with self.assertRaises(suite.Failure):dep.recover()
+            self.assertEqual(order,['stop','validate'])
+            self.assertTrue((dep.path/'pending.json').exists())
 
 if __name__=='__main__':unittest.main()

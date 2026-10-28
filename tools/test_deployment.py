@@ -9,6 +9,7 @@ import subprocess
 import sys
 import tempfile
 import time
+import traceback
 import uuid
 
 ROOT=Path(__file__).resolve().parents[1]
@@ -56,10 +57,15 @@ def main():
              'COBUILD_FLOW_RECEIPT':str(directory/'flow.json'),'COBUILD_ATTACHMENT_RECEIPT':str(directory/'attachment.json')}
         if readonly:env['COBUILD_PERSISTENCE_ONLY']='true'
         run(name,['node',script,*args],env)
-    def child_image(name,tail):
-        tag=owner+':'+name;file=directory/('Dockerfile.'+name)
-        file.write_text('FROM '+baseline_tag+'\nLABEL cobuild.test-owner="'+owner+'"\n'+tail+'\n')
-        result=captured(['docker','build','--network','none','-f',str(file),'-t',tag,str(directory)],cwd=ROOT,env=base,timeout=180)
+    def child_image(name,tail,extra_files=None,from_image=None):
+        tag=owner+':'+name;context=directory/'fixture-images'/name;context.mkdir(parents=True,mode=0o700)
+        file=context/'Dockerfile'
+        file.write_text('FROM '+(from_image or baseline_tag)+'\nLABEL cobuild.test-owner="'+owner+'"\n'+tail+'\n')
+        for relative,content in (extra_files or {}).items():
+            path=Path(relative)
+            if path.is_absolute() or '..' in path.parts:raise ValueError('Invalid fixture path')
+            path=context/path;path.parent.mkdir(parents=True,exist_ok=True,mode=0o700);path.write_bytes(content)
+        result=captured(['docker','build','--network','none','-f',str(file),'-t',tag,str(context)],cwd=ROOT,env=base,timeout=180)
         log=local/('deployment-fixture-'+name+'.private.log');log.write_text(result.stdout+result.stderr);log.chmod(0o600)
         if result.returncode:raise RuntimeError('Fixture image build failed')
         images.append(tag);return tag
@@ -163,12 +169,20 @@ def main():
             restored.stop();suite.write(restored.path/'state/config.json',original);restored.up()
         preserve('reenabled-modules-data',restored)
         check(True,'module re-enable preserves shared identity, files and new document')
+        if '--with-migrations' in sys.argv:
+            from deployment_migration_checks import run_checks
+            restored=run_checks(suite,ROOT,directory,restored,deployments,child_image,retained,check,preserve,base)
         recovery=restored.recover_owner()
         recovery_file=Path(recovery['recoveryFile'])
         check(recovery_file.is_file() and recovery_file.stat().st_mode & 0o077==0,'owner recovery writes only a private local file')
         report['passed']=True
     except BaseException as error:
         report['passed']=False;report['error']=type(error).__name__+': '+str(error)
+        failure=local/'deployment-failure-traceback.private.log'
+        failure.write_text(traceback.format_exc());failure.chmod(0o600)
+        command_error=local/'deployment-command-error.private.log'
+        if command_error.is_file():
+            saved=local/'deployment-failure-command.private.log';shutil.copyfile(command_error,saved);saved.chmod(0o600)
         for i,dep in enumerate(deployments):
             for service in ['core','gateway']:
                 try:
@@ -180,7 +194,7 @@ def main():
         cleaned=[]
         known={d.path for d in deployments}
         for path in directory.glob('*/instance.json'):
-            if path.parent.name not in ['original','restored']:continue
+            if path.parent.name not in ['original','restored','migration-restored']:continue
             if path.parent not in known:
                 try:deployments.append(suite.Deployment(path.parent))
                 except Exception:pass

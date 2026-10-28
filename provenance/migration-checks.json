@@ -1,0 +1,347 @@
+{
+  "schemaVersion": 1,
+  "version": "0.5.0-dev.0",
+  "date": "2026-10-28",
+  "baseRevision": "181383ee2f368c6d99cbc2cdb812925b9a95d867",
+  "scope": "Local Linux arm64 additive Makit schema migration, partial-prefix restore and forward repair, exact legacy binary rollback and real control-process interruption recovery; not arbitrary migrations or public release acceptance",
+  "productionModified": false,
+  "realExternalMessages": false,
+  "browserUIAcceptance": false,
+  "environment": {
+    "dockerEngine": "29.4.3",
+    "compose": "5.1.3",
+    "containerNode": "24.21.0",
+    "hostTestNode": "24.15.0",
+    "hostPython": "3.9.6",
+    "architecture": "arm64",
+    "os": "Docker Desktop Linux containers on macOS"
+  },
+  "regressions": {
+    "suite": 54,
+    "makit": 30,
+    "makitMigrationScripts": 8,
+    "weknow": 39,
+    "deploymentAndMigration": 22,
+    "totalPassed": 153,
+    "failed": 0
+  },
+  "integration": {
+    "stages": [
+      {
+        "name": "core-e2e",
+        "exitCode": 0,
+        "assertions": 133
+      },
+      {
+        "name": "attachment-seed",
+        "exitCode": 0,
+        "assertions": 7
+      },
+      {
+        "name": "restart",
+        "exitCode": 0,
+        "assertions": 11
+      },
+      {
+        "name": "restart-session-files",
+        "exitCode": 0,
+        "assertions": 3
+      },
+      {
+        "name": "restored-core",
+        "exitCode": 0,
+        "assertions": 11
+      },
+      {
+        "name": "restored-session-files",
+        "exitCode": 0,
+        "assertions": 3
+      },
+      {
+        "name": "upgrade-new-write",
+        "exitCode": 0,
+        "assertions": 5
+      },
+      {
+        "name": "rollback-retains-writes",
+        "exitCode": 0,
+        "assertions": 4
+      },
+      {
+        "name": "failed-upgrade-retains-data",
+        "exitCode": 0,
+        "assertions": 4
+      },
+      {
+        "name": "interrupted-upgrade-recovery",
+        "exitCode": 0,
+        "assertions": 4
+      },
+      {
+        "name": "reenabled-modules-data",
+        "exitCode": 0,
+        "assertions": 4
+      },
+      {
+        "name": "migration-new-write",
+        "exitCode": 0,
+        "assertions": 4
+      },
+      {
+        "name": "migration-legacy-rollback",
+        "exitCode": 0,
+        "assertions": 4
+      },
+      {
+        "name": "migration-partial-old-app",
+        "exitCode": 0,
+        "assertions": 4
+      },
+      {
+        "name": "migration-partial-restored",
+        "exitCode": 0,
+        "assertions": 4
+      },
+      {
+        "name": "migration-forward-repair",
+        "exitCode": 0,
+        "assertions": 4
+      },
+      {
+        "name": "migration-crash-after-commit-recovered",
+        "exitCode": 0,
+        "assertions": 4
+      },
+      {
+        "name": "migration-crash-inside-transaction-recovered",
+        "exitCode": 0,
+        "assertions": 4
+      }
+    ],
+    "lifecycleChecks": [
+      "fresh Linux core starts with generated secrets",
+      "complete backup manifest and checksums verify",
+      "backup returns the original service to healthy running state",
+      "reject tampered snapshot before creating restore target",
+      "reject missing snapshot before creating restore target",
+      "reject symlink snapshot before creating restore target",
+      "restore cannot overwrite existing deployment",
+      "restore creates a stopped isolated deployment",
+      "Redis state restored",
+      "sealed release retains its immutable image after the working tag is removed",
+      "compatible image upgrade succeeds",
+      "running container uses the new immutable image",
+      "rollback selects the previous immutable image",
+      "failed upgrade automatically restores old application image",
+      "failed candidate writes are retained rather than overwritten by old snapshot",
+      "unknown migration rejected before stopping current service",
+      "stored runtime contract also rejects an incompatible direct start",
+      "interrupted upgrade has explicit recover path",
+      "platform/Kick-only module selection starts",
+      "makit disabled port is not published",
+      "weknow disabled port is not published",
+      "module re-enable preserves shared identity, files and new document",
+      "real generated table/column/index migration completed",
+      "legacy rollback uses the exact previously verified immutable 0.4 image",
+      "immutable 0.4 application runs after the additive migration",
+      "application rollback retains new table data",
+      "actual database schema and active binary compatibility are recorded separately",
+      "divergent schema branch rejected before stopping the application",
+      "a committed prefix is reconciled after an actual SQL failure",
+      "SQL failure restores the compatible previous application",
+      "committed first migration remains",
+      "failed file rolls back its earlier DDL in the same transaction",
+      "backup restore preserves partial schema, compatibility and committed data",
+      "repair cannot rewrite an already-committed migration prefix",
+      "a new retained candidate repairs only the unapplied suffix",
+      "repair does not rerun the committed prefix",
+      "repair retains the data written before recovery",
+      "killed after-commit operation retains its durable journal",
+      "recovery reconciles after-commit against real PostgreSQL history",
+      "transactional DDL survives only a committed migration",
+      "killed before-history operation retains its durable journal",
+      "uncertain history leaves business consumers stopped",
+      "recovery reconciles before-history against real PostgreSQL history",
+      "transactional DDL survives only a committed migration",
+      "all migration failures and interruptions preserve existing business data",
+      "owner recovery writes only a private local file"
+    ],
+    "httpAndPersistenceAssertions": 217,
+    "lifecycleAssertions": 46,
+    "totalAssertions": 263,
+    "passed": true
+  },
+  "artifact": {
+    "immutableImageId": "sha256:c18d4dfbec3b7249fe928e8e599911fe33e35532a2c3bab98b32c9f75c5d685f",
+    "sizeBytesReportedByDocker": 438062672,
+    "legacyRollbackImageId": "sha256:e3087db4342167b33a68c8956c9cfcb8b70872667445dbf1b27b729e3e20df07",
+    "retainedLocalImage": true,
+    "published": false
+  },
+  "cleanup": {
+    "ownedTestContainersNetworksVolumesAndFixtureImagesRemoved": true,
+    "otherRunningContainersPreserved": true,
+    "hostPreviewStarted": false
+  },
+  "limitations": [
+    "Only constrained additive Makit table/nullable-column/ordinary-index operations",
+    "No Platform/WeKnow schema migration, arbitrary SQL, destructive operation, data backfill or down migration",
+    "No cross-host/engine or architecture conversion acceptance",
+    "No public HTTPS, x86_64, historical identity/data migration, external delivery or public release acceptance",
+    "Schema compatibility still requires application semantic review"
+  ],
+  "earlierFailedAttempts": [
+    "Fixture SQL unreadable by the non-root image user; corrected explicit COPY mode",
+    "Legacy-derived fixture missing the reviewed migration runner; corrected fixture-only COPY"
+  ],
+  "evidence": [
+    {
+      "localLog": ".local/migration-verify.log",
+      "sha256": "23bca1e202dba1a5fbedcbb0d70664ba1a7917260b69ce2de84706214c5bce89"
+    },
+    {
+      "localLog": ".local/migration-unit.log",
+      "sha256": "59f87ba0f5e71a648e205f8252b220c9d7700584a9de48bc291cb0dc04805142"
+    },
+    {
+      "localLog": ".local/migration-makit-tests.log",
+      "sha256": "6e169ff8b77061d880e7933e57371af4e6e93c0a920bef3daededb2441e98517"
+    },
+    {
+      "localLog": ".local/migration-sql-tests.log",
+      "sha256": "26e6d9cfb376d216e76d46ec9734dcf7f770498314e8f94aec1b0130f84058e5"
+    },
+    {
+      "localLog": ".local/migration-weknow-tests.log",
+      "sha256": "56debb453347fc548c2be998b7850d26b8b0725098c21dad95e4c0eff3a3552f"
+    },
+    {
+      "localLog": ".local/migration-build.log",
+      "sha256": "415159c5c1d724944e8b6c48168d46f9bb137b6cdef568ad30e9582b34d7a134"
+    },
+    {
+      "localLog": ".local/migration-final-build.log",
+      "sha256": "aa8c7e74c516ede8101d8d85ed7e73cacd6bd291d98cc828f4a9dde3374a84d0"
+    },
+    {
+      "localLog": ".local/migration-e2e.log",
+      "sha256": "ce025937d3f3219a3c03a20b3bf7dabb4739b02c76749f06e47056aa9b0493c5"
+    },
+    {
+      "localLog": ".local/migration-e2e-attempt-2.log",
+      "sha256": "20a628bf7f3263dd2b0784a17893d963bb9716150c969206f95ec382ee61a66e"
+    },
+    {
+      "localLog": ".local/migration-release.log",
+      "sha256": "fe518da06398f7119d172bdc3b8ecbcc4e7a8b0866d4a482dedb503de75ef052"
+    },
+    {
+      "localLog": ".local/migration-interrupt-crash-after-commit.private.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "localLog": ".local/migration-interrupt-crash-inside-transaction.private.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "localLog": ".local/deployment-core-e2e.private.log",
+      "sha256": "589ba6caf2eedce3489f91b3d9cc5c4528aec5a2227963a897b9bbf817b7f711"
+    },
+    {
+      "localLog": ".local/deployment-attachment-seed.private.log",
+      "sha256": "26afa813a807f6f52c51c66bf2df525075e9e59e8942c485bf9543aadf99bff0"
+    },
+    {
+      "localLog": ".local/deployment-restart.private.log",
+      "sha256": "e413ae7cf5316336648e6e57746739ffd6cae0ecebae53d39a1094c85f9e62a9"
+    },
+    {
+      "localLog": ".local/deployment-restart-session-files.private.log",
+      "sha256": "6d4932901cc715926dc2ceb45f7aaf00bc3873389cafd210969397fa47a10da4"
+    },
+    {
+      "localLog": ".local/deployment-restored-core.private.log",
+      "sha256": "e413ae7cf5316336648e6e57746739ffd6cae0ecebae53d39a1094c85f9e62a9"
+    },
+    {
+      "localLog": ".local/deployment-restored-session-files.private.log",
+      "sha256": "6d4932901cc715926dc2ceb45f7aaf00bc3873389cafd210969397fa47a10da4"
+    },
+    {
+      "localLog": ".local/deployment-upgrade-new-write.private.log",
+      "sha256": "63944d431858012c71ec9194885ee19f7a270bb7f79b786feff77c729fb3be69"
+    },
+    {
+      "localLog": ".local/deployment-rollback-retains-writes.private.log",
+      "sha256": "f1869514f485243dcbc25a614a0eddafc1d54160423ca7c06063032872c17ce2"
+    },
+    {
+      "localLog": ".local/deployment-failed-upgrade-retains-data.private.log",
+      "sha256": "f1869514f485243dcbc25a614a0eddafc1d54160423ca7c06063032872c17ce2"
+    },
+    {
+      "localLog": ".local/deployment-interrupted-upgrade-recovery.private.log",
+      "sha256": "f1869514f485243dcbc25a614a0eddafc1d54160423ca7c06063032872c17ce2"
+    },
+    {
+      "localLog": ".local/deployment-reenabled-modules-data.private.log",
+      "sha256": "f1869514f485243dcbc25a614a0eddafc1d54160423ca7c06063032872c17ce2"
+    },
+    {
+      "localLog": ".local/deployment-migration-new-write.private.log",
+      "sha256": "f1869514f485243dcbc25a614a0eddafc1d54160423ca7c06063032872c17ce2"
+    },
+    {
+      "localLog": ".local/deployment-migration-legacy-rollback.private.log",
+      "sha256": "f1869514f485243dcbc25a614a0eddafc1d54160423ca7c06063032872c17ce2"
+    },
+    {
+      "localLog": ".local/deployment-migration-partial-old-app.private.log",
+      "sha256": "f1869514f485243dcbc25a614a0eddafc1d54160423ca7c06063032872c17ce2"
+    },
+    {
+      "localLog": ".local/deployment-migration-partial-restored.private.log",
+      "sha256": "f1869514f485243dcbc25a614a0eddafc1d54160423ca7c06063032872c17ce2"
+    },
+    {
+      "localLog": ".local/deployment-migration-forward-repair.private.log",
+      "sha256": "f1869514f485243dcbc25a614a0eddafc1d54160423ca7c06063032872c17ce2"
+    },
+    {
+      "localLog": ".local/deployment-migration-crash-after-commit-recovered.private.log",
+      "sha256": "f1869514f485243dcbc25a614a0eddafc1d54160423ca7c06063032872c17ce2"
+    },
+    {
+      "localLog": ".local/deployment-migration-crash-inside-transaction-recovered.private.log",
+      "sha256": "f1869514f485243dcbc25a614a0eddafc1d54160423ca7c06063032872c17ce2"
+    }
+  ],
+  "implementationSha256": {
+    "README.md": "86beea00ca079c05f4c87fec2098b04217c774d88792eac1b5b559a10dadc93f",
+    "deploy/README.md": "c5dd0980f485b329b2e72e8b6b99de872fe664eabd1668e80decb184ad310ba8",
+    "deploy/examples/makit-additive.plan.json": "4e9201a1b4a98a7b2530d5abadba7942a58bc52bef200b4741678ae966a54120",
+    "deploy/migration_policy.py": "8e04f164fa27bdf80f18ca01e24552db37fc47ad501e6653695bed30aa9281e4",
+    "deploy/runtime/environment.mjs": "3bc1f43101fb312d259d22f5dbc8a557b3911f23facabd8c0aea9ae157aa54e5",
+    "deploy/runtime/migrate.mjs": "ea8c72b8c001b655eadc55786f56373721aa45f238e9cde058979a22cbc9b4f7",
+    "deploy/runtime/schema-inspect.mjs": "240d5effb010a8a69d43e4e1762df241af4f9b96340bfb89f56d27c0ca3889f7",
+    "deploy/suite.py": "e472185d99043ba948f47932576881b4c7bb602509093a81efb5df60580f2948",
+    "deploy/test_migration_policy.py": "15805897d3bea3b5adb81c55c9af89ab2fe893b53793daa8b40e90ea33b554ce",
+    "deploy/test_suite.py": "cf232f21ef9d952feaeae2e5534d598765dcdd6f92a58f524d3d0a4a7cd59260",
+    "docs/LOCAL-RUNTIME.md": "0d85b32d49c9e344d4966a1b4a91a63369d2d1ed74a81376ddccec096a01ba79",
+    "docs/REVIEW.md": "39cf5640cda9f8b2a7fafa2594bc2edd9f64cb5e91e801f1c74996f2fd739624",
+    "docs/ROADMAP.md": "35c629ab89df1c0b51accfdfaccf6142894bb835ca0aef31192a02d6063aa563",
+    "docs/VERIFICATION.md": "56c117c8b04945fae2f2057637543470ce54ab91b5e6ae3809a452a9614fa5cd",
+    "package.json": "a633109ab9823d23285c71f63d3d7c0b65f18ca176058da7edbd2ebe1b6d9575",
+    "release-blockers.json": "4ae6dad473d4db01400f0edb923cf11c6155aeca4ac2b65441a3c74f1656675e",
+    "suite.json": "b0377e49ce340f9f19c61e4606d8e98317b40e2e01f30b3ccaa9780435371891",
+    "tools/deployment_migration_checks.py": "f3122931099f1326e1fa99d536b0a53164691f38a060d848e9b0cd0765003444",
+    "tools/migration_interrupt_worker.py": "2af4e075f237887ded27425370ea890c434495c8535d429f2ffa42a5aa72936f",
+    "tools/test_deployment.py": "d3d51f93eeb4c9abe5d939696a50635506d5a4548c3de5c1a69605f617cc9086"
+  },
+  "publicReleaseGate": {
+    "ready": false,
+    "expectedExitCode": 2,
+    "actualExitCode": 2,
+    "productionDeploymentPerformed": false
+  }
+}
