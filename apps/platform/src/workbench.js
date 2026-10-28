@@ -109,7 +109,7 @@ function renderUpdate({notice}) {
 }
 function bindChrome() {
   if(runtime.listening)return;runtime.listening=true;
-  const menu=$('cb-user-actions');for(const id of ['ws-role-chip','ws-admin-settings','ws-logout'])if($(id))menu.append($(id));
+  const menu=$('cb-user-actions');for(const id of ['ws-role-chip','ws-account-settings','ws-admin-settings','ws-logout'])if($(id))menu.append($(id));
   document.addEventListener('110lab:identity',event=>identityChanged(event.detail));
   document.addEventListener('click',async event=>{
     if(runtime.assetBase||!embedded||event.defaultPrevented||event.button!==0||event.metaKey||event.ctrlKey||event.shiftKey||event.altKey)return;

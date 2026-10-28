@@ -64,3 +64,61 @@ export async function provisionSuiteMember(sql: Sql, profile: SuiteProfile) {
     };
   });
 }
+
+/** Complete organization snapshot; central activation never rewrites app roles. */
+export async function syncSuiteDirectory(sql: Sql) {
+  const { serviceRequest } = await import("./suite-channel");
+  const issuer = process.env.COBUILD_IDENTITY_ORIGIN!,
+    organizationId = process.env.LAB_IDENTITY_TENANT_KEY!;
+  const snapshot = await serviceRequest(
+    issuer,
+    "/api/suite/services/makit/directory",
+    { organizationId },
+    process.env.COBUILD_SERVICE_KEY_FILE!,
+  );
+  if (
+    snapshot.organizationId !== organizationId ||
+    !Array.isArray(snapshot.members) ||
+    !snapshot.members.length ||
+    snapshot.members.length > 10000 ||
+    new Set(snapshot.members.map((m: any) => m.id)).size !==
+      snapshot.members.length ||
+    snapshot.members.some(
+      (m: any) =>
+        !/^[-a-f0-9]{36}$/.test(m.id) ||
+        m.subject !== organizationId + ":" + m.id ||
+        typeof m.active !== "boolean" ||
+        !m.name,
+    )
+  )
+    throw new UnauthorizedException("组织目录无效");
+  await sql.begin(async (tx) => {
+    await tx`SELECT pg_advisory_xact_lock(hashtextextended('cobuild-native-identity',0))`;
+    const [binding] = await tx`SELECT * FROM makit_suite_organization WHERE id`;
+    if (
+      !binding ||
+      binding.issuer !== issuer ||
+      binding.organization_id !== organizationId
+    )
+      throw new UnauthorizedException("请先由所有者初始化 Makit");
+    for (const m of snapshot.members) {
+      const changed =
+        await tx`INSERT INTO makit_directory(employee_id,open_id,union_id,name,avatar_url,department_ids,active)
+        VALUES(${m.id},${m.id},${m.id},${m.name},'',${tx.json([])},${m.active})
+        ON CONFLICT(employee_id) DO UPDATE SET name=EXCLUDED.name,active=EXCLUDED.active,updated_at=now()
+        WHERE makit_directory.union_id=EXCLUDED.union_id AND makit_directory.open_id=EXCLUDED.open_id RETURNING employee_id`;
+      if (!changed.length) throw new UnauthorizedException("组织身份冲突");
+      const [user] =
+        await tx`SELECT * FROM makit_user WHERE employee_id=${m.id}`;
+      if (user && user.subject !== m.subject)
+        throw new UnauthorizedException("组织身份冲突");
+      if (!user && m.active) {
+        const [{ id }] = await tx`SELECT nextval('makit_user_id_seq')::text id`;
+        await tx`INSERT INTO makit_user(id,subject,employee_id) VALUES(${id},${m.subject},${m.id})`;
+        await tx`INSERT INTO makit_user_role(user_id,role_id,source) VALUES(${id},'editor','native')`;
+      }
+    }
+    await tx`UPDATE makit_directory SET active=false WHERE NOT (employee_id = ANY(${snapshot.members.map((m: any) => m.id)}::text[]))`;
+  });
+  return snapshot;
+}

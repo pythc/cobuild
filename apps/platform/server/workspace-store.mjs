@@ -1,3 +1,4 @@
+import {suiteConfig} from '../../../packages/config/runtime.mjs';
 import {projectKnowledgeStore} from './project-knowledge-store.mjs';
 // Workspace project store for the 110lab portal.
 //
@@ -143,7 +144,7 @@ function isSafeHttpsUrl(v) {
   } catch {
     return false;
   }
-  if (u.protocol !== 'https:') return false;
+  if (u.protocol !== 'https:' && !(suiteConfig&&Object.values(suiteConfig.origins).includes(u.origin))) return false;
   if (u.username || u.password) return false;
   if (!u.hostname || u.hostname.length > 253) return false;
   return true;
@@ -161,7 +162,7 @@ const linksSchema = z
     docs: safeUrlSchema,
     knowledgeSpace: safeUrlSchema.refine(value=>{
       if(!value)return true;
-      const url=new URL(value);return url.hostname==='knowledge.110-lab.cn'&&url.pathname.startsWith('/s/');
+      const url=new URL(value);return (suiteConfig?url.origin===suiteConfig.origins.weknow:url.hostname==='knowledge.110-lab.cn')&&url.pathname.startsWith('/s/');
     },{message:'invalid_knowledge_space'}).optional(),
     demo: safeUrlSchema,
   })

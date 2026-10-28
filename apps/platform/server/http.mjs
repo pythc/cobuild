@@ -1,3 +1,4 @@
+import {suiteProjectClients} from "./suite-project-clients.mjs";
 import {suiteConfig,suiteApplications,moduleEnabled,moduleForPath,businessModule,portalHost,assertNativeRuntime} from '../../../packages/config/runtime.mjs';
 import {createSuiteIdentity} from './suite-identity.mjs';
 import {createWorkbenchNavigation} from './workbench-navigation.mjs';
@@ -69,12 +70,14 @@ export async function createHttpServer(options={}){
   const recruitment=createRecruitmentHttp(options.recruitment);
   if(!suiteConfig&&process.env.PORTAL_ADMIN_ENABLED==='true'&&!process.env.PORTAL_UPDATES_DATABASE&&!options.updatesStore)throw new Error('Admin updates require a persistent database');
   let mail;try{mail=suiteConfig?createSuiteIdentity({config:suiteConfig,directory:process.env.COBUILD_DATA_DIR}):await createMailHttp(options.mail);}catch(e){recruitment.close();if(!options.updatesStore)updates.close();throw e;}
+  if(suiteConfig){const connected=moduleEnabled('kick');options.workspace={...options.workspace,projectSyncEnabled:connected&&moduleEnabled('makit'),knowledgeWorkerEnabled:connected&&moduleEnabled('weknow'),...suiteProjectClients(suiteConfig,process.env.COBUILD_DATA_DIR,mail.auth.organizationId)};}
   let applicationAccess;try{applicationAccess=mail.enabled?openApplicationAccess({directory:join(mail.workspaceDirectory,'organization'),apps:appConfig.apps,profile:mail.profile,fetchSnapshot:options.applicationAccess?.fetchSnapshot||mail.directorySnapshot,now:options.mail?.now||Date.now}):null;}catch(e){mail.close();recruitment.close();if(!options.updatesStore)updates.close();throw e;}
   mail.setApplicationAccess?.(applicationAccess);
   const applicationAccessHttp=createApplicationAccessHttp({mail,apps:appConfig.apps,access:applicationAccess,localTest:options.mail?.localTest});
   let admin;try{admin=await createAdminHttp({...options.admin,updates,mail});}catch(e){await applicationAccess?.close();mail.close();recruitment.close();if(!options.updatesStore)updates.close();throw e;}
   let recruitmentWorkflow;try{recruitmentWorkflow=createRecruitmentWorkflowHttp({mail,legacyReceipt:recruitment.legacyReceipt,...options.recruitmentWorkflow});}catch(e){await applicationAccess?.close();mail.close();admin.close();recruitment.close();if(!options.updatesStore)updates.close();throw e;}
   let honors;let workspace;try{workspace=createWorkspaceHttp({mail,honorsTodos:a=>honors?.todos(a).items||[],recruitment:recruitmentWorkflow.enabled?recruitmentWorkflow:recruitment,...options.workspace});}catch(e){await applicationAccess?.close();await recruitmentWorkflow.close();mail.close();admin.close();recruitment.close();if(!options.updatesStore)updates.close();throw e;}
+  mail.setWorkspace?.(workspace);
   mail.setNavigation?.(createWorkbenchNavigation({workspace,access:applicationAccess,apps:appConfig.apps}));
   try{honors=createHonorsHttp({mail,projects:a=>workspace.projects(a),...options.honors});}catch(e){await applicationAccess?.close();await recruitmentWorkflow.close();await workspace.close();mail.close();admin.close();recruitment.close();if(!options.updatesStore)updates.close();throw e;}
   let recruitmentTest;try{recruitmentTest=createRecruitmentTestHttp({mail,...options.recruitmentTest});}catch(e){await applicationAccess?.close();honors.close();await recruitmentWorkflow.close();await workspace.close();mail.close();admin.close();recruitment.close();if(!options.updatesStore)updates.close();throw e;}
@@ -151,7 +154,7 @@ export async function createHttpServer(options={}){
       }
       if(req.method!=='GET'&&req.method!=='HEAD'){res.writeHead(405,{Allow:'GET, HEAD'});res.end('Method not allowed');req.resume();return;}
       const head=req.method==='HEAD';
-      if(path==='/healthz'){json(res,200,{status:'ok',service:suiteConfig?'cobuild-platform':'110lab-homepage',version:packageInfo.version,contentManagement:false,...(suiteConfig?{modules:suiteConfig.modules,externalMessages:false,projectSyncEnabled:false,knowledgeWorkerEnabled:false}:{}),businessMcp:business.enabled,mailManagement:suiteConfig?moduleEnabled('mail')&&mail.mailboxReady():mail.enabled,dynamicManagement:admin.enabled,recruitmentEnabled:recruitment.enabled,workspaceEnabled:workspace.enabled,honorsEnabled:honors.enabled,recruitmentTestEnabled:recruitmentTest.enabled,recruitmentWorkflowEnabled:recruitmentWorkflow.enabled});return;}
+      if(path==='/healthz'){json(res,200,{status:'ok',service:suiteConfig?'cobuild-platform':'110lab-homepage',version:packageInfo.version,contentManagement:false,...(suiteConfig?{modules:suiteConfig.modules,externalMessages:false,projectSyncEnabled:options.workspace.projectSyncEnabled,knowledgeWorkerEnabled:options.workspace.knowledgeWorkerEnabled}:{}),businessMcp:business.enabled,mailManagement:suiteConfig?moduleEnabled('mail')&&mail.mailboxReady():mail.enabled,dynamicManagement:admin.enabled,recruitmentEnabled:recruitment.enabled,workspaceEnabled:workspace.enabled,honorsEnabled:honors.enabled,recruitmentTestEnabled:recruitmentTest.enabled,recruitmentWorkflowEnabled:recruitmentWorkflow.enabled});return;}
       if(path.startsWith('/assets/')){
         if(!await serveAsset(req,res,path.slice(8)))throw new HttpError(404,'Not found');
         return;

@@ -1,3 +1,4 @@
+import {SuiteCollaborationService} from './suite-collaboration.service';
 import {
   IdentityLoginError,
   identityLoginStep,
@@ -36,6 +37,7 @@ export class LabIdentityService {
     private tokens: TokenService,
     private env: EnvironmentService,
     private signup: SignupService,
+    private collaboration: SuiteCollaborationService,
   ) {}
   get issuer() { return identityEndpoint(this.config); }
   get enabled() {
@@ -140,6 +142,7 @@ export class LabIdentityService {
       .where('subject', '=', data.user.open_id)
       .executeTakeFirst();
     })();
+    if(this.config.get('COBUILD_IDENTITY_MODE')==='local')await this.collaboration.syncDirectory();
     if (!identity) throw new IdentityLoginError('identity_not_registered');
     const user = await this.users.findById(
       identity.userId,

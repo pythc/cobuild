@@ -1,6 +1,6 @@
 {
   "name": "cobuild-suite",
-  "version": "0.2.0-dev.0",
+  "version": "0.3.0-dev.0",
   "private": true,
   "type": "module",
   "engines": {
@@ -15,6 +15,7 @@
     "release:check": "python3 tools/release_check.py",
     "local:init": "node tools/local-init.mjs",
     "local:platform": "node --require ./tools/local-network-guard.cjs tools/serve-platform.mjs",
+    "local:recover-owner": "node tools/recover-owner.mjs",
     "test:local-suite": "python3 tools/test_local_suite.py"
   }
 }

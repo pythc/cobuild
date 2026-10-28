@@ -62,6 +62,8 @@ export function openSuiteAuth({ directory, config, now = Date.now }) {
     CREATE TABLE IF NOT EXISTS suite_api_tokens(key TEXT PRIMARY KEY,session_key TEXT NOT NULL,scopes TEXT NOT NULL,created INTEGER NOT NULL);
     CREATE TABLE IF NOT EXISTS suite_login_budget(key TEXT NOT NULL,bucket INTEGER NOT NULL,n INTEGER NOT NULL,PRIMARY KEY(key,bucket));
     CREATE TABLE IF NOT EXISTS suite_audit(id INTEGER PRIMARY KEY AUTOINCREMENT,actor TEXT,action TEXT NOT NULL,target TEXT,created INTEGER NOT NULL);`);
+  db.exec(`CREATE TABLE IF NOT EXISTS suite_recovery(key TEXT PRIMARY KEY,user_id TEXT NOT NULL,created_by TEXT,expires INTEGER NOT NULL);
+    CREATE TABLE IF NOT EXISTS suite_owner_transfer(id INTEGER PRIMARY KEY CHECK(id=1),source TEXT NOT NULL,target TEXT NOT NULL,expires INTEGER NOT NULL);`);
   db.prepare("INSERT OR IGNORE INTO suite_meta VALUES(?,?)").run(
     "organizationId",
     randomUUID(),
@@ -113,6 +115,8 @@ export function openSuiteAuth({ directory, config, now = Date.now }) {
   };
   const subject = (id) => organizationId + ":" + id;
   function profile(value) {
+    if (typeof value !== "string" || value.length > 100)
+      throw new MailAuthError(401, "账号不可用或登录已失效");
     const id = value?.startsWith(organizationId + ":")
       ? value.slice(organizationId.length + 1)
       : value;
@@ -237,6 +241,54 @@ export function openSuiteAuth({ directory, config, now = Date.now }) {
       expiresAt: new Date(row.expires).toISOString(),
     };
   }
+  function revokeUser(id) {
+    db.prepare(
+      "DELETE FROM suite_api_tokens WHERE session_key IN (SELECT key FROM suite_sessions WHERE user_id=?)",
+    ).run(id);
+    db.prepare("DELETE FROM suite_sessions WHERE user_id=?").run(id);
+    db.prepare(
+      "DELETE FROM suite_recovery WHERE user_id=? OR created_by=?",
+    ).run(id, id);
+    db.prepare("DELETE FROM suite_invitations WHERE created_by=?").run(id);
+    db.prepare(
+      "DELETE FROM suite_owner_transfer WHERE source=? OR target=?",
+    ).run(id, id);
+  }
+  async function confirmPassword(session, password) {
+    const current = sessionByKey(session.key),
+      p = profile(current.subject);
+    budget("reauth:" + p.id, p.email);
+    const row = db
+      .prepare("SELECT password FROM suite_users WHERE id=?")
+      .get(p.id);
+    if (
+      typeof password !== "string" ||
+      password.length > 128 ||
+      !(await passwordMatches(password, row.password))
+    )
+      throw new MailAuthError(403, "当前密码不正确");
+    // scrypt yields; recheck suspension, reset, logout and a competing password change.
+    sessionByKey(session.key);
+    if (
+      db.prepare("SELECT password FROM suite_users WHERE id=?").get(p.id)
+        ?.password !== row.password
+    )
+      throw new MailAuthError(401, "身份已改变，请重新登录");
+    return profile(p.id);
+  }
+  function recovery(id, actorId) {
+    const token = nonce(),
+      expires = now() + 30 * 60000;
+    db.prepare("DELETE FROM suite_recovery WHERE user_id=?").run(id);
+    db.prepare("INSERT INTO suite_recovery VALUES(?,?,?,?)").run(
+      hash(token),
+      id,
+      actorId,
+      expires,
+    );
+    audit(actorId, "identity.recovery.issued", id);
+    return { token, expiresAt: new Date(expires).toISOString() };
+  }
   return {
     organizationId,
     bootstrapFile,
@@ -246,6 +298,167 @@ export function openSuiteAuth({ directory, config, now = Date.now }) {
     owner,
     sessionByKey,
     initialized: () => userCount() > 0,
+    directorySnapshot() {
+      return {
+        organizationId,
+        members: db
+          .prepare(
+            "SELECT id,email,name,role,active FROM suite_users ORDER BY id",
+          )
+          .all()
+          .map((r) => ({
+            ...r,
+            active: Boolean(r.active),
+            subject: subject(r.id),
+          })),
+      };
+    },
+    async changePassword(session, input) {
+      if (
+        !input ||
+        Object.keys(input).some(
+          (k) => !["currentPassword", "password"].includes(k),
+        )
+      )
+        throw new MailAuthError(400, "参数无效");
+      const p = await confirmPassword(session, input.currentPassword),
+        encoded = await passwordHash(input.password);
+      sessionByKey(session.key);
+      transaction(() => {
+        db.prepare("UPDATE suite_users SET password=? WHERE id=?").run(
+          encoded,
+          p.id,
+        );
+        revokeUser(p.id);
+        audit(p.id, "identity.password.changed", p.id);
+      });
+      return { changed: true };
+    },
+    async issueRecovery(session, input) {
+      if (
+        !input ||
+        Object.keys(input).some(
+          (k) => !["userId", "currentPassword"].includes(k),
+        ) ||
+        typeof input.userId !== "string"
+      )
+        throw new MailAuthError(400, "参数无效");
+      const p = await confirmPassword(session, input.currentPassword),
+        current = administrator(p),
+        target = profile(input.userId);
+      if (
+        target.role === "super_admin" ||
+        target.id === current.id ||
+        (current.role !== "super_admin" && target.role !== "member")
+      )
+        throw new MailAuthError(403, "只能为权限低于自己的成员生成恢复链接");
+      return recovery(target.id, current.id);
+    },
+    // Local CLI only. Possession of the private identity directory is required.
+    recoverOwner() {
+      const rows = db
+        .prepare(
+          "SELECT id FROM suite_users WHERE role='super_admin' AND active=1",
+        )
+        .all();
+      if (rows.length !== 1) throw new MailAuthError(409, "组织所有者状态异常");
+      return recovery(rows[0].id, null);
+    },
+    async resetPassword(input, ip) {
+      if (
+        !input ||
+        Object.keys(input).some((k) => !["token", "password"].includes(k)) ||
+        !/^[\w-]{43}$/.test(input.token || "")
+      )
+        throw new MailAuthError(400, "恢复链接无效");
+      budget("reset:" + ip, hash(input.token));
+      const encoded = await passwordHash(input.password);
+      transaction(() => {
+        const row = db
+          .prepare("SELECT * FROM suite_recovery WHERE key=? AND expires>?")
+          .get(hash(input.token), now());
+        if (!row) throw new MailAuthError(410, "恢复链接已失效");
+        const target = profile(row.user_id);
+        if (row.created_by) {
+          const p = administrator(profile(row.created_by));
+          if (
+            target.role === "super_admin" ||
+            (p.role !== "super_admin" && target.role !== "member")
+          )
+            throw new MailAuthError(403, "恢复授权已失效");
+        } else if (target.role !== "super_admin")
+          throw new MailAuthError(403, "所有者已变更");
+        db.prepare("UPDATE suite_users SET password=? WHERE id=?").run(
+          encoded,
+          target.id,
+        );
+        revokeUser(target.id);
+        audit(target.id, "identity.password.recovered", target.id);
+      });
+      return { changed: true };
+    },
+    transferStatus(actor) {
+      const p = profile(actor.subject),
+        row = db
+          .prepare(
+            "SELECT source,target,expires FROM suite_owner_transfer WHERE id=1 AND expires>?",
+          )
+          .get(now());
+      return row && [row.source, row.target].includes(p.id)
+        ? { ...row, targetName: profile(row.target).name }
+        : null;
+    },
+    async transferOwner(session, input) {
+      if (
+        !input ||
+        Object.keys(input).some(
+          (k) => !["action", "userId", "currentPassword"].includes(k),
+        ) ||
+        !["request", "accept", "cancel"].includes(input.action) ||
+        (input.action === "request" && typeof input.userId !== "string")
+      )
+        throw new MailAuthError(400, "转让参数无效");
+      const p = await confirmPassword(session, input.currentPassword);
+      return transaction(() => {
+        if (input.action === "request") {
+          owner(p);
+          const target = profile(input.userId);
+          if (target.id === p.id)
+            throw new MailAuthError(400, "请选择其他成员");
+          db.prepare(
+            "INSERT OR REPLACE INTO suite_owner_transfer VALUES(1,?,?,?)",
+          ).run(p.id, target.id, now() + 86400000);
+          audit(p.id, "organization.transfer.requested", target.id);
+          return { pending: true };
+        }
+        const row = db
+          .prepare(
+            "SELECT * FROM suite_owner_transfer WHERE id=1 AND expires>?",
+          )
+          .get(now());
+        if (!row) throw new MailAuthError(410, "转让邀请已失效");
+        owner(profile(row.source));
+        if (input.action === "cancel") {
+          if (![row.source, row.target].includes(p.id))
+            throw new MailAuthError(403, "没有权限");
+          db.prepare("DELETE FROM suite_owner_transfer WHERE id=1").run();
+          audit(p.id, "organization.transfer.cancelled", row.target);
+          return { cancelled: true };
+        }
+        if (p.id !== row.target)
+          throw new MailAuthError(403, "仅被指定的成员可接收");
+        db.prepare("UPDATE suite_users SET role='admin' WHERE id=?").run(
+          row.source,
+        );
+        db.prepare("UPDATE suite_users SET role='super_admin' WHERE id=?").run(
+          p.id,
+        );
+        revokeUser(row.source);
+        revokeUser(p.id);
+        audit(p.id, "organization.transfer.accepted", row.source);
+        return { transferred: true };
+      });
+    },
     issueToken(session, scopes) {
       sessionByKey(session.key);
       const token = nonce();
@@ -312,6 +525,11 @@ export function openSuiteAuth({ directory, config, now = Date.now }) {
         row?.password ||
         "00000000000000000000000000000000:" + "".padEnd(128, "0");
       if (!(await passwordMatches(password, stored)) || !row?.active)
+        throw new MailAuthError(401, "邮箱或密码不正确");
+      const current = db
+        .prepare("SELECT active,password FROM suite_users WHERE id=?")
+        .get(row.id);
+      if (!current?.active || current.password !== stored)
         throw new MailAuthError(401, "邮箱或密码不正确");
       audit(row.id, "identity.login", row.id);
       return mint(row.id);
@@ -411,6 +629,9 @@ export function openSuiteAuth({ directory, config, now = Date.now }) {
           )
           .get(hash(input.token), now());
         if (!current) throw new MailAuthError(410, "邀请已失效");
+        const inviter = administrator(profile(current.created_by));
+        if (current.role === "admin" && inviter.role !== "super_admin")
+          throw new MailAuthError(403, "邀请授权已改变");
         if (
           db
             .prepare("SELECT 1 FROM suite_users WHERE email=?")
@@ -450,6 +671,7 @@ export function openSuiteAuth({ directory, config, now = Date.now }) {
           id,
         );
         if (input.active === false) {
+          revokeUser(id);
           db.prepare("DELETE FROM suite_sessions WHERE user_id=?").run(id);
           db.prepare("DELETE FROM suite_invitations WHERE created_by=?").run(
             id,

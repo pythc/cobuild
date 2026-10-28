@@ -135,7 +135,7 @@ async function bootstrap() {
       // don't require workspaceId for the following paths
       const excludedPaths = [
         '/api/auth/setup',
-        ...(process.env.COBUILD_IDENTITY_MODE === 'local' ? ['/api/auth/identity/status','/api/auth/identity/login','/api/auth/identity/callback'] : []),
+        ...(process.env.COBUILD_IDENTITY_MODE === 'local' ? ['/api/suite/projects/ensure','/api/auth/identity/status','/api/auth/identity/login','/api/auth/identity/callback'] : []),
         '/api/health',
         '/api/billing/stripe/webhook',
         '/api/workspace/check-hostname',

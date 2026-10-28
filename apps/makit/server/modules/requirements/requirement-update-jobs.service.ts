@@ -103,7 +103,7 @@ export class RequirementUpdateJobsService
   ) {}
 
   onModuleInit(): void {
-    if (process.env.MAKIT_WORKERS_ENABLED === 'false') return;
+    if (process.env.MAKIT_WORKERS_ENABLED === 'false' && process.env.COBUILD_IDENTITY_MODE !== 'local') return;
     setTimeout((): void => {
       this.dispatchPendingJobs();
     }, 0);
@@ -400,7 +400,7 @@ export class RequirementUpdateJobsService
   }
 
   private dispatchPendingJobs(): void {
-    if (process.env.MAKIT_WORKERS_ENABLED === 'false') return;
+    if (process.env.MAKIT_WORKERS_ENABLED === 'false' && process.env.COBUILD_IDENTITY_MODE !== 'local') return;
     const work = () => this.processPendingJobs();
     void (
       this.telemetry ? this.telemetry.scanner('requirement_jobs', work) : work()
@@ -420,7 +420,7 @@ export class RequirementUpdateJobsService
   }
 
   private async processJob(jobId: string): Promise<void> {
-    if (process.env.MAKIT_WORKERS_ENABLED === 'false') return;
+    if (process.env.MAKIT_WORKERS_ENABLED === 'false' && process.env.COBUILD_IDENTITY_MODE !== 'local') return;
     const work = () => this.executeJob(jobId);
     return this.telemetry ? this.telemetry.operation(jobId, work) : work();
   }

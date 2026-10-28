@@ -1066,7 +1066,7 @@ export class RequirementsCommandService {
     );
     this.query.invalidateRequirement(recordId);
     const operationStages: OperationStage[] = [
-      { key: 'write', label: '需求写入', status: 'succeeded', detail: '飞书已确认写入' },
+      { key: 'write', label: '需求写入', status: 'succeeded', detail: process.env.COBUILD_IDENTITY_MODE==='local' ? '本地数据库已确认写入' : '飞书已确认写入' },
       { key: 'history', label: '变更历史', status: 'unknown', detail: '未确认' },
       { key: 'review', label: 'AI 评审', status: 'unknown', detail: '未确认' },
       { key: 'notification', label: '协作通知', status: 'unknown', detail: '由协作机器人独立处理' },
@@ -1079,7 +1079,7 @@ export class RequirementsCommandService {
       const result: MutationResult = {
         success: true, message: '已修改', recordId, updatedFields: labels,
         operationStages: operationStages.map((stage) =>
-          stage.key === 'write' ? stage : { ...stage, status: 'pending', detail: '等待独立处理' }),
+          stage.key === 'write' ? stage : process.env.COBUILD_IDENTITY_MODE==='local' && ['review','notification'].includes(stage.key) ? {...stage,status:'disabled',detail:'此部署未启用该集成'} : { ...stage, status: 'pending', detail: '等待独立处理' }),
       };
       await writeHooks.confirmed(current, updated, receipt, result);
       return result;

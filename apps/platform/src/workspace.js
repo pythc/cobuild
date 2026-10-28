@@ -48,7 +48,7 @@ const isSuperAdmin = () => !!(state.profile && state.profile.role === 'super_adm
 
 function isSafeHttpsUrl(value) {
   if (typeof value !== 'string' || !value) return false;
-  try { const u=new URL(value);return value.length<=2000&&u.protocol==='https:'&&!u.username&&!u.password&&!/[\u0000-\u0020\u007f]/.test(value); } catch { return false; }
+  try { const u=new URL(value);return value.length<=2000&&(u.protocol==='https:'||globalThis.__COBUILD__&&[location.origin,...Object.values(globalThis.__COBUILD__.catalog.systems)].some(v=>{try{return new URL(v).origin===u.origin;}catch{return false;}}))&&!u.username&&!u.password&&!/[\u0000-\u0020\u007f]/.test(value); } catch { return false; }
 }
 function isGithubRepoUrl(value) {
   if (!isSafeHttpsUrl(value)) return false;
@@ -178,6 +178,7 @@ function renderShell() {
   const recruitChip = document.querySelector('[data-todo-filter="recruitment"]');
   const loginHint = $('ws-login-hint');
   if (!state.profile) {
+    setHidden($('ws-account-settings'),true);
     if (greet) greet.textContent = PROJECTS_PAGE ? '项目立项' : '你的项目与协作';
     setHidden(chip, true); setHidden(login, false); setHidden(logout, true); setHidden(admin, true);
     setHidden(needed, false); setHidden(perms, true); setHidden(tabs, true); setHidden(newBtn, true);
@@ -195,6 +196,7 @@ function renderShell() {
       : '通过飞书登录 查看个人待办和项目空间';
     return;
   }
+  setHidden($('ws-account-settings'),!globalThis.__COBUILD__);
   const name = state.profile.name || state.profile.email || '成员';
   if (greet) greet.textContent = PROJECTS_PAGE ? '项目立项' : name+'的工作台';
   if (chip) { chip.textContent = ROLE_LABEL[state.profile.role] || '成员'; chip.dataset.role = state.profile.role || 'member'; chip.hidden = false; }
@@ -707,7 +709,7 @@ function openProjectDialog(project) {
   $('ws-field-link-repo').value = links.repository || '';
   $('ws-field-link-req').value = links.requirements || '';
   $('ws-field-link-docs').value = links.docs || '';
-  if(globalThis.__COBUILD__){$('ws-field-create-knowledge').disabled=true;$('ws-field-create-knowledge').title='自动建空间连接尚未启用';}
+  if(globalThis.__COBUILD__){$('ws-field-create-knowledge').disabled=!suiteModule('weknow');$('ws-field-create-knowledge').title=suiteModule('weknow')?'':'WeKnow 模块未启用';}
   $('ws-field-link-knowledge').value = links.knowledgeSpace || '';
   $('ws-field-create-knowledge').checked = false;
   $('ws-create-knowledge-option').hidden = !!project && !project.unconfigured;

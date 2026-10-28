@@ -47,7 +47,7 @@
     {
       "path": "apps/platform/server/http.mjs",
       "baselineSha256": "b216182948737823b31dd8b62770694721f7802d289318e50cea25dac12c96b7",
-      "currentSha256": "f734f7e06f997a72953aabd2a5081abe001670a4377b2ea04936cce6e5e606da"
+      "currentSha256": "e6f66745f52fbecf0e3a598a702f68e52030f33ac655219de840d389e1032f5b"
     },
     {
       "path": "apps/platform/server/monitoring-http.mjs",
@@ -82,7 +82,12 @@
     {
       "path": "apps/platform/server/workspace-http.mjs",
       "baselineSha256": "9d9c1ade9d545dc6634ebba07ec826ff9a5df3bdc49067124fc54ea82c7e8821",
-      "currentSha256": "f315990c1b796d9bd342036c9f65964324d8857529c7e87de0ea6015a5b38000"
+      "currentSha256": "3e1d8296882aaef35a4cd1d9ddd58e150ad4f76840de146fd834cf8a528b6c85"
+    },
+    {
+      "path": "apps/platform/server/workspace-store.mjs",
+      "baselineSha256": "b847a21809bbcfbf8388e16639dbd4fdd4db297739d6024955a3db43432a43bb",
+      "currentSha256": "64ec36b7fa9f7f31b0ff7a700a3866d96ec4c90d4605f543cb446e05c02b65d4"
     },
     {
       "path": "apps/platform/src/lab-session.js",
@@ -112,12 +117,17 @@
     {
       "path": "apps/platform/src/workbench.js",
       "baselineSha256": "5a342de1ea3474b791a129e1919b1fb9833eb976062b9361ec5207cb5f6d51b9",
-      "currentSha256": "f474472df4e9a1e24cb6b2e13bf221fe3ddf465e06af1c405c276f49407ec59e"
+      "currentSha256": "cb5f4c31cf2ad203e964fc76bd7d1756213fb4acd6a48092155e03bab9bea81d"
+    },
+    {
+      "path": "apps/platform/src/workspace-markup.html",
+      "baselineSha256": "478362e21f800d274683e1685295921f720066d181e39043410e97e7d9ddff5e",
+      "currentSha256": "04ef83ae7d2e522f1223a1822402c29666f4ad39718d75c99b9bfedc341e10d7"
     },
     {
       "path": "apps/platform/src/workspace.js",
       "baselineSha256": "6d0884f56c2dceaf951b80ace4ec65def32e618d2ef6b8d1e277797fb77838ed",
-      "currentSha256": "cb7acb0ffe1afaaaade962e667dea15e1f6394c1434f415fc079b04e5461eac0"
+      "currentSha256": "55f4cf0d3efce7c58499f97d05a32d34a17f6f198bd96d46d3bb63595d6905d9"
     },
     {
       "path": "apps/makit/client/src/components/CoBuildBrand.tsx",
@@ -157,7 +167,7 @@
     {
       "path": "apps/makit/server/common/selfhost/access.guard.ts",
       "baselineSha256": "be97fb33a220064f589155568a0bc6306d0e59425baf3c710f60732d43d52891",
-      "currentSha256": "74b8e24d0c5c2edb0e2f294fa328493d09ef870fd6d9aa6ad6a3ffafb697b0f2"
+      "currentSha256": "a1953b07ef34d004b4d32ec2c438c268cc4637a83f492e28f988074df997861a"
     },
     {
       "path": "apps/makit/server/common/selfhost/auth.controller.ts",
@@ -167,12 +177,12 @@
     {
       "path": "apps/makit/server/common/selfhost/identity.repository.ts",
       "baselineSha256": "bacb611503373e2f25a6adff8f16b41bf48bb53d3097434aca9d9179e8b350b8",
-      "currentSha256": "93bb47d27628b291fc9d5036db8f0c8e650011ed1690ca2bd01f36caabb07823"
+      "currentSha256": "08a2ce60ab807b73c45214b7005ee9a3004222e2a612d600f3637cd81f1e216e"
     },
     {
       "path": "apps/makit/server/common/selfhost/organization.service.ts",
       "baselineSha256": "cd8f49e616ca19d4522cf00f39dd1ed3f4b8c06a79a3230acfb43d45df369fa4",
-      "currentSha256": "3a39687b75cc44b54a4e415fff571478ba4b0fa8f210cc3c796a55279f6b6e9a"
+      "currentSha256": "1f45cfebbe28066c395b2f4b894075fb33c037e20afee73371bf529246835dd9"
     },
     {
       "path": "apps/makit/server/common/selfhost/session.service.ts",
@@ -180,19 +190,59 @@
       "currentSha256": "54005b2e6a502ba9921c855510e0d5ed628fe850a621f6943102f8e15dbf8be4"
     },
     {
+      "path": "apps/makit/server/modules/operations/operations.model.ts",
+      "baselineSha256": "258106b4015174da3ea1d1e617549c335e89cc71fb9e270d2ca5bc415d75d2cb",
+      "currentSha256": "9740e853cbc76d7c42dd23fb4bdae5e560ed7661762d92a9d0c08ddefe6d46ac"
+    },
+    {
+      "path": "apps/makit/server/modules/operations/operations.service.ts",
+      "baselineSha256": "d3c8f75cf917513adea6e800360fa1b86ed6516198c06ef34445c88580c0a449",
+      "currentSha256": "c773cfe71405d94bd5175d69f235c058c8600357825e2b9d691f61804036e92f"
+    },
+    {
       "path": "apps/makit/server/modules/requirements/feishu.service.ts",
       "baselineSha256": "b0ec41cc513f31f62b00dfc0485e6d1b5988e64539bd230bb084e552d371257a",
-      "currentSha256": "aa40057ce305d324fe8c696dcdcc1fce7d6eb286fe96ed53a2a9f22c8793e50b"
+      "currentSha256": "317fe6e3c7e23f55480f919e5a6e4c929e578d80d70e0def3dbdeb4c9bd4ab40"
+    },
+    {
+      "path": "apps/makit/server/modules/requirements/portal-project.service.ts",
+      "baselineSha256": "8f299bcef2fd4e653372d2e0d88c14c39d77d6d322c78357ef67112e4ce827b2",
+      "currentSha256": "1e7a4b864d7b22a7423950c36796c68868d2cc2b7e03f78785113b0722acc798"
     },
     {
       "path": "apps/makit/server/modules/requirements/project-action.service.ts",
       "baselineSha256": "a33c8df8cc06e46325bbe1aeb0e4e85f6215333a30c2b1a2b0396a3300122b97",
-      "currentSha256": "0d068ce2497d0e727fc850937e982340e01adbc461d80a414c6584d3c9462b63"
+      "currentSha256": "fbcd1b8c68f6f659a71c94f7d98200a70896854022ea01429251e8726fcce693"
+    },
+    {
+      "path": "apps/makit/server/modules/requirements/project-management.model.ts",
+      "baselineSha256": "016733910e16578f249e8092e213b4476d84ca6303abf758577e1764d6a7fe7c",
+      "currentSha256": "7efdfed7395e6c9908ff69d3eadef22dccf192251dd1ab2671e0ebdf29d57659"
+    },
+    {
+      "path": "apps/makit/server/modules/requirements/requirement-operation-outbox.service.ts",
+      "baselineSha256": "e07350866a9c929c9501aa9e7bd731ca0001f7451e47358c3a430a9f6d7d0311",
+      "currentSha256": "512aab9f39621338f7b4ef3f9797dabec565b61495ecfa94140e5b12780a7487"
+    },
+    {
+      "path": "apps/makit/server/modules/requirements/requirement-update-jobs.service.ts",
+      "baselineSha256": "5e898e6666bd47600553c4f6ab7bb5147f3aaab0d9de22158fb3bac05e9ea4f8",
+      "currentSha256": "0aa632c7d6a2abf544074af8cbd99b8af3e199e7da0303459c52e720d35f0a87"
+    },
+    {
+      "path": "apps/makit/server/modules/requirements/requirements-command.service.ts",
+      "baselineSha256": "430cdc0fd9346801e700f90bcef863045ac75cd5587dc5852ba14f11d0f5dda7",
+      "currentSha256": "fd0976d1d20ca9bdfc80f71922ceb2589af4a725d495ab8569d676c3cc67911c"
     },
     {
       "path": "apps/makit/server/selfhost-main.ts",
       "baselineSha256": "fa0478cd8d5d3434c4e26d5882bfbcc54090e4cc5532c7f7396546c0ba9a086c",
-      "currentSha256": "db442abcf5e76bdfdc7e1e7b1331164c7080deb685f195082656d694659bd794"
+      "currentSha256": "d8b7115b4f028a3ec31f6837469cc4f6c501a62434008f06c0eedf1619f16e2e"
+    },
+    {
+      "path": "apps/makit/shared/api.interface.ts",
+      "baselineSha256": "ef35829d8608abec7010438a2e33ed5255b00c8dda595bf07ec38a06405305cb",
+      "currentSha256": "f084de5cd0614e16b26b572948923c5697b0b6517f234e35ab14c7c4af5ad476"
     },
     {
       "path": "integrations/weknow/source/apps/client/package.json",
@@ -230,6 +280,11 @@
       "currentSha256": "2816562156dbe07fdd2dcf5780f411bc55c5c05477db07aa31cfcf63ec850faf"
     },
     {
+      "path": "integrations/weknow/source/apps/server/src/core/auth/auth.module.ts",
+      "baselineSha256": "2be7a1a1dff831c249cf1c4377071a3a9bf1299b88c5f4d3abb7d4d3cc31e960",
+      "currentSha256": "2d950c765f8e9cb640893ada8d759e66d530edb06a2992f3084ab91a74d6d4f9"
+    },
+    {
       "path": "integrations/weknow/source/apps/server/src/core/auth/dto/jwt-payload.ts",
       "baselineSha256": "149daf8171327f9a2e36e685079f1df8146be9d37946c58a5ceaa9b7eb533dd4",
       "currentSha256": "8f4ba8e0709cf19d5de7d700be38c2724a231ae1bd71a12238526a5c990cedb7"
@@ -252,7 +307,7 @@
     {
       "path": "integrations/weknow/source/apps/server/src/core/auth/feishu/lab-identity.service.ts",
       "baselineSha256": "9bbcbc36fe124862efcc3c6fbf1fd6314d51c88073c1fb1fc02e4b3ea0f16be5",
-      "currentSha256": "5ff6dcac9883f7b203b561b6d5f16b656536024a60a58743b122ba2fb2c6a8db"
+      "currentSha256": "f8d5872cf76de86c0eadf565beb196238a55c4fddb1493a6449b1e2484da5736"
     },
     {
       "path": "integrations/weknow/source/apps/server/src/core/auth/services/token.service.ts",
@@ -270,9 +325,14 @@
       "currentSha256": "25ee37c8e516fcbb9c2020b50631ee121f742e46400f1f44226b4332e3bc3b9c"
     },
     {
+      "path": "integrations/weknow/source/apps/server/src/database/repos/user/user.repo.ts",
+      "baselineSha256": "044b363ef36b8f5ce9c55425eadce7fd70edaddf43c2a7d50e8c9f5d36040bfd",
+      "currentSha256": "0b29c9100d394d5e013b859e2f445c90132d827b97c40c62a541a1bdfcdfe747"
+    },
+    {
       "path": "integrations/weknow/source/apps/server/src/main.ts",
       "baselineSha256": "013ecafcd44ccc10c9a23911aa0282ff03b88eea678530ec8956d26e18ff8c1e",
-      "currentSha256": "cc9df1794152f7229b5da8aeedfe839ce93995bee6d574fe482951db87a0c60e"
+      "currentSha256": "77d06d425ea225512ccb70129f46cc33c7b2ec79a1b2e963ef6fdb559e15c149"
     },
     {
       "path": "integrations/weknow/source/apps/server/test/jest-e2e.json",
@@ -548,37 +608,37 @@
     {
       "rule": "lab-service-address",
       "path": "apps/platform/server/http.mjs",
-      "line": 38
-    },
-    {
-      "rule": "lab-service-address",
-      "path": "apps/platform/server/http.mjs",
       "line": 39
     },
     {
       "rule": "lab-service-address",
       "path": "apps/platform/server/http.mjs",
-      "line": 62
+      "line": 40
     },
     {
       "rule": "lab-service-address",
       "path": "apps/platform/server/http.mjs",
-      "line": 92
+      "line": 63
     },
     {
       "rule": "lab-service-address",
       "path": "apps/platform/server/http.mjs",
-      "line": 166
+      "line": 95
     },
     {
       "rule": "lab-service-address",
       "path": "apps/platform/server/http.mjs",
-      "line": 168
+      "line": 169
     },
     {
       "rule": "lab-service-address",
       "path": "apps/platform/server/http.mjs",
-      "line": 170
+      "line": 171
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/server/http.mjs",
+      "line": 173
     },
     {
       "rule": "lab-service-address",
@@ -903,7 +963,7 @@
     {
       "rule": "lab-service-address",
       "path": "apps/platform/server/workspace-store.mjs",
-      "line": 164
+      "line": 165
     },
     {
       "rule": "lab-service-address",
@@ -1293,7 +1353,7 @@
     {
       "rule": "lab-service-address",
       "path": "apps/platform/src/workspace-markup.html",
-      "line": 111
+      "line": 112
     },
     {
       "rule": "lab-service-address",
@@ -1308,7 +1368,7 @@
     {
       "rule": "lab-service-address",
       "path": "apps/platform/src/workspace.js",
-      "line": 1069
+      "line": 1071
     },
     {
       "rule": "lab-service-address",
@@ -2093,7 +2153,7 @@
     {
       "rule": "fixed-administrator-name",
       "path": "apps/makit/server/modules/requirements/feishu.service.ts",
-      "line": 708
+      "line": 709
     },
     {
       "rule": "lab-service-address",
@@ -2108,7 +2168,7 @@
     {
       "rule": "lab-service-address",
       "path": "apps/makit/server/modules/requirements/project-action.service.ts",
-      "line": 42
+      "line": 49
     },
     {
       "rule": "fixed-administrator-name",

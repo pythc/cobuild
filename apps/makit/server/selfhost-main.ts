@@ -25,6 +25,7 @@ import { OperationsInsightsModule } from './modules/operations/operations-insigh
 import { NotificationDeliveryApiModule } from './modules/notifications/notification-delivery-api.module';
 import { ViewModule } from './modules/view/view.module';
 import { GlobalExceptionFilter } from './common/filters/exception.filter';
+import { configureSuiteCollections, initializeSuiteCollections } from './common/selfhost/suite-collections';
 import { gatewayAllowed } from './common/selfhost/gateway';
 
 @Module({
@@ -40,9 +41,11 @@ export async function startSelfhost() {
   if (process.env.MAKIT_STORAGE !== 'postgres' || !['true', 'false'].includes(process.env.MAKIT_WORKERS_ENABLED || '')) {
     throw new Error('Explicit PostgreSQL and worker configuration required');
   }
+  configureSuiteCollections();
   const app = await NestFactory.create<NestExpressApplication>(MakitSelfhostModule, { bodyParser: false });
   const database = app.get(DrizzleDatabaseManager);
   await database.assertRuntimeRole();
+  await initializeSuiteCollections(database.client);
   const sessions = app.get(MakitSessionService), context = app.get(RequestContextService);
   app.use(json({ limit: '9mb', strict: true }));
   app.use(urlencoded({ limit: '32kb', extended: false }));

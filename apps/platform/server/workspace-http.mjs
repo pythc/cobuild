@@ -61,6 +61,7 @@ export function createWorkspaceHttp({mail,knowledgeWorkerEnabled=true,apps=appCo
       if(host!==portalHost()&&!(localTest&&['localhost','127.0.0.1'].includes(host)))throw new WorkspaceError(404,'Not found');
       if(!enabled)throw new WorkspaceError(503,'工作台登录尚未配置');
       if(path==='/api/workspace/project-actions'){
+        if(suiteConfig)throw new WorkspaceError(404,'Not found');
         if(req.method!=='POST'||req.headers.origin||req.headers['sec-fetch-site'])throw new WorkspaceError(403,'仅供服务连接使用');
         const envelope=verifyProjectBridge(await body(req),req.headers['x-project-signature'],{secret:localTest?projectBridgeSecret:undefined,now});
         throttle({subject:envelope.subject});
@@ -90,7 +91,7 @@ export function createWorkspaceHttp({mail,knowledgeWorkerEnabled=true,apps=appCo
         if(route==='projects'){
           if(!input||typeof input!=='object'||Array.isArray(input))throw new WorkspaceError(400,'invalid_input');
           const {requestId,...fields}=input;
-          if(suiteConfig&&fields.createKnowledgeSpace)throw new WorkspaceError(503,'自动创建 WeKnow 空间的连接尚未启用');
+          if(suiteConfig&&!knowledgeWorkerEnabled&&fields.createKnowledgeSpace)throw new WorkspaceError(503,'自动创建 WeKnow 空间的连接尚未启用');
           if(requestId!==undefined&&!z.uuid().safeParse(requestId).success)throw new WorkspaceError(400,'invalid_input');
           const canonical=await canonicalMembers(actor,fields);actor=mail.identity(req,{embedded,write:true});
           const value=requestId?store.durable(actor,requestId,'web_project_create',fields,()=>store.create(actor,canonical)):store.create(actor,canonical);

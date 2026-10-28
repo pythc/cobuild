@@ -1,3 +1,4 @@
+import {serviceRequest} from '../../common/selfhost/suite-channel';
 import {
   BadRequestException,
   HttpException,
@@ -25,9 +26,15 @@ const actionInput = z
 export class ProjectActionService {
   constructor(private readonly feishu: FeishuService) {}
   async execute(actor: CurrentUserSummary, body: unknown): Promise<unknown> {
-    if(process.env.COBUILD_IDENTITY_MODE==='local')throw new ServiceUnavailableException('套件项目连接尚未接入');
     const parsed = actionInput.safeParse(body);
     if (!parsed.success) throw new BadRequestException('项目操作参数无效');
+    if(process.env.COBUILD_IDENTITY_MODE==='local'){
+      const organizationId=process.env.LAB_IDENTITY_TENANT_KEY!;
+      if(!/^[-a-f0-9]{36}$/.test(actor.employeeId||''))throw new BadRequestException('成员身份无效');
+      try{return await serviceRequest(process.env.COBUILD_IDENTITY_ORIGIN!,'/api/suite/services/makit/actions',{
+        organizationId,command:{...parsed.data,subject:organizationId+':'+actor.employeeId}
+      },process.env.COBUILD_SERVICE_KEY_FILE!);}catch(e){throw new HttpException('项目操作失败，请检查权限或刷新后重试',[400,401,403,404,409,429].includes(e.status)?e.status:503);}
+    }
     const secret = process.env.PORTAL_PROJECT_BRIDGE_SECRET || '';
     if (secret.length < 32)
       throw new ServiceUnavailableException('项目管理连接尚未配置');

@@ -153,8 +153,9 @@ export class OperationsService {
           operation_id: string;
           consumer: string;
           status: string;
+          error_code: string | null;
         }>(sql`
-        SELECT operation_id,consumer,status FROM requirement_operation_outbox WHERE operation_id IN(${ownedIds})`),
+        SELECT operation_id,consumer,status,error_code FROM requirement_operation_outbox WHERE operation_id IN(${ownedIds})`),
       );
       const deliveries = await this.database.run((db) =>
         db.execute<{ operation_id: string; state: string; count: number }>(sql`
@@ -175,6 +176,7 @@ export class OperationsService {
             (row) => row.operation_id === item.id && row.consumer === stage.key,
           );
           if (!consumer) continue;
+          if(consumer.error_code==='integration_disabled'){stage.status='disabled';stage.detail='此部署未启用该集成，没有执行或发送';continue;}
           stage.status =
             consumer.status === 'succeeded'
               ? 'succeeded'

@@ -167,6 +167,7 @@ export class UserRepo {
       .where('workspaceId', '=', workspaceId)
       .where('deletedAt', 'is', null);
 
+    if(process.env.COBUILD_IDENTITY_MODE==='local')query=query.where(sql<boolean>`EXISTS (SELECT 1 FROM suite_identity_accounts sia WHERE sia.user_id=users.id AND sia.workspace_id=users.workspace_id AND sia.active)`);
     if (pagination.query) {
       query = query.where((eb) =>
         eb(

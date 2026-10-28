@@ -58,7 +58,7 @@ export class PortalProjectService {
     @Optional() private readonly feishu?: FeishuService,
   ) {}
   private dto(row: Row): PortalProjectSummary {
-    const url: URL = new URL((process.env.REQUIREMENT_PLATFORM_URL || DEFAULT_REQUIREMENT_PLATFORM_URL).replace(/\/+$/, '') + '/requirements');
+    const url: URL = new URL((process.env.MAKIT_PUBLIC_URL || process.env.REQUIREMENT_PLATFORM_URL || DEFAULT_REQUIREMENT_PLATFORM_URL).replace(/\/+$/, '') + '/requirements');
     url.searchParams.set('project', row.name);
     return {
       sourceProjectId: row.id,
@@ -131,7 +131,7 @@ export class PortalProjectService {
             name: input.name,
             summary: input.summary,
             sourceUrl:
-              'https://internal.110-lab.cn/projects?project=' +
+              (process.env.COBUILD_IDENTITY_ORIGIN || 'https://internal.110-lab.cn')+'/projects?project=' +
               input.sourceProjectId,
             snapshotJson: input.snapshot
               ? JSON.stringify(input.snapshot)

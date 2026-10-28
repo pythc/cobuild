@@ -673,6 +673,7 @@ export class FeishuService {
   async getUserByEmployeeId(
     employeeId: string,
   ): Promise<{ employeeId: string; openId: string; name: string }> {
+    if(process.env.COBUILD_IDENTITY_MODE==='local')return this.identities!.verifiedLocalMember(employeeId);
     if (!employeeId) {
       throw new ServiceUnavailableException('飞书用户 ID 不能为空');
     }

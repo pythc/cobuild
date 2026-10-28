@@ -42,9 +42,10 @@
       "acceptance": "公共配置接入各运行时，移除实际执行路径中的实验室域名、固定身份、服务地址和绝对路径",
       "evidence": [
         "provenance/native-runtime-checks.json",
-        "docs/LOCAL-RUNTIME.md"
+        "docs/LOCAL-RUNTIME.md",
+        "provenance/collaboration-checks.json"
       ],
-      "scopeNote": "Partial local acceptance on macOS: native core identity and selected built-in module gates verified. Unported extensions, integrations, recovery, migration and deployment remain open."
+      "scopeNote": "Native core runtime and account/project service keys verified locally. Unported extensions, external integrations, branding portability and deployment remain open."
     },
     {
       "id": "identity",
@@ -57,9 +58,10 @@
       "acceptance": "无飞书环境完成首个管理员初始化、邀请、登录、退出和跨应用身份映射；首次部署不依赖既有服务",
       "evidence": [
         "provenance/native-runtime-checks.json",
-        "docs/LOCAL-RUNTIME.md"
+        "docs/LOCAL-RUNTIME.md",
+        "provenance/collaboration-checks.json"
       ],
-      "scopeNote": "Partial local acceptance on macOS: native core identity and selected built-in module gates verified. Unported extensions, integrations, recovery, migration and deployment remain open."
+      "scopeNote": "Native initialization, invitation, account recovery, owner transfer, live revocation and directory sync verified on an empty local organization. Existing identity migration and deployment acceptance remain open."
     },
     {
       "id": "module-isolation",
@@ -70,9 +72,10 @@
       "acceptance": "可选模块关闭时，页面、API、MCP、定时任务和邮件消费全部停止；服务端执行限制",
       "evidence": [
         "provenance/native-runtime-checks.json",
-        "docs/LOCAL-RUNTIME.md"
+        "docs/LOCAL-RUNTIME.md",
+        "provenance/collaboration-checks.json"
       ],
-      "scopeNote": "Partial local acceptance on macOS: native core identity and selected built-in module gates verified. Unported extensions, integrations, recovery, migration and deployment remain open."
+      "scopeNote": "Selected built-in modules have HTTP/API/MCP/worker gates and data preservation. Local core data writers run while external AI/notification delivery stays disabled. Other extensions remain unported."
     },
     {
       "id": "project-contract",
@@ -82,7 +85,12 @@
         "makit",
         "weknow"
       ],
-      "acceptance": "项目只创建一次，显式 ID 关联，改名归档和成员变化可恢复且不重复建空间"
+      "acceptance": "项目只创建一次，显式 ID 关联，改名归档和成员变化可恢复且不重复建空间",
+      "scopeNote": "Stable project and space IDs, approval gating, concurrent/restart retries, milestone/link writes and live permissions verified locally. Full rename/archive/membership lifecycle and historical migration remain open.",
+      "evidence": [
+        "provenance/collaboration-checks.json",
+        "docs/LOCAL-RUNTIME.md"
+      ]
     },
     {
       "id": "install-reproducibility",
@@ -128,7 +136,12 @@
         "makit",
         "weknow"
       ],
-      "acceptance": "两个真实测试账号完成项目、文档、需求和交付全流程及越权验证，无实验室服务请求或真实外发"
+      "acceptance": "两个真实测试账号完成项目、文档、需求和交付全流程及越权验证，无实验室服务请求或真实外发",
+      "scopeNote": "Local project, requirement assignment/update/comment/acceptance and knowledge-document flow verified with two synthetic accounts; actual GitHub/AI delivery, attachments and external integrations not accepted.",
+      "evidence": [
+        "provenance/collaboration-checks.json",
+        "docs/LOCAL-RUNTIME.md"
+      ]
     }
   ]
 }

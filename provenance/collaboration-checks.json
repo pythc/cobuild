@@ -1,0 +1,188 @@
+{
+  "schemaVersion": 1,
+  "version": "0.3.0-dev.0",
+  "date": "2026-10-28",
+  "baseRevision": "cea7e321930bdc188b7ba5ed0cc2e102e2f95b88",
+  "scope": "isolated local account lifecycle and Kick/Makit/WeKnow project collaboration; not production, external delivery or public release acceptance",
+  "productionModified": false,
+  "realExternalMessages": false,
+  "tests": [
+    {
+      "name": "suite",
+      "passed": 52,
+      "failed": 0,
+      "localLog": ".local/collaboration-root.log",
+      "sha256": "1c2057bc1836631cbf7b51632ddcbcf7a09a8f59dd6c1ee02c19d9494a0a033b"
+    },
+    {
+      "name": "platform",
+      "passed": 56,
+      "failed": 0,
+      "localLog": ".local/collaboration-platform-regression.log",
+      "sha256": "ab3c44808d8d4d0f1799991674fe4404c9d20b0108c2204d3ce9a2f3fcccf290"
+    },
+    {
+      "name": "makit",
+      "passed": 30,
+      "failed": 0,
+      "localLog": ".local/collaboration-makit-regression.log",
+      "sha256": "d18867ba0c26596bce5750ab7329d0f185ac14d9cb51b10e01573058d685befb"
+    },
+    {
+      "name": "weknow",
+      "passed": 39,
+      "failed": 0,
+      "localLog": ".local/collaboration-weknow-tests.log",
+      "sha256": "14bc2ed5aac1abd5cabbe616dc3227722a19518c48194a2f261c7bb83cc801bc"
+    }
+  ],
+  "totalTestCasesPassed": 177,
+  "integrationChecks": [
+    {
+      "name": "core-http",
+      "passed": 133,
+      "failed": 0,
+      "localLog": ".local/collaboration-core-e2e.log",
+      "sha256": "589ba6caf2eedce3489f91b3d9cc5c4528aec5a2227963a897b9bbf817b7f711"
+    },
+    {
+      "name": "collection-guards",
+      "passed": 7,
+      "failed": 0,
+      "localLog": ".local/collaboration-collections.log",
+      "sha256": "bdbd9c3e126c4d67ff8153c102854f743a6f3d5e840bcbb29ace9dc5d575e909"
+    },
+    {
+      "name": "restart",
+      "passed": 14,
+      "failed": 0,
+      "localLog": ".local/collaboration-restart-e2e.log",
+      "sha256": "cbf70777ec7d53715f2153ecb02edac3beb3c001c754160de4c4fe944b54cb8d"
+    }
+  ],
+  "builds": [
+    {
+      "name": "platform",
+      "passed": true,
+      "localLog": ".local/collaboration-platform-build.log",
+      "sha256": "fe4037d06ecbec9ef1bcaaa22b9b4b05140fc81f02ad4e752097953dc18f1de0"
+    },
+    {
+      "name": "makit-selfhost-server",
+      "passed": true,
+      "localLog": ".local/collaboration-makit-build.log",
+      "sha256": "9822b9a2e3bfde3b1d630c5b20efd85a09d9ae7c7698e9e754cc4ea7993a0716"
+    },
+    {
+      "name": "makit-selfhost-client",
+      "passed": true,
+      "localLog": ".local/collaboration-makit-client.log",
+      "sha256": "0238a6824397ea0d99e14f048c331c7c97809af94239c192663f15475b9735bc"
+    },
+    {
+      "name": "makit-client-types",
+      "passed": true,
+      "localLog": ".local/collaboration-makit-client-types.log",
+      "sha256": "5de4c739afd533e2467ccf8cc61ee38975e0cd63a2b89969d99259b0a72b4c1e"
+    },
+    {
+      "name": "weknow-server",
+      "passed": true,
+      "localLog": ".local/collaboration-weknow-build.log",
+      "sha256": "b603385863ab2d317ba0105d93d45c2b6079b2b34bc6d26ab0c83f22ff38fc3d"
+    }
+  ],
+  "browser": {
+    "passed": true,
+    "checked": [
+      "local sign-in and workbench",
+      "account security forms and role-specific visibility",
+      "Kick project and new-project knowledge option",
+      "Makit SSO and project-filtered requirements",
+      "Makit milestone and knowledge-space management dialog",
+      "WeKnow SSO, project space and persisted document"
+    ],
+    "notChecked": [
+      "sensitive password/transfer form submission through UI; covered by API/store tests",
+      "all inherited application screens",
+      "public HTTPS deployment"
+    ],
+    "timing": "after 131-check flow and service restart; final 133-check flow additionally verifies requirement-code filtering",
+    "screenshots": [
+      {
+        "localLog": ".local/collaboration-project-preview.png",
+        "sha256": "2f737b9d4b83af614c32e9bdf469d749cffe887f0c6cfcb3ccfe50375403a8ae"
+      },
+      {
+        "localLog": ".local/collaboration-weknow-preview.png",
+        "sha256": "c6452188d7bac3eaff03c8d72eff84aa87bdddf1a7c1b4b88f0c270ff566c587"
+      }
+    ]
+  },
+  "testEnvironment": {
+    "productionAccess": false,
+    "stages": [
+      {
+        "name": "makit-migrations",
+        "exitCode": 0
+      },
+      {
+        "name": "makit-role",
+        "exitCode": 0
+      },
+      {
+        "name": "core-e2e",
+        "exitCode": 0
+      },
+      {
+        "name": "collections",
+        "exitCode": 0
+      },
+      {
+        "name": "restart-e2e",
+        "exitCode": 0
+      }
+    ],
+    "passed": true,
+    "ownedContainersRemoved": true
+  },
+  "limitations": [
+    "Existing database identity migration",
+    "Project rename/archive/full membership lifecycle acceptance",
+    "Attachment backup and restore",
+    "Clean Linux Compose and HTTPS deployment",
+    "Cross-version upgrades and recovery",
+    "GitHub/AI release delivery and real notifications",
+    "Full inherited-source license and security review"
+  ],
+  "failedAttemptsResolved": [
+    "Empty native business collections",
+    "Local write workers disabled with outbound workers",
+    "Deferred actor lookup required obsolete Feishu directory",
+    "Selfhost bundle stale after schema edit",
+    "Global operations query required separate operations role; regression uses the correct personal endpoint"
+  ],
+  "publicReleaseReady": false,
+  "finalChecks": [
+    {
+      "name": "verify",
+      "exitCode": 0,
+      "localLog": ".local/collaboration-verify.log",
+      "sha256": "37b620be8ae786c1855fa8ac98662ee11354a523576994d24cc856da676aa970"
+    },
+    {
+      "name": "release-check",
+      "exitCode": 2,
+      "expected": "public release remains blocked",
+      "localLog": ".local/collaboration-release-check.log",
+      "sha256": "181b41b91484237f2899185c82f6579ce62a87ceb405b0614f3029602b1c24e7"
+    }
+  ],
+  "cleanup": {
+    "testContainersRemaining": 0,
+    "ownedTestProcessesStopped": true,
+    "disposableConfigDirectoriesRemaining": 0,
+    "browserTestTabClosed": true,
+    "existingServicesChanged": false
+  }
+}

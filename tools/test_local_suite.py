@@ -1,5 +1,5 @@
 """Own disposable local databases and processes; never read production config."""
-import json, os, secrets, socket, subprocess, tempfile, time, uuid
+import json, os, secrets, socket, subprocess, tempfile, time, uuid, sys
 from pathlib import Path
 from local_process import captured
 
@@ -45,7 +45,7 @@ def main():
         config=tmp/'config.json';config.write_text(json.dumps(cfg))
         data=tmp/'data';data.mkdir(mode=0o700)
         common={**base,'NODE_ENV':'production','NODE_OPTIONS':'--require='+str(ROOT/'tools/local-network-guard.cjs'),'COBUILD_IDENTITY_MODE':'local'}
-        env={**common,'COBUILD_CONFIG':str(config),'COBUILD_DATA_DIR':str(data)}
+        env={**common,'COBUILD_CONFIG':str(config),'COBUILD_DATA_DIR':str(data),'COBUILD_FLOW_RECEIPT':str(tmp/'flow.json')}
         def start(name,command,cwd,env):
           f=open(LOCAL/f'native-{name}.private.log','w');os.chmod(f.name,0o600);logs.append(f)
           p=subprocess.Popen(command,cwd=cwd,env=env,stdout=f,stderr=f);processes.append(p);return p
@@ -64,13 +64,31 @@ def main():
         import urllib.request
         with urllib.request.urlopen(cfg['origins']['platform']+'/api/suite/config') as r:org=json.load(r)['organizationId']
         application_env=json.loads(subprocess.check_output(['node','tools/local-application-env.mjs',str(config),org],cwd=ROOT,env=base,text=True))
-        makit={**common,**application_env['makit'],'MAKIT_DATABASE_URL':f'postgres://makit_application:{app_password}@127.0.0.1:{pgport}/makit','MAKIT_MIGRATION_DATABASE_URL':f'postgres://suite_owner:{password}@127.0.0.1:{pgport}/makit','MAKIT_APPLICATION_PASSWORD':app_password,'MAKIT_SESSION_ENCRYPTION_KEY':secrets.token_hex(32)}
+        makit={**common,**application_env['makit'],'COBUILD_SERVICE_KEY_FILE':str(data/'makit.service.key'),'MAKIT_DATABASE_URL':f'postgres://makit_application:{app_password}@127.0.0.1:{pgport}/makit','MAKIT_MIGRATION_DATABASE_URL':f'postgres://suite_owner:{password}@127.0.0.1:{pgport}/makit','MAKIT_APPLICATION_PASSWORD':app_password,'MAKIT_SESSION_ENCRYPTION_KEY':secrets.token_hex(32)}
         run('makit-migrations',['node','scripts/selfhost/migrate.cjs'],ROOT/'apps/makit',makit)
         run('makit-role',['node','scripts/selfhost/set-runtime-password.cjs'],ROOT/'apps/makit',makit)
         p=start('makit',['node','dist/selfhost/server.cjs'],ROOT/'apps/makit',makit);wait(cfg['origins']['makit']+'/healthz',p)
-        weknow={**common,**application_env['weknow'],'APP_SECRET':secrets.token_hex(32),'DATABASE_URL':f'postgres://suite_owner:{password}@127.0.0.1:{pgport}/weknow','REDIS_URL':f'redis://127.0.0.1:{redisport}','COBUILD_STORAGE_PATH':str(tmp/'files')}
+        weknow={**common,**application_env['weknow'],'COBUILD_SERVICE_KEY_FILE':str(data/'weknow.service.key'),'APP_SECRET':secrets.token_hex(32),'DATABASE_URL':f'postgres://suite_owner:{password}@127.0.0.1:{pgport}/weknow','REDIS_URL':f'redis://127.0.0.1:{redisport}','COBUILD_STORAGE_PATH':str(tmp/'files')}
         p=start('weknow',['node','dist/main.js'],ROOT/'integrations/weknow/source/apps/server',weknow);wait(cfg['origins']['weknow']+'/api/auth/identity/status',p)
         run('core-e2e',['node','tests/local-core-e2e.mjs'],ROOT,env)
+        run('collections',['node','tests/local-collections.cjs'],ROOT,makit)
+        for old in reversed(processes):
+          if old.poll() is None:old.terminate()
+        for old in processes:
+          try:old.wait(timeout=12)
+          except subprocess.TimeoutExpired:old.kill();old.wait()
+        p=start('platform-restarted',['node','tools/serve-platform.mjs'],ROOT,env);wait(cfg['origins']['platform']+'/healthz',p)
+        p=start('makit-restarted',['node','dist/selfhost/server.cjs'],ROOT/'apps/makit',makit);wait(cfg['origins']['makit']+'/healthz',p)
+        p=start('weknow-restarted',['node','dist/main.js'],ROOT/'integrations/weknow/source/apps/server',weknow);wait(cfg['origins']['weknow']+'/api/auth/identity/status',p)
+        run('restart-e2e',['node','tests/local-core-restart.mjs'],ROOT,env)
+        if '--browser-review' in sys.argv:
+          release=tmp/'finish-browser-review'
+          metadata={'origins':cfg['origins'],'receipt':json.loads((tmp/'flow.json').read_text()),'releaseFile':str(release)}
+          (LOCAL/'browser-review.json').write_text(json.dumps(metadata))
+          deadline=time.monotonic()+900
+          while not release.exists() and time.monotonic()<deadline:time.sleep(.25)
+          if not release.exists():raise RuntimeError('Browser review hold expired')
+          report['browserReviewReleased']=True
         report['passed']=True
       except Exception as e:
         report['passed']=False;report['error']=str(e).replace(password,'[REDACTED]').replace(app_password,'[REDACTED]')

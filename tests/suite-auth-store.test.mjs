@@ -13,9 +13,9 @@ const config = validateConfig(
     ),
   ),
 );
-async function fixture(run) {
+async function fixture(run, now = Date.now) {
   const directory = mkdtempSync(join(tmpdir(), "cobuild-auth-"));
-  let store = openSuiteAuth({ directory, config });
+  let store = openSuiteAuth({ directory, config, now });
   try {
     await run({
       get store() {
@@ -23,7 +23,7 @@ async function fixture(run) {
       },
       reopen() {
         store.close();
-        store = openSuiteAuth({ directory, config });
+        store = openSuiteAuth({ directory, config, now });
       },
       directory,
     });
@@ -183,4 +183,209 @@ test("reactivation preserves role but cannot revive suspended sessions", () =>
     store.updateMember(owner, id, { active: true });
     assert.equal(store.profile(id).role, "admin");
     assert.throws(() => store.session(cookie(member)), { status: 401 });
+  }));
+
+async function pair(store) {
+  const login = await bootstrap(store),
+    owner = store.profile(login.session.subject);
+  const invite = store.invite(owner, { email: "m@example.test" });
+  const member = await store.accept({
+    token: invite.token,
+    name: "Member",
+    password: "Member password 12345",
+  });
+  return { login, owner, member, p: store.profile(member.session.subject) };
+}
+test("password changes revoke every session and PAT, require current password", () =>
+  fixture(async ({ store }) => {
+    const { login } = await pair(store);
+    const second = await store.login(ownerInput, "second");
+    const pat = store.issueToken(login.session, ["projects:read"]);
+    await assert.rejects(
+      store.changePassword(login.session, {
+        currentPassword: "wrong",
+        password: "New password 12345",
+      }),
+      { status: 403 },
+    );
+    await store.changePassword(login.session, {
+      currentPassword: ownerInput.password,
+      password: "New password 12345",
+    });
+    assert.throws(() => store.session(cookie(second)), { status: 401 });
+    assert.throws(() => store.inspectToken(pat.token), { status: 401 });
+    await assert.rejects(store.login(ownerInput, "old"), { status: 401 });
+    await store.login({ ...ownerInput, password: "New password 12345" }, "new");
+  }));
+test("recovery is one-use, newest link wins and cannot grant roles", () =>
+  fixture(async ({ store }) => {
+    const { login, owner, member, p } = await pair(store);
+    await assert.rejects(
+      store.issueRecovery(member.session, {
+        userId: owner.id,
+        currentPassword: "Member password 12345",
+      }),
+      { status: 403 },
+    );
+    const old = await store.issueRecovery(login.session, {
+      userId: p.id,
+      currentPassword: ownerInput.password,
+    });
+    const current = await store.issueRecovery(login.session, {
+      userId: p.id,
+      currentPassword: ownerInput.password,
+    });
+    await assert.rejects(
+      store.resetPassword(
+        { token: old.token, password: "Reset password 12345" },
+        "ip",
+      ),
+      { status: 410 },
+    );
+    const results = await Promise.allSettled(
+      [1, 2].map(() =>
+        store.resetPassword(
+          { token: current.token, password: "Reset password 12345" },
+          "ip",
+        ),
+      ),
+    );
+    assert.equal(results.filter((r) => r.status === "fulfilled").length, 1);
+    assert.throws(() => store.session(cookie(member)), { status: 401 });
+    assert.equal(store.profile(p.id).role, "member");
+  }));
+test("recovery authorization is rechecked after administrator demotion", () =>
+  fixture(async ({ store }) => {
+    const { login, owner, p } = await pair(store);
+    const inv = store.invite(owner, { email: "a@example.test", role: "admin" });
+    const admin = await store.accept({
+      token: inv.token,
+      name: "Admin",
+      password: "Admin password 12345",
+    });
+    const a = store.profile(admin.session.subject);
+    const reset = await store.issueRecovery(admin.session, {
+      userId: p.id,
+      currentPassword: "Admin password 12345",
+    });
+    store.updateMember(owner, a.id, { role: "member" });
+    await assert.rejects(
+      store.resetPassword(
+        { token: reset.token, password: "Reset password 12345" },
+        "ip",
+      ),
+      { status: 403 },
+    );
+  }));
+test("owner transfer needs acceptance and revokes former and new owner sessions without copying app roles", () =>
+  fixture(async (f) => {
+    const { login, owner, member, p } = await pair(f.store);
+    await f.store.transferOwner(login.session, {
+      action: "request",
+      userId: p.id,
+      currentPassword: ownerInput.password,
+    });
+    assert.equal(f.store.profile(p.id).role, "member");
+    f.reopen();
+    assert.equal(f.store.transferStatus(p).target, p.id);
+    await assert.rejects(
+      f.store.transferOwner(login.session, {
+        action: "accept",
+        currentPassword: ownerInput.password,
+      }),
+      { status: 403 },
+    );
+    await f.store.transferOwner(member.session, {
+      action: "accept",
+      currentPassword: "Member password 12345",
+    });
+    assert.equal(f.store.profile(p.id).role, "super_admin");
+    assert.equal(f.store.profile(owner.id).role, "admin");
+    assert.throws(() => f.store.session(cookie(login)), { status: 401 });
+    assert.throws(() => f.store.session(cookie(member)), { status: 401 });
+    assert.equal(
+      f.store.members().filter((m) => m.role === "super_admin").length,
+      1,
+    );
+  }));
+test("offline recovery targets only the current owner and revokes that owner sessions", () =>
+  fixture(async ({ store }) => {
+    const { login, owner } = await pair(store);
+    const link = store.recoverOwner();
+    await store.resetPassword(
+      { token: link.token, password: "Owner recovered password 123" },
+      "ip",
+    );
+    assert.throws(() => store.session(cookie(login)), { status: 401 });
+    assert.equal(store.profile(owner.id).role, "super_admin");
+  }));
+test("recovery and ownership invitations expire and a cancelled transfer cannot be accepted", async () => {
+  let clock = Date.now();
+  await fixture(
+    async ({ store }) => {
+      const { login, owner, member, p } = await pair(store);
+      const reset = await store.issueRecovery(login.session, {
+        userId: p.id,
+        currentPassword: ownerInput.password,
+      });
+      clock += 30 * 60000;
+      await assert.rejects(
+        store.resetPassword(
+          { token: reset.token, password: "Expired reset password 123" },
+          "ip",
+        ),
+        { status: 410 },
+      );
+      const request = () =>
+        store.transferOwner(login.session, {
+          action: "request",
+          userId: p.id,
+          currentPassword: ownerInput.password,
+        });
+      const accept = () =>
+        store.transferOwner(member.session, {
+          action: "accept",
+          currentPassword: "Member password 12345",
+        });
+      await request();
+      await store.transferOwner(member.session, {
+        action: "cancel",
+        currentPassword: "Member password 12345",
+      });
+      await assert.rejects(accept(), { status: 410 });
+      await request();
+      clock += 86400000;
+      assert.equal(store.transferStatus(p), null);
+      await assert.rejects(accept(), { status: 410 });
+      assert.equal(store.profile(owner.id).role, "super_admin");
+      assert.equal(store.profile(p.id).role, "member");
+      assert.equal(store.session(cookie(member)).subject, p.subject);
+    },
+    () => clock,
+  );
+});
+test("demoted inviter cannot grant an administrator through an outstanding invitation", () =>
+  fixture(async ({ store }) => {
+    const { login, owner, member, p } = await pair(store);
+    const invite = store.invite(owner, {
+      email: "later@example.test",
+      role: "admin",
+    });
+    await store.transferOwner(login.session, {
+      action: "request",
+      userId: p.id,
+      currentPassword: ownerInput.password,
+    });
+    await store.transferOwner(member.session, {
+      action: "accept",
+      currentPassword: "Member password 12345",
+    });
+    await assert.rejects(
+      store.accept({
+        token: invite.token,
+        name: "Late",
+        password: "Late password 12345",
+      }),
+      { status: 410 },
+    );
   }));

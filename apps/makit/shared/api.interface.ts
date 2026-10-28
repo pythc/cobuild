@@ -271,6 +271,7 @@ export interface OperationsAccess {
 }
 
 export type OperationStageStatus =
+  | 'disabled'
   | 'succeeded'
   | 'failed'
   | 'pending'

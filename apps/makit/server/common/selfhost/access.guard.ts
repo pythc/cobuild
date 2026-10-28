@@ -1,3 +1,4 @@
+import {verifyService} from './suite-channel';
 import { Injectable, UnauthorizedException, type CanActivate, type ExecutionContext } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import type { Request } from 'express';
@@ -28,6 +29,12 @@ export class MakitAccessGuard implements CanActivate {
     const handler = context.getHandler(), controller = context.getClass();
     const login = this.reflector.getAllAndOverride<boolean>('makit:login', [handler, controller]);
     const publicRoute = this.reflector.getAllAndOverride<boolean>('makit:public', [handler, controller]);
+    if(process.env.COBUILD_IDENTITY_MODE==='local'&&/^\/openapi\/workspace\/projects\/(lookup|sync)\/?$/.test(req.path)){
+      if(req.method!=='POST')throw new UnauthorizedException('请求无效');
+      try{const payload=verifyService(req.headers,req.body,req.path,process.env.COBUILD_SERVICE_KEY_FILE!);
+        if(payload.organizationId!==process.env.LAB_IDENTITY_TENANT_KEY)throw Error();req.body=payload.input;return true;
+      }catch{throw new UnauthorizedException('服务接入凭据无效');}
+    }
     // Native Relay and GitHub endpoints verify their dedicated signatures in
     // their controllers. No gateway key can grant browser administrative access.
     if (/^\/openapi\/relay-native\/?$/.test(req.path)) return true;

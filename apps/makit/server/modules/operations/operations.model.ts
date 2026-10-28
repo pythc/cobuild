@@ -206,7 +206,7 @@ export function operationRecord(row: StoredOperation): OperationRecord {
       );
     if (
       found &&
-      ['succeeded', 'failed', 'pending', 'unknown'].includes(
+      ['succeeded', 'failed', 'pending', 'unknown', 'disabled'].includes(
         String(found.status),
       )
     ) {
@@ -218,6 +218,7 @@ export function operationRecord(row: StoredOperation): OperationRecord {
           : stage.status === 'succeeded'
             ? '已确认'
             : stage.detail;
+      if(stage.status==='disabled')stage.detail='此部署未启用该集成';
       if (stage.key === 'review' && stage.status === 'succeeded')
         stage.detail = '触发检查已完成；评审结果请查看 AI 评审记录';
     }

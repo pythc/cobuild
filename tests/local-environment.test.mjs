@@ -27,6 +27,12 @@ test("core adapters derive native identity, callbacks, session age and disabled 
   );
 });
 test("disabled services cannot receive an environment, and public destinations cannot enter the local runner", () => {
+  const withoutKnowledge = structuredClone(config);
+  withoutKnowledge.modules = ["platform", "kick", "makit"];
+  delete withoutKnowledge.origins.weknow;
+  const env = localApplicationEnvironment(withoutKnowledge, "makit", org);
+  assert.equal(env.COBUILD_WEKNOW_ORIGIN, "");
+  assert.ok(Object.values(env).every((value) => typeof value === "string"));
   assert.equal(
     localApplicationEnvironment(
       { ...config, modules: ["platform"] },

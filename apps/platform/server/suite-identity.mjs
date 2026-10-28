@@ -1,8 +1,15 @@
+import { WorkspaceError } from "./workspace-store.mjs";
+import {
+  serviceKey,
+  verifyService,
+} from "../../../packages/service/channel.mjs";
+import { runProjectBridge } from "./project-action-bridge.mjs";
 import { join } from "node:path";
 import { randomBytes, createHash } from "node:crypto";
 import { openSuiteAuth } from "./suite-auth-store.mjs";
 import { openUnifiedIdentity } from "./unified-identity.mjs";
 import { MailAuthError } from "./mail-auth.mjs";
+import { suiteAccountPage } from "./suite-account-page.mjs";
 import { suiteAuthPage } from "./suite-auth-page.mjs";
 import { suiteOrganizationPage } from "./suite-organization-page.mjs";
 import {
@@ -40,7 +47,7 @@ async function read(req) {
   timer.unref();
   try {
     for await (const chunk of req) {
-      if ((size += chunk.length) > 8192)
+      if ((size += chunk.length) > 32768)
         throw new MailAuthError(413, "请求过长");
       parts.push(chunk);
     }
@@ -116,7 +123,16 @@ export function createSuiteIdentity({ config, directory, now = Date.now }) {
   const auth = openSuiteAuth({ directory, config, now }),
     apps = suiteApplications(config),
     registry = createRegistry(config);
-  let access, navigation;
+  let access, navigation, workspace;
+  const keys = Object.fromEntries(
+    ["makit", "weknow"]
+      .filter((id) => config.modules.includes(id))
+      .map((id) => {
+        const p = join(directory, id + ".service.key");
+        serviceKey(p, true);
+        return [id, p];
+      }),
+  );
   const allowed = (id) =>
     Boolean(
       applicationModules[id] && config.modules.includes(applicationModules[id]),
@@ -182,6 +198,9 @@ export function createSuiteIdentity({ config, directory, now = Date.now }) {
     setApplicationAccess(value) {
       access = value;
     },
+    setWorkspace(value) {
+      workspace = value;
+    },
     setNavigation(value) {
       navigation = value;
     },
@@ -235,12 +254,15 @@ export function createSuiteIdentity({ config, directory, now = Date.now }) {
       if (
         ![
           "/organization",
+          "/account",
+          "/reset-password",
           "/login",
           "/join",
           "/setup",
           "/auth",
           "/auth/",
         ].includes(path) &&
+        !path.startsWith("/api/suite/services/") &&
         !path.startsWith("/api/auth/") &&
         !path.startsWith("/api/identity/") &&
         ![
@@ -257,35 +279,143 @@ export function createSuiteIdentity({ config, directory, now = Date.now }) {
         return false;
       try {
         const url = new URL(req.url, config.origins.platform);
-        if (path === "/organization" && req.method === "GET") {
+        if (path.startsWith("/api/suite/services/")) {
+          const match =
+            /^\/api\/suite\/services\/(makit|weknow)\/(directory|member|actions|project)$/.exec(
+              path,
+            );
+          if (!match || req.method !== "POST" || !keys[match[1]])
+            throw new MailAuthError(404, "连接未启用");
+          let payload;
+          try {
+            payload = verifyService(
+              req.headers,
+              await read(req),
+              path,
+              keys[match[1]],
+            );
+          } catch {
+            throw new MailAuthError(401, "服务身份无效");
+          }
+          if (payload.organizationId !== auth.organizationId)
+            throw new MailAuthError(403, "组织不匹配");
+          const app = match[1],
+            action = match[2];
+          if (action === "member" && app === "makit") {
+            const p = auth.profile(payload.userId);
+            await checkApp(p, "requirements");
+            json(res, 200, p);
+            return true;
+          }
+          if (action === "directory") {
+            json(res, 200, auth.directorySnapshot());
+            return true;
+          }
+          if (!config.modules.includes("kick") || !workspace)
+            throw new MailAuthError(404, "项目未启用");
+          if (action === "actions" && app === "makit") {
+            const v = payload.command;
+            if (
+              !v ||
+              Object.keys(v).some(
+                (k) =>
+                  ![
+                    "requestId",
+                    "subject",
+                    "at",
+                    "action",
+                    "projectId",
+                    "input",
+                  ].includes(k),
+              ) ||
+              typeof v.subject !== "string" ||
+              !/^[-a-f0-9]{36}$/.test(v.projectId || "") ||
+              ![
+                "read",
+                "knowledge_link",
+                "milestone_add",
+                "milestone_set",
+              ].includes(v.action) ||
+              !/^[-a-f0-9]{36}$/.test(v.requestId || "")
+            )
+              throw new MailAuthError(400, "项目操作无效");
+            json(
+              res,
+              200,
+              await runProjectBridge(v, { store: workspace.store, mail: this }),
+            );
+            return true;
+          }
+          if (action === "project" && app === "weknow") {
+            const snapshot = auth.directorySnapshot(),
+              p = workspace.store.get(
+                auth.profile(
+                  snapshot.members.find(
+                    (m) => m.active && m.role === "super_admin",
+                  )?.id,
+                ),
+                payload.projectId,
+              );
+            if (
+              p.phase !== "active" ||
+              p.archived ||
+              !p.knowledgeSpace?.requested
+            )
+              throw new MailAuthError(409, "项目未批准创建知识空间");
+            const owner = auth.profile(p.ownerSubject);
+            await checkApp(owner, "knowledge");
+            json(res, 200, { project: p, owner });
+            return true;
+          }
+          throw new MailAuthError(404, "连接操作不存在");
+        }
+        if (
+          ["/organization", "/account"].includes(path) &&
+          req.method === "GET"
+        ) {
           let a;
           try {
             a = actor(req);
           } catch {
-            res.writeHead(302, { Location: "/login?next=%2Forganization" });
+            res.writeHead(302, {
+              Location: "/login?next=" + encodeURIComponent(path),
+            });
             res.end();
             return true;
           }
-          auth.administrator(a);
-          const page = suiteOrganizationPage(config, a);
+          if (path === "/organization") auth.administrator(a);
+          const page =
+            path === "/account"
+              ? suiteAccountPage(config, a)
+              : suiteOrganizationPage(config, a);
           res.writeHead(200, {
             "Content-Type": "text/html; charset=utf-8",
             "Cache-Control": "no-store",
             "Content-Security-Policy": page.csp,
+            "Referrer-Policy": "no-referrer",
           });
           res.end(page.html);
           return true;
         }
         if (
           ["GET", "HEAD"].includes(req.method) &&
-          ["/login", "/join", "/setup", "/auth", "/auth/"].includes(path)
+          [
+            "/login",
+            "/join",
+            "/setup",
+            "/auth",
+            "/auth/",
+            "/reset-password",
+          ].includes(path)
         ) {
           let mode =
-              path === "/join"
-                ? "join"
-                : auth.initialized()
-                  ? "login"
-                  : "setup",
+              path === "/reset-password"
+                ? "reset"
+                : path === "/join"
+                  ? "join"
+                  : auth.initialized()
+                    ? "login"
+                    : "setup",
             consent,
             next = safeNext(url.searchParams.get("next"));
           if (path.startsWith("/auth") && url.search) {
@@ -311,6 +441,10 @@ export function createSuiteIdentity({ config, directory, now = Date.now }) {
           return true;
         }
         if (req.method === "GET") {
+          if (path === "/api/auth/transfer-owner") {
+            json(res, 200, { transfer: auth.transferStatus(actor(req)) });
+            return true;
+          }
           if (path === "/api/suite/config") {
             json(res, 200, {
               organization: config.organization,
@@ -370,6 +504,14 @@ export function createSuiteIdentity({ config, directory, now = Date.now }) {
         }
         writes(req);
         const input = await read(req);
+        if (path === "/api/auth/reset-password") {
+          json(
+            res,
+            200,
+            await auth.resetPassword(input, req.socket.remoteAddress),
+          );
+          return true;
+        }
         if (
           path === "/api/auth/bootstrap" ||
           path === "/api/auth/login" ||
@@ -399,6 +541,21 @@ export function createSuiteIdentity({ config, directory, now = Date.now }) {
         }
         const session = auth.session(req.headers.cookie);
         auth.csrf(session, req.headers["x-csrf-token"]);
+        if (
+          [
+            "/api/auth/change-password",
+            "/api/auth/recovery",
+            "/api/auth/transfer-owner",
+          ].includes(path)
+        ) {
+          const method = path.endsWith("change-password")
+            ? "changePassword"
+            : path.endsWith("recovery")
+              ? "issueRecovery"
+              : "transferOwner";
+          json(res, 200, await auth[method](session, input));
+          return true;
+        }
         if (path === "/api/auth/tokens") {
           if (
             Object.keys(input).some((k) => k !== "scopes") ||
@@ -463,12 +620,19 @@ export function createSuiteIdentity({ config, directory, now = Date.now }) {
       } catch (error) {
         req.resume();
         if (!res.headersSent)
-          json(res, error instanceof MailAuthError ? error.status : 503, {
-            error:
-              error instanceof MailAuthError
-                ? error.message
-                : "暂时无法完成身份操作",
-          });
+          json(
+            res,
+            error instanceof MailAuthError || error instanceof WorkspaceError
+              ? error.status
+              : 503,
+            {
+              error:
+                error instanceof MailAuthError ||
+                error instanceof WorkspaceError
+                  ? error.message
+                  : "暂时无法完成身份操作",
+            },
+          );
         return true;
       }
     },

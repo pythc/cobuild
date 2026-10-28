@@ -16,7 +16,7 @@ const link = z
     if (!v) return true;
     try {
       const u = new URL(v);
-      return u.protocol === 'https:' && !u.username && !u.password;
+      return (u.protocol === 'https:' || process.env.COBUILD_IDENTITY_MODE==='local'&&[process.env.COBUILD_IDENTITY_ORIGIN,process.env.MAKIT_PUBLIC_URL,process.env.COBUILD_WEKNOW_ORIGIN].includes(u.origin)) && !u.username && !u.password;
     } catch {
       return false;
     }

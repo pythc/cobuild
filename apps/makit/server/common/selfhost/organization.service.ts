@@ -10,7 +10,7 @@ export class MakitOrganizationService {
   private chats: Awaited<ReturnType<FeishuService['visibleChats']>> = [];
   constructor(private readonly database: DrizzleDatabaseManager, private readonly feishu: FeishuService) {}
   async refresh(): Promise<void> {
-    if (this.expires > Date.now()) return;
+    if (process.env.COBUILD_IDENTITY_MODE!=='local' && this.expires > Date.now()) return;
     if (this.pending) return this.pending;
     this.pending = this.sync().finally(() => { this.pending = undefined; });
     return this.pending;

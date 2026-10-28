@@ -69,7 +69,7 @@ export class RequirementOperationOutboxService
   ) {}
 
   onModuleInit(): void {
-    if (process.env.MAKIT_WORKERS_ENABLED === 'false') return;
+    if (process.env.MAKIT_WORKERS_ENABLED === 'false' && process.env.COBUILD_IDENTITY_MODE !== 'local') return;
     this.timer = setInterval(() => {
       void this.scan().catch((error: unknown) =>
         this.logger.error(`operation_outbox_scan_failed ${backgroundErrorDiagnostic(error)}`),
@@ -82,7 +82,7 @@ export class RequirementOperationOutboxService
   }
 
   async scan(): Promise<void> {
-    if (process.env.MAKIT_WORKERS_ENABLED === 'false') return;
+    if (process.env.MAKIT_WORKERS_ENABLED === 'false' && process.env.COBUILD_IDENTITY_MODE !== 'local') return;
     if (this.busy) return;
     this.busy = true;
     try {
@@ -129,6 +129,11 @@ export class RequirementOperationOutboxService
       if (!event) throw new Error('event_missing');
       const before: RequirementSummary = JSON.parse(event.before_json);
       const after: RequirementSummary = JSON.parse(event.after_json);
+      if (process.env.COBUILD_IDENTITY_MODE === 'local' && ['review', 'notification'].includes(row.consumer)) {
+        // Complete the consumer as intentionally disabled, never as delivered.
+        await this.finish(row, 'succeeded', 'integration_disabled');
+        return;
+      }
       if (row.consumer === 'history') {
         if (!(await this.command.hasConfirmedActivity(row.operation_id))) {
           const actor = await this.jobs.currentActor(event.actor_user_id);

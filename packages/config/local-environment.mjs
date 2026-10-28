@@ -35,6 +35,9 @@ export function localApplicationEnvironment(input, id, organizationId) {
     ? {
         ...common,
         COBUILD_IDENTITY_ORIGIN: issuer.origin,
+        COBUILD_WEKNOW_ORIGIN: config.modules.includes("weknow")
+          ? config.origins.weknow
+          : "",
         MAKIT_PUBLIC_URL: url.origin,
         SERVER_HOST: "127.0.0.1",
         SERVER_PORT: url.port,

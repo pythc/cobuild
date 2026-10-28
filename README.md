@@ -2,7 +2,7 @@
 
 面向实验室和小型研发团队的自部署协作套件。以项目为主线，连接项目发起、需求推进与知识沉淀。
 
-**当前阶段：通用运行时的本地验证（0.2.0-dev.0）。尚不可作为独立安装版本公开发行。** 工作台、Makit、WeKnow 的本地统一身份已贯通；平台可选模块已有实际门禁。生产部署、外部集成和完整业务迁移仍未验收。
+**当前阶段：核心项目协作的本地验证（0.3.0-dev.0）。尚不可作为独立安装版本公开发行。** 不依赖飞书的登录、成员邀请、账号恢复、所有权转让和目录同步已接入。Kick 审批立项 → Makit 需求协作与里程碑回写 → WeKnow 自动建空间及文档写入，已通过真实本地服务和重启验证。生产部署、外部交付集成和既有数据迁移仍未验收。
 
 ## 产品范围
 
@@ -22,6 +22,7 @@ apps/evalab/               考核源码，可选
 apps/relay/                咨询与反馈源码，可选
 integrations/weknow/       Docmost 派生源码及许可边界
 packages/config/           通用目标配置与模块依赖校验
+packages/service/          核心服务之间的签名请求协议
 config/                    无凭据的配置示例
 deploy/                    部署目标与验收边界
 docs/                      产品、架构、改造顺序与验证记录
@@ -48,6 +49,8 @@ npm run release:check
 `config/cobuild.example.json` 是完整目标契约，`config/cobuild.local.example.json` 是本机核心配置示例。当前运行器支持本地邀请账号；不支持的模块和外部集成会在启动前明确拒绝。OIDC 仍待实现。
 
 本地预览和完整核心链路测试见 [本地运行说明](docs/LOCAL-RUNTIME.md)。`npm run local:init` / `npm run local:platform` 提供持久的工作台与 Kick 预览；`npm run test:local-suite` 使用三套真实服务及临时数据库完成隔离验证并自动清理。
+
+账号恢复、所有权转让及 Kick → Makit → WeKnow 的操作步骤也在该说明中。当前本地模式的需求写入与操作历史正常执行；未配置的 AI 评审、邮件和飞书通知明确显示未启用，不会伪装成发送成功。
 
 ## 开发单个应用
 
