@@ -88,11 +88,12 @@
         "weknow"
       ],
       "acceptance": "项目只创建一次，显式 ID 关联，改名归档和成员变化可恢复且不重复建空间",
-      "scopeNote": "Stable project IDs and durable command receipts verified. New managed WeKnow spaces enforce live project membership/archive state intersected with native ACL, including native file/search/MCP/collaboration access. Space rename, ownership transfer and deliberate legacy-space conversion remain open.",
+      "scopeNote": "Stable project IDs, durable edit/rename receipts, managed-space rename conflict handling, archive/restore convergence and native live ACL intersections verified locally. Archive/restore command replay, ownership transfer, explicit visibility policy and deliberate legacy-space conversion remain open.",
       "evidence": [
         "provenance/collaboration-checks.json",
         "docs/LOCAL-RUNTIME.md",
-        "provenance/core-managed-checks.json"
+        "provenance/core-managed-checks.json",
+        "provenance/project-lifecycle-checks.json"
       ]
     },
     {
@@ -140,9 +141,10 @@
         "provenance/deployment-checks.json",
         "provenance/migration-checks.json",
         "provenance/https-checks.json",
-        "provenance/core-managed-checks.json"
+        "provenance/core-managed-checks.json",
+        "provenance/project-lifecycle-checks.json"
       ],
-      "scopeNote": "Exact local 0.6 to core candidate migration verified across SQLite/PostgreSQL, including partial commit, controller exception after candidate activation, forward resume, unsafe old-binary refusal and cold restore preserving sessions/documents/attachments/new writes. Generic replacement-candidate repair, other historical baselines and cross-host/engine restore remain open."
+      "scopeNote": "Exact local 0.6-to-managed-core migration and 0.7-to-0.8 runtime transition verified. Same-schema, exact-plan replacement candidate, interrupted forward resume and cold restore retain sessions/documents/attachments/new writes. Arbitrary runtime/schema repairs, other historical baselines and cross-host/engine restore remain open."
     },
     {
       "id": "workflow-acceptance",

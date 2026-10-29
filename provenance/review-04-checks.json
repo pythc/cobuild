@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-29",
+  "baseCommit": "92bb05579f1cd88d49d2300b773d078b7d301c8d",
+  "scope": "read-only source review, local regression and synthetic probes; no runtime feature changes",
+  "productionAccess": false,
+  "externalMessages": false,
+  "startedContainers": false,
+  "currentRun": {
+    "regressionPassed": 122,
+    "deploymentPolicyPassed": 42,
+    "probes": {
+      "productionAccess": false,
+      "scope": "synthetic store and UI logic only",
+      "archive": {
+        "committed": true,
+        "hasOperation": false,
+        "retryAfterLostResponse": {
+          "status": 409,
+          "message": "revision_conflict"
+        },
+        "storedArchived": true
+      },
+      "archivedDeepLink": {
+        "firstSelected": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+        "afterRefresh": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+        "selectionLost": true,
+        "filter": "active"
+      }
+    }
+  },
+  "notRun": [
+    "browser acceptance",
+    "native three-service E2E",
+    "container upgrade/restore",
+    "capacity or cross-host verification"
+  ],
+  "priorEvidence": [
+    "provenance/project-lifecycle-checks.json"
+  ],
+  "logSha256": {
+    "next-batch-review-verify.log": "8a20a2e498610566b68d6ca5dce276b93a3e4641e45f56bf8dd3d0d4661ceb0a",
+    "next-batch-review-deploy.log": "43c14d09feca505fd82478586807c4b5c94a41f6ea63038686838f69e16fb0ca",
+    "next-batch-review-probes.json": "21c6c941c414dcae750e11b24148f90e47fe0b6a00b40445c33ad6f9f662c98e"
+  }
+}
