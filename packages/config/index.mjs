@@ -35,7 +35,7 @@ function freeze(value) {
 /** Validates the target configuration contract. Legacy application adapters are tracked separately. */
 export function validateConfig(input) {
   const config = structuredClone(input);
-  keys(config, ['schemaVersion', 'organization', 'origins', 'modules', 'identity', 'integrations', 'delivery'], 'config');
+  keys(config, ['schemaVersion', 'organization', 'origins', 'modules', 'identity', 'integrations', 'delivery', 'codeSources'], 'config');
   if (config.schemaVersion !== 1) fail('schemaVersion must be 1');
   keys(config.organization, ['name', 'slug'], 'organization');
   if (typeof config.organization.name !== 'string' || !config.organization.name.trim() || config.organization.name.length > 100) fail('organization.name must be 1 to 100 characters');
@@ -63,6 +63,10 @@ export function validateConfig(input) {
   for (const id of ['feishu', 'github', 'mail', 'ai']) boolean(config.integrations[id], `integrations.${id}`);
   if (config.identity.providers.includes('feishu') && !config.integrations.feishu) fail('Feishu identity requires the Feishu integration');
   if (config.integrations.mail && !config.modules.includes('mail')) fail('mail integration requires the mail module');
+  if (config.codeSources !== undefined) {
+    keys(config.codeSources, ['githubPublic'], 'codeSources');
+    boolean(config.codeSources.githubPublic, 'codeSources.githubPublic');
+  }
   keys(config.delivery, ['externalMessages'], 'delivery');
   boolean(config.delivery.externalMessages, 'delivery.externalMessages');
   if (config.delivery.externalMessages && !config.integrations.mail && !config.integrations.feishu) fail('external messages require an enabled delivery integration');

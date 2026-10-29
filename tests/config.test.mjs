@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import {assertNativeRuntime} from '../packages/config/runtime.mjs';
 import { registry, validateConfig, planConfig } from '../packages/config/index.mjs';
 
 const example = () => JSON.parse(readFileSync(new URL('../config/cobuild.example.json', import.meta.url)));
@@ -65,3 +66,11 @@ test('suite manifest and package publish the same development version', () => {
   const pkg=JSON.parse(readFileSync(new URL('../package.json',import.meta.url)));
   assert.equal(manifest.version,pkg.version);
 });
+
+test('public code reads are opt-in, legacy integrations remain separate, old configuration stays valid',()=>{
+  const c=example();delete c.codeSources;assert.equal(validateConfig(c).codeSources,undefined);
+  c.codeSources={githubPublic:true};assert.equal(validateConfig(c).codeSources.githubPublic,true);assert.equal(validateConfig(c).integrations.github,false);
+  for(const bad of [{githubPublic:'true'},{githubPublic:true,token:'not-supported'},{githubPublic:true,apiUrl:'http://127.0.0.1'}])assert.throws(()=>validateConfig({...c,codeSources:bad}));
+});
+
+test('native runtime permits public read source but still rejects legacy GitHub integration',()=>{const c=example();c.codeSources={githubPublic:true};assert.doesNotThrow(()=>assertNativeRuntime(validateConfig(c)));c.integrations.github=true;assert.throws(()=>assertNativeRuntime(validateConfig(c)),/not yet enabled/);});

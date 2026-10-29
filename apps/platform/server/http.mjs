@@ -33,7 +33,7 @@ import {ADMIN_FRAME_ANCESTORS} from './admin-http.mjs';
 import {mailAuthChallenge} from './mail-oauth.mjs';
 import packageInfo from '../package.json' with {type:'json'};
 const appConfig=suiteConfig?suiteApplications():legacyAppConfig;
-function renderWorkbenchForSuite(html){const data=JSON.stringify({catalog:appConfig,organization:suiteConfig.organization,modules:suiteConfig.modules}).replaceAll('<','\\u003c');return renderWorkbench(html,appConfig).replace('<script type="module">','<script>window.__COBUILD__='+data+'</script><script type="module">');}
+function renderWorkbenchForSuite(html){const data=JSON.stringify({catalog:appConfig,organization:suiteConfig.organization,modules:suiteConfig.modules,codeSources:{githubPublic:moduleEnabled('kick')&&suiteConfig.codeSources?.githubPublic===true}}).replaceAll('<','\\u003c');return renderWorkbench(html,appConfig).replace('<script type="module">','<script>window.__COBUILD__='+data+'</script><script type="module">');}
 class HttpError extends Error {constructor(status,message){super(message);this.status=status;}}
 const securityHeaders={'X-Content-Type-Options':'nosniff','Referrer-Policy':'strict-origin-when-cross-origin','Permissions-Policy':'camera=(), microphone=(), geolocation=()'};
 const legacyCsp="frame-src 'self' https://cobuild.110-lab.cn; default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'self'; form-action 'self'";
@@ -85,7 +85,7 @@ export async function createHttpServer(options={}){
   const monitoring=createMonitoringHttp({mail,...options.monitoring});
   const monitoringPage=await readFile(new URL('../dist/monitoring.html',import.meta.url),'utf8');
   const server=createServer(async(req,res)=>{
-    if(suiteConfig){const end=res.end.bind(res);res.end=(body,...args)=>{if(typeof body==='string'&&String(res.getHeader('Content-Type')).includes('text/html')&&body.includes('<script type="module">')&&!body.includes('window.__COBUILD__=')){const data=JSON.stringify({catalog:appConfig,organization:suiteConfig.organization,modules:suiteConfig.modules}).replaceAll('<','\\u003c');body=body.replace('<script type="module">','<script>window.__COBUILD__='+data+'</script><script type="module">');}return end(body,...args);};}
+    if(suiteConfig){const end=res.end.bind(res);res.end=(body,...args)=>{if(typeof body==='string'&&String(res.getHeader('Content-Type')).includes('text/html')&&body.includes('<script type="module">')&&!body.includes('window.__COBUILD__=')){const data=JSON.stringify({catalog:appConfig,organization:suiteConfig.organization,modules:suiteConfig.modules,codeSources:{githubPublic:moduleEnabled('kick')&&suiteConfig.codeSources?.githubPublic===true}}).replaceAll('<','\\u003c');body=body.replace('<script type="module">','<script>window.__COBUILD__='+data+'</script><script type="module">');}return end(body,...args);};}
     for(const [name,value] of Object.entries(securityHeaders))res.setHeader(name,value);
     const host=(req.headers.host||'').toLowerCase().replace(/:\d+$/,'');
     if(suiteConfig&&req.headers.host!==new URL(suiteConfig.origins.platform).host){res.writeHead(421);res.end('Unrecognized host');return;}

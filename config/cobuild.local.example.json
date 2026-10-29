@@ -9,5 +9,6 @@
   "modules": ["platform", "kick", "makit", "weknow"],
   "identity": { "providers": ["local"], "sessionDays": 30, "selfRegistration": false },
   "integrations": { "feishu": false, "github": false, "mail": false, "ai": false },
+  "codeSources": { "githubPublic": false },
   "delivery": { "externalMessages": false }
 }

@@ -2,9 +2,9 @@
 
 面向实验室和小型研发团队的自部署协作套件。以项目为主线，连接项目发起、需求推进与知识沉淀。
 
-**当前阶段：项目负责人转让（0.12.0-dev.0），仅本地验证，尚未达到公开发行条件。** 负责人或组织管理员发起，由接收人本人确认；原负责人保留为项目成员，里程碑分配和知识空间权限不自动改变。
+**当前阶段：项目概览的只读代码状态（0.13.0-dev.0），仅本地验证，尚未达到公开发行条件。** 可按需读取公共 GitHub 仓库的近期 PR 和指定提交检查；默认关闭，不使用凭据，不启动代码写入或通知。
 
-当前完成度与待办见 [实施状态](docs/design/collaboration-framework/STATUS.md)，本批边界见 [实施记录 07](docs/design/collaboration-framework/IMPLEMENTATION-07.md)，整体目标见 [改造方案](docs/design/collaboration-framework/README.md)。历史验证记录保持原样；**没有发布线上或公开发行。**
+当前完成度与待办见 [实施状态](docs/design/collaboration-framework/STATUS.md)，本批边界见 [实施记录 08](docs/design/collaboration-framework/IMPLEMENTATION-08.md)，整体目标见 [改造方案](docs/design/collaboration-framework/README.md)。历史验证记录保持原样；**没有发布线上或公开发行。**
 
 ## 产品范围
 
@@ -12,7 +12,8 @@
 | --- | --- |
 | 默认核心 | CoBuild 工作台、组织与权限、统一身份、Kick、Makit、WeKnow |
 | 仅保留历史源码 | HiFlow、Evalab、Relay、荣誉、动态发布；不接受运行配置启用 |
-| 后续连接器 | OIDC、飞书、GitHub、通知渠道、管理员运维；当前默认关闭 |
+| 可选只读来源 | GitHub 公共仓库，无凭据、手动读取；已验证宿主本地运行，默认关闭 |
+| 后续连接器 | OIDC、飞书、私有代码仓库、通知渠道、管理员运维；当前默认关闭 |
 | 本仓库不包含的产品 | 110lab 桌面插件、CoBuild 品牌首页、需求监控／催办工程、智评学堂／批改系统 |
 
 ## 当前目录
@@ -26,6 +27,7 @@ integrations/weknow/       Docmost 派生源码及许可边界
 packages/config/           通用目标配置与模块依赖校验
 packages/service/          核心服务之间的签名请求协议
 packages/contracts/        资源与内置模块能力契约
+packages/code-sources/     公共代码状态的只读 provider
 packages/operations/       同业务库事务的操作与事件回执
 config/                    无凭据的配置示例
 deploy/                    容器构建、部署管理、备份恢复、升级与回退

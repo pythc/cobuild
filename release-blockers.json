@@ -44,9 +44,10 @@
         "provenance/native-runtime-checks.json",
         "docs/LOCAL-RUNTIME.md",
         "provenance/collaboration-checks.json",
-        "provenance/makit-local-brand-checks.json"
+        "provenance/makit-local-brand-checks.json",
+        "provenance/public-code-checks.json"
       ],
-      "scopeNote": "Native core runtime and account/project service keys verified locally. Makit header and light/dark favicons now use bundled local SVG assets, verified in actual Chrome. Unported extensions, external integrations, remaining branding portability and target deployment remain open."
+      "scopeNote": "Native core runtime and account/project service keys verified locally. Makit header and light/dark favicons now use bundled local SVG assets, verified in actual Chrome. Unported extensions, external integrations, remaining branding portability and target deployment remain open. Version 0.13 adds a separately gated public GitHub read adapter without credentials or legacy workers; native preview egress is limited to api.github.com:443. Container core egress remains isolated and unverified for this source."
     },
     {
       "id": "identity",
@@ -89,13 +90,14 @@
         "weknow"
       ],
       "acceptance": "项目只创建一次，显式 ID 关联，改名归档和成员变化可恢复且不重复建空间",
-      "scopeNote": "Stable IDs, durable edit/rename/archive/restore replay, coalesced snapshot receipts, managed-space rename and live ACL boundaries verified locally. Ownership transfer, explicit visibility policy and deliberate legacy-space conversion remain open.",
+      "scopeNote": "Stable IDs, durable edit/rename/archive/restore replay, coalesced snapshot receipts, managed-space rename and live ACL boundaries verified locally. Version 0.12 adds recipient-confirmed ownership transfer with former-owner membership and milestone assignments preserved. Explicit visibility policy, deliberate legacy-space conversion, generic transfer events and broader contract acceptance remain open.",
       "evidence": [
         "provenance/collaboration-checks.json",
         "docs/LOCAL-RUNTIME.md",
         "provenance/core-managed-checks.json",
         "provenance/project-lifecycle-checks.json",
-        "provenance/project-state-checks.json"
+        "provenance/project-state-checks.json",
+        "provenance/project-transfer-checks.json"
       ]
     },
     {
@@ -145,9 +147,10 @@
         "provenance/https-checks.json",
         "provenance/core-managed-checks.json",
         "provenance/project-lifecycle-checks.json",
-        "provenance/project-state-checks.json"
+        "provenance/project-state-checks.json",
+        "provenance/project-transfer-checks.json"
       ],
-      "scopeNote": "Exact local 0.6-to-managed-core, 0.7-to-0.8 and 0.8-to-0.9 transitions verified. Same-schema exact-plan repair replacement, interrupted resume and cold restore retain sessions/documents/attachments/new writes. Arbitrary repairs, other historical baselines and cross-host/engine restore remain open."
+      "scopeNote": "Exact local managed-core lifecycle transitions verified. Version 0.12 transfer migration and exact-candidate forward runtime repair add 13 lifecycle checks and 47 stage assertions on the retained local baseline. Sessions, documents, attachments and new writes survive. Arbitrary repairs, other historical baselines and cross-host/engine restore remain open; the latest candidate overlay is not a clean full Dockerfile build."
     },
     {
       "id": "workflow-acceptance",
@@ -158,12 +161,14 @@
         "weknow"
       ],
       "acceptance": "两个真实测试账号完成项目、文档、需求和交付全流程及越权验证，无实验室服务请求或真实外发",
-      "scopeNote": "Synthetic local collaboration and native live ACL verified. This batch adds 34 real Chrome project navigation, archive replay, draft/error/revocation and two-account cross-app checks over local HTTP. Full-site/browser visual acceptance, portable branding, GitHub/AI delivery, outbound notifications and external integrations remain open.",
+      "scopeNote": "Synthetic local collaboration and native live ACL verified. Version 0.12 records 77 real Chrome checks including recipient-confirmed project transfer, navigation, draft/error and revocation cases. Full-site accessibility, portable branding, real code delivery, external integrations and external-team acceptance remain open. Version 0.13 adds 36 fixture-upstream browser checks, two real-public-source browser checks and bounded unauthenticated public API reads. This is read-only source acceptance, not immutable Delivery evidence, private repository access or container deployment acceptance.",
       "evidence": [
         "provenance/collaboration-checks.json",
         "docs/LOCAL-RUNTIME.md",
         "provenance/core-managed-checks.json",
-        "provenance/project-state-checks.json"
+        "provenance/project-state-checks.json",
+        "provenance/project-transfer-checks.json",
+        "provenance/public-code-checks.json"
       ]
     }
   ]

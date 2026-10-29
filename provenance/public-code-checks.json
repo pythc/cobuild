@@ -1,0 +1,355 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-30",
+  "version": "0.13.0-dev.0",
+  "baseCommit": "6ad7f9f9b960ff39fa1ceaec97c95272f90fe2ae",
+  "scope": "Public GitHub read-only source in the existing project overview; native local self-hosted runtime",
+  "productionAccess": false,
+  "externalMessages": false,
+  "externalWrites": false,
+  "publicReleaseReady": false,
+  "checks": {
+    "regression": {
+      "rootPassed": 89,
+      "projectPassed": 86,
+      "deploymentPolicyPassed": 46,
+      "failed": 0
+    },
+    "builds": {
+      "platform": true,
+      "makit": "not_rerun",
+      "weknow": "not_rerun"
+    },
+    "fixtureBrowser": {
+      "passed": true,
+      "checks": [
+        "opening project sends no external code reads",
+        "one action reads repository plus a bounded PR page",
+        "load preserves keyboard focus",
+        "PR points at validated GitHub source",
+        "both check and status results are visible",
+        "checks show exact commit prefix",
+        "accessible expand state",
+        "read-only interactions do not mutate project audit",
+        "390px view has no horizontal page overflow",
+        "back retains selected project and expanded code result",
+        "background refresh preserves edit draft",
+        "rate_limited failure stays inside code panel",
+        "rate_limited does not show stale success",
+        "timeout failure stays inside code panel",
+        "timeout does not show stale success",
+        "not_found failure stays inside code panel",
+        "not_found does not show stale success",
+        "repository_moved failure stays inside code panel",
+        "repository_moved does not show stale success",
+        "partial results never claim all passed",
+        "provider title is rendered only as text",
+        "old head response cannot overwrite refreshed checks",
+        "late previous project response discarded",
+        "return from abandoned request is not stuck loading",
+        "preview exits gracefully",
+        "disabled source API refuses reads",
+        "disable sends no upstream requests",
+        "disable retains repository and native session",
+        "preview exits gracefully",
+        "disabled Kick rejects the code endpoint",
+        "module disable sends no source requests",
+        "preview exits gracefully",
+        "restart/reenable has fresh cache",
+        "revocation clears source and project details",
+        "no browser page errors",
+        "preview exits gracefully"
+      ],
+      "productionAccess": false,
+      "externalMessages": false,
+      "github": "local deterministic fixture",
+      "screenshots": [
+        "code-desktop.png",
+        "code-narrow.png",
+        "code-partial.png"
+      ],
+      "browserVersion": "156.0.8078.73"
+    },
+    "realPublicBrowser": {
+      "passed": true,
+      "productionAccess": false,
+      "externalWrites": false,
+      "repository": "https://github.com/octokit/rest.js",
+      "checks": [
+        "native page reads real public repository through guarded preview",
+        "real head checks render without external browser navigation"
+      ],
+      "repositoryId": "359215305",
+      "pullCount": 5,
+      "reference": {
+        "provider": "github",
+        "host": "github.com",
+        "repositoryId": "359215305",
+        "pullRequestId": "4736617467",
+        "number": 648,
+        "headSha": "2982836c825a1b967baf6e10d4fc3e4b52924fe1"
+      },
+      "result": {
+        "state": "ready",
+        "outcome": "passed",
+        "count": 8
+      },
+      "browserVersion": "156.0.8078.73",
+      "previewStopped": true
+    },
+    "publicApi": [
+      {
+        "date": "2026-10-29T16:26:25.170Z",
+        "scope": "Public GitHub GET only; no repository changes",
+        "repository": {
+          "provider": "github",
+          "host": "github.com",
+          "repositoryId": "1296269",
+          "fullName": "octocat/Hello-World",
+          "url": "https://github.com/octocat/Hello-World"
+        },
+        "summaryState": "ready",
+        "readAt": "2026-10-29T16:26:23.552Z",
+        "pullCount": 5,
+        "partial": true,
+        "reference": {
+          "provider": "github",
+          "host": "github.com",
+          "repositoryId": "1296269",
+          "pullRequestId": "5067622205",
+          "number": 11654,
+          "headSha": "e8b3b81cebc6a8d2f92a05c4b111c9bd283757e2"
+        },
+        "checks": {
+          "state": "ready",
+          "headSha": "e8b3b81cebc6a8d2f92a05c4b111c9bd283757e2",
+          "outcome": "none",
+          "sources": [
+            {
+              "source": "checks",
+              "state": "ready"
+            },
+            {
+              "source": "statuses",
+              "state": "ready"
+            }
+          ],
+          "count": 0
+        },
+        "calls": [
+          {
+            "path": "/repos/octocat/Hello-World",
+            "status": 200
+          },
+          {
+            "path": "/repos/octocat/Hello-World/pulls",
+            "status": 200
+          },
+          {
+            "path": "/repos/octocat/Hello-World",
+            "status": 200
+          },
+          {
+            "path": "/repos/octocat/Hello-World/pulls/11654",
+            "status": 200
+          },
+          {
+            "path": "/repos/octocat/Hello-World/commits/e8b3b81cebc6a8d2f92a05c4b111c9bd283757e2/check-runs",
+            "status": 200
+          },
+          {
+            "path": "/repos/octocat/Hello-World/commits/e8b3b81cebc6a8d2f92a05c4b111c9bd283757e2/status",
+            "status": 200
+          },
+          {
+            "path": "/repos/octocat/Hello-World/pulls/11654",
+            "status": 200
+          }
+        ],
+        "passed": true
+      },
+      {
+        "date": "2026-10-29T16:30:08.669Z",
+        "scope": "Public GitHub GET only; no repository changes",
+        "repository": {
+          "provider": "github",
+          "host": "github.com",
+          "repositoryId": "359215305",
+          "fullName": "octokit/rest.js",
+          "url": "https://github.com/octokit/rest.js"
+        },
+        "summaryState": "ready",
+        "readAt": "2026-10-29T16:30:06.730Z",
+        "pullCount": 5,
+        "partial": true,
+        "reference": {
+          "provider": "github",
+          "host": "github.com",
+          "repositoryId": "359215305",
+          "pullRequestId": "4736617467",
+          "number": 648,
+          "headSha": "2982836c825a1b967baf6e10d4fc3e4b52924fe1"
+        },
+        "checks": {
+          "state": "ready",
+          "headSha": "2982836c825a1b967baf6e10d4fc3e4b52924fe1",
+          "outcome": "passed",
+          "sources": [
+            {
+              "source": "checks",
+              "state": "ready"
+            },
+            {
+              "source": "statuses",
+              "state": "ready"
+            }
+          ],
+          "count": 8
+        },
+        "calls": [
+          {
+            "path": "/repos/octokit/rest.js",
+            "status": 200
+          },
+          {
+            "path": "/repos/octokit/rest.js/pulls",
+            "status": 200
+          },
+          {
+            "path": "/repos/octokit/rest.js",
+            "status": 200
+          },
+          {
+            "path": "/repos/octokit/rest.js/pulls/648",
+            "status": 200
+          },
+          {
+            "path": "/repos/octokit/rest.js/commits/2982836c825a1b967baf6e10d4fc3e4b52924fe1/status",
+            "status": 200
+          },
+          {
+            "path": "/repos/octokit/rest.js/commits/2982836c825a1b967baf6e10d4fc3e4b52924fe1/check-runs",
+            "status": 200
+          },
+          {
+            "path": "/repos/octokit/rest.js/pulls/648",
+            "status": 200
+          }
+        ],
+        "passed": true
+      }
+    ],
+    "schema": {
+      "trackedMigrationFilesUnchanged": 150,
+      "newTables": 0,
+      "newMigrations": 0
+    },
+    "release": {
+      "exitCode": 2,
+      "openBlockers": [
+        "license-original",
+        "license-weknow",
+        "source-current",
+        "configuration",
+        "identity",
+        "module-isolation",
+        "project-contract",
+        "deployment",
+        "upgrade-recovery",
+        "workflow-acceptance"
+      ],
+      "statusesUnchanged": true
+    },
+    "audit": {
+      "importedFiles": 2776,
+      "modifiedFiles": 92,
+      "missingFiles": 0,
+      "boundaryViolations": 0,
+      "portabilityFindings": 425
+    },
+    "cleanup": {
+      "unrelatedContainersUnchanged": true,
+      "containersChecked": 11,
+      "ownedContainersCreated": 0,
+      "recoveredTestDirectoriesRemoved": [
+        "cobuild-public-code-cF4FoF"
+      ],
+      "previewProcessesRemaining": []
+    }
+  },
+  "limits": [
+    "Public repositories only; no credentials or private-repository authorization",
+    "No immutable Delivery object, required-check policy, merge or deployment acceptance",
+    "Container core network remains internal; container egress and current image/upgrade acceptance not run",
+    "Full three-service regression, cross-host recovery, capacity and external-team acceptance not rerun",
+    "Source data is the recorded snapshot, not an assertion about current repository state"
+  ],
+  "reviewCorrections": [
+    "UI test harness loads the actual new module",
+    "Browser route fixture waits for held response before removal",
+    "Old-head response discarded after summary refresh",
+    "Detected head/repository changes evict summary cache; requested PR identity validated",
+    "Native preview permits only explicitly opted-in api.github.com:443; actual browser verified"
+  ],
+  "evidenceRoot": ".local/evidence/public-code-0.13.0-dev.0",
+  "sourceSha256": {
+    "README.md": "a43f580c929e7ac6a41278ba8b04c34aaae7dad8268b9a9241b5a7048f426358",
+    "apps/platform/server/http.mjs": "826d3b4db5e5947f295e463140863b0013ab2a25fec5a855b3644203c506d96c",
+    "apps/platform/server/workspace-http.mjs": "8d310b10205bd96a258ff50eb506069a875d5ecd4dc2d3e5761dbbe89814fe33",
+    "apps/platform/src/project-code.js": "68c22ab75262987c5c5658fead19b14dc9066e7257ff085c8097f1d40aed42bd",
+    "apps/platform/src/workspace.css": "3a0fcaf6bb36fdfae32544f48f7be00a10dd70e16817fcbd039ef8c639ce45cb",
+    "apps/platform/src/workspace.js": "1008e707eb8612851fdf5284fd695b0ec2f7f54fd16e9cd2461ca763fd99955d",
+    "apps/platform/tests/project-code-http.test.mjs": "1ce0272ccf044e94b9a4ab79ce46d960130f3690cc0a4b1fa647027b597b954a",
+    "apps/platform/tests/workspace-ui.test.mjs": "f61643bcfc8b67b1dcfeadf9ecf9cc24ce425ba070239657ef20cb698b734635",
+    "config/cobuild.example.json": "30582252ff5ebb4bd38651765d440aa96176105e76deb6863f482cf423d14005",
+    "config/cobuild.local.example.json": "809d0d7146be3847d197e89858410365c678a209ac8c199db0596252d16738a7",
+    "docs/LOCAL-RUNTIME.md": "9abc13aa75bc8995c23af9a73fbab9be0bf264bd06b047c4fc6eea187b6ceda9",
+    "docs/VERIFICATION.md": "8594dbb569dda445a751828c2c70abe5ecb1586978de9b37b7e849e0952b03fe",
+    "docs/design/collaboration-framework/IMPLEMENTATION-08.md": "9cc1c027d0f8dfe0aee548a4e2472b8e231c9d2aab4b396a26f5ad6157434d7b",
+    "docs/design/collaboration-framework/REVIEW-08.md": "bfeea170aca5085904d8e247f1b14849700f80a7752f322ca7dbe582c0493ed0",
+    "docs/design/collaboration-framework/STATUS.md": "a1f2ed978a11bfd698e9143264fbced6ef31872c2200e24b2d4d56e125722712",
+    "package.json": "ff283d257f94f4f309d3b7b8e585b3ea03f79915b83ebe6ced8d8648fe676f16",
+    "packages/code-sources/github-public.mjs": "7650d699c1de2a5f53037b59030a01fe628318587bf8a24453dc0bfa4fab1cac",
+    "packages/config/index.mjs": "a6a90c192ef243cdd21e83f7db34e501333f4ed6bab2df93af0721399b007d5d",
+    "provenance/audit.json": "a9b8f4adfbee3cde9b5db6709c83b490df6a6f1b682768e125fedc7a28b85b58",
+    "release-blockers.json": "6bcc7e8c93c06c8bb73756c786a672b62e3bf7a9018ba759967026ea05411437",
+    "suite.json": "34576556850eb3130d6792e38e5260efdf1583db8033ebc15ef85d3bf226bfcd",
+    "tests/code-network-guard.test.mjs": "a3ba087d37c84ac1b88dbc5fab735bd1fa1dbe2db5cfc8d4cf5d006e9b44c680",
+    "tests/code-source-browser.mjs": "395b283d9caefba6d00df55b3c2183734a8c291aca5f11930b164a8222a64e3d",
+    "tests/code-source-live-browser.mjs": "cb136bd0a78d4b26b4fc5c088d003043cfdd9b4636a1d2a9bbb9756afcd87acd",
+    "tests/code-source.test.mjs": "109b53175463bfaacc1b26ece554f390cac051cf6e6d6ea495b07cb99315d0f9",
+    "tests/config.test.mjs": "aa4da114f1af9540a1fcd857bc86cd9c77aee5ac4dd849f046332ce7c4d4cdd6",
+    "tests/fixtures/public-code-preview.mjs": "ae555148ab17ff8424138caab8bc02a8e13f3c629d297fab71f6789da2722462",
+    "tests/fixtures/public-code.mjs": "095bd0dfe8738342eac2c3ab49680fe89d3ba3c6863ca72b2d3f7763c223636b",
+    "tests/local-environment.test.mjs": "c6943f3cacca892f189f299aca5836a47dbe512edd833b5435e676f389ba18de",
+    "tools/check-public-code.mjs": "f0fa56767bb2a0d5365c68dbd46a6c1d892223db7fdc55254f310b9abb486ff1",
+    "tools/local-network-guard.cjs": "946502b122f760a6f1d9d365ebab8b088a8731a6c18dab77e34baf66b822b6a7"
+  },
+  "evidenceSha256": {
+    ".local/evidence/public-code-0.13.0-dev.0/audit.log": "cc3ba51faf612d235a23b3e4b4d8a1595b4f435c0fce04a3667d56cd2078ec2a",
+    ".local/evidence/public-code-0.13.0-dev.0/browser/code-desktop.png": "557cb4901822aaa7bdab08fdb22e0ae9f89c644ab6040d674941d650914f0ad4",
+    ".local/evidence/public-code-0.13.0-dev.0/browser/code-narrow.png": "8b9830067bd57f50f3772ed35c8ca9d6def8976d8b864ea0d43fbd8849b2e0cf",
+    ".local/evidence/public-code-0.13.0-dev.0/browser/code-partial.png": "36d76a0b293d88d2dcd75b5d29931fef151914bc256f2f29d62d806a6cb0d0e3",
+    ".local/evidence/public-code-0.13.0-dev.0/browser/preview.log": "79bf89594f824635839ff7ad514564bebde057ed132c5e6e29d1d4a2d3a05875",
+    ".local/evidence/public-code-0.13.0-dev.0/browser/report.json": "53dee53513f285ed0c8c87b9c97967b07cfe96fd6de225092cacaaa896e830e7",
+    ".local/evidence/public-code-0.13.0-dev.0/browser-final.log": "3fa16fb58d997efff881adadf014ec05b266dfa5668643b2f95c2d907178c0c9",
+    ".local/evidence/public-code-0.13.0-dev.0/browser-run-2.log": "d6de289cd442fbc0dd67d68e84a50fb4feb2d2f5e175c04fec730564e9bd5332",
+    ".local/evidence/public-code-0.13.0-dev.0/browser-run.log": "224f2882d9fa3e9be5a1e1473587f9c4629e6c26c92cd428cb47bc540d7749d4",
+    ".local/evidence/public-code-0.13.0-dev.0/cleanup.json": "93f8d9cc0e1580ac1a227a3a6751da9eec87982bf13c3f9d1e40f9e64bbe8460",
+    ".local/evidence/public-code-0.13.0-dev.0/deployment-policy.log": "7be53ca596750cb7f47020fefcd4725013d704e26c20d52230ec1f73dbd33d41",
+    ".local/evidence/public-code-0.13.0-dev.0/github-live-checks.json": "bbb7bd499afd4c852a76b9147fcf8d32c4c056439b51435797751e00dbdbaeb4",
+    ".local/evidence/public-code-0.13.0-dev.0/github-live.json": "b23a5c2267c0e25db06dba592b374a4f594805c6166a1e98caed0398d3db57cc",
+    ".local/evidence/public-code-0.13.0-dev.0/live-browser/preview.log": "1ada0c811cf0da9de34b6c3c4aa73b7e23619c9742752ba9c29299e566c89e26",
+    ".local/evidence/public-code-0.13.0-dev.0/live-browser/real-public-code.png": "7ef483e8c68565cc248cb286cc84083911f3778e3334ca4f2daf1c3be4b478fe",
+    ".local/evidence/public-code-0.13.0-dev.0/live-browser/report.json": "f68745063031db4dd3b0ad9026a10e10c24b4e5fa570ee57978e2e177cb83ecc",
+    ".local/evidence/public-code-0.13.0-dev.0/live-browser-final.log": "f4981ecc581a8934f325a99c74b4d6e4db36931e7867a0261f3940d10140fe37",
+    ".local/evidence/public-code-0.13.0-dev.0/live-browser-run.log": "f4981ecc581a8934f325a99c74b4d6e4db36931e7867a0261f3940d10140fe37",
+    ".local/evidence/public-code-0.13.0-dev.0/platform-build.log": "415166c5a486ab2c4beadd4bddf8befc2802f0f791d4c807a5bdd05855e9ef30",
+    ".local/evidence/public-code-0.13.0-dev.0/project-tests.log": "1630e30481f58b7377a2dfa3c813b9b7b3ce4f1c17ccf7f47b3bf5de8a68e1f0",
+    ".local/evidence/public-code-0.13.0-dev.0/release-check.log": "9b00c368fc3c25ea6ece92ed9944988abe00b239f11430d9cbc1843d2b31c261",
+    ".local/evidence/public-code-0.13.0-dev.0/root-tests.log": "07af90b4d7ae4fa4ba0db518c48566dcb46479d6a39e265006e0d40600da580f",
+    ".local/evidence/public-code-0.13.0-dev.0/services-after.json": "1c4dacf73e426622862f3cf828e01dbb447faece29a1a3890792616c8d28e5ea",
+    ".local/evidence/public-code-0.13.0-dev.0/services-before.json": "1c4dacf73e426622862f3cf828e01dbb447faece29a1a3890792616c8d28e5ea",
+    ".local/evidence/public-code-0.13.0-dev.0/ui-tests.log": "a88f77905d549033665afb2e4c11e95f4220f988a261e4ecbe3eb01b6ea9dd7b"
+  }
+}

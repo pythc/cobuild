@@ -1,3 +1,4 @@
+import {createProjectCodeView} from './project-code.js';
 import {restoreLabSession} from './persistent-login.js';
 // 110lab workspace frontend. Entry: initWorkspace(). No deps, textContent only.
 const PATHNAME = typeof location !== 'undefined' ? String(location.pathname || '') : '';
@@ -546,6 +547,10 @@ function renderProjectSide() {
 }
 
 // Lightweight read-only view: Kick data renders immediately; Makit has its own bounded read.
+const projectCodeView=createProjectCodeView({api,current:()=>({subject:state.profile?.subject,project:state.projects.find(p=>p.id===state.selectedProjectId)}),onDenied:e=>{
+  if(e.status===401){clearIdentity();return;}
+  state.projects=[];state.pendingProjectId=state.selectedProjectId;state.selectedProjectId=null;discardProjectDialog();renderProjects();renderProjectSide();setStatus('无权访问项目','error');
+}});
 let overviewRead=0;
 function overviewLink(parent,label,url) {
   if(!isSafeHttpsUrl(url))return;
@@ -577,6 +582,8 @@ function renderProjectOverview(side,p) {
   if(list.length>4)milestones.append(el('p','ws-side-hint','另有 '+(list.length-4)+' 项，可在管理中查看'));
   const requirements=overviewSection(root,'需求进展');requirements.id='ws-overview-requirements';
   renderOverviewRequirements(requirements,p);
+  if(globalThis.__COBUILD__){const code=overviewSection(root,'代码状态');code.id='ws-overview-code';
+    projectCodeView.render(code,p,{enabled:globalThis.__COBUILD__.codeSources?.githubPublic===true,subject:state.profile.subject});}
   const knowledge=overviewSection(root,'知识空间');
   const sync=p.knowledgeSpace;
   const labels={awaiting_approval:'待立项审批后创建',queued:'等待同步',working:'正在同步',retrying:'同步未完成，将自动重试',blocked:'同步需要处理',ready:'空间已关联',archived:'项目已归档，空间访问暂停',legacy:'已关联既有空间'};
@@ -1167,6 +1174,7 @@ function submitRecruitForm(e) {
 }
 
 function clearIdentity() {
+  projectCodeView.reset();
   state.generation++;state.profile=null;state.csrf='';state.members=[];state.projects=[];state.todos=[];state.todoSources=null;state.requirements=null;
   state.selectedProjectId=null;state.selectedTodoKey=null;state.reqRequestId=null;state.todosReady=false;
   state.membersSource=''; state.membersUnavailable=false; state.membersLoaded=false; state.membersLoading=false; state.membersError='';

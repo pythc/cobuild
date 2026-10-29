@@ -62,3 +62,10 @@ test("disabled services cannot receive an environment, and public destinations c
     ),
   );
 });
+
+test('public code source never enables legacy Makit workers or credentials',()=>{
+  const enabled={...config,codeSources:{githubPublic:true}};
+  const env=localApplicationEnvironment(enabled,'makit',org);
+  assert.equal(env.MAKIT_WORKERS_ENABLED,'false');assert.equal(env.MAKIT_EXTERNAL_WRITES_ENABLED,'false');
+  assert.ok(!Object.keys(env).some(k=>k.startsWith('GITHUB_')));
+});

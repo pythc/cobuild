@@ -586,3 +586,17 @@ body.is-workbench-embedded main.shell { padding-top: 10px; }
 .ws-access-person { display:grid; gap:4px; min-width:0; overflow-wrap:anywhere; }
 .ws-access-email { font-size:13px; color:var(--ws-slate); }
 .ws-access-member>.ws-badge { flex:none; }
+
+/* Read-only source list uses the existing project surface and controls. */
+.ws-code-list,.ws-code-check-list {list-style:none;padding:0;margin:12px 0;display:grid;gap:12px;}
+.ws-code-item {padding:14px;border:1px solid var(--ws-line);border-radius:10px;min-width:0;}
+.ws-code-heading {display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap;}
+.ws-code-heading .ws-code-link {flex:1;min-width:100px;}
+.ws-code-link {color:var(--ws-indigo);text-underline-offset:3px;overflow-wrap:anywhere;}
+.ws-code-sha {font-size:12px;font-family:ui-monospace,monospace;overflow-wrap:anywhere;}
+.ws-code-checks {margin-top:12px;padding-top:8px;border-top:1px solid var(--ws-line);}
+.ws-code-checks>.ws-code-link {display:inline-block;margin:8px;}
+.ws-code-check-list li {display:flex;justify-content:space-between;gap:12px;}
+.ws-code-check-list li>span:first-child {min-width:0;overflow-wrap:anywhere;}
+.ws-code-check-list li>span:last-child {flex:none;}
+.ws-code-status {line-height:1.6;}

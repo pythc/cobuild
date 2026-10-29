@@ -1,3 +1,4 @@
+import {createGithubPublicSource} from '../../../packages/code-sources/github-public.mjs';
 import {ContractError} from '../../../packages/contracts/index.mjs';
 import {suiteConfig,moduleEnabled,portalHost,portalRequestOrigin} from '../../../packages/config/runtime.mjs';
 import {verifyProjectBridge,runProjectBridge} from './project-action-bridge.mjs';
@@ -29,13 +30,14 @@ async function body(req){
   try{return JSON.parse(Buffer.concat(chunks).toString('utf8'));}catch{throw new WorkspaceError(400,'请求格式无效');}
 }
 
-export function createWorkspaceHttp({mail,knowledgeWorkerEnabled=true,apps=appConfig.apps,recruitment,honorsTodos=()=>[],localTest=false,now=Date.now,directory=mail?.workspaceDirectory,projectSyncEnabled=process.env.PORTAL_PROJECT_SYNC_ENABLED==='true',projectSyncClient,knowledgeProjectClient,projectOverviewClient,projectBridgeSecret}={}){
+export function createWorkspaceHttp({mail,knowledgeWorkerEnabled=true,apps=appConfig.apps,recruitment,honorsTodos=()=>[],localTest=false,now=Date.now,directory=mail?.workspaceDirectory,projectSyncEnabled=process.env.PORTAL_PROJECT_SYNC_ENABLED==='true',projectSyncClient,knowledgeProjectClient,projectOverviewClient,projectBridgeSecret,projectCodeSource}={}){
   const enabled=!!mail?.enabled&&!!directory;
   const store=enabled?openWorkspaceStore({directory,now,syncProjects:projectSyncEnabled,organizationId:mail.auth?.organizationId,resolveProjectActor:mail.suite?mail.profile:undefined}):null;
   let inbox;try{inbox=enabled&&moduleEnabled('hiflow')?openWorkspaceRecruitment({directory,source:()=>recruitment.labInbox(),canManage:a=>recruitment.store?.canManage?.(a)||['admin','super_admin'].includes(a.role),now}):null;}catch(e){store?.close();throw e;}
   let preferences;try{preferences=enabled?openWorkbenchPreferencesStore({directory,allowedAppIds:apps.map(app=>app.id),now}):null;}catch(e){inbox?.close();store?.close();throw e;}
   const projectSync=store?projectSyncWorker({store,mail,client:projectSyncClient,enabled:projectSyncEnabled}):null;
   const knowledgeWorker=store&&knowledgeWorkerEnabled?projectKnowledgeWorker({store,client:knowledgeProjectClient}):null;
+  const codeSource=projectCodeSource||createGithubPublicSource({enabled:()=>!!suiteConfig?.codeSources?.githubPublic&&moduleEnabled('kick'),now});
   const writes=new Map();
   function throttle(actor){const time=now(),old=writes.get(actor.subject),v=old&&time-old.at<60000?old:{at:time,count:0};
     if(++v.count>60)throw new WorkspaceError(429,'操作频繁 请稍后再试');
@@ -57,7 +59,7 @@ export function createWorkspaceHttp({mail,knowledgeWorkerEnabled=true,apps=appCo
       return {subject:member.subject,name:member.name,email:member.email};
     })};
   }
-  return {enabled,store,canonicalMembers,favorites:actor=>preferences.get(actor),projects:actor=>store?.list(actor).projects||[],async close(){await knowledgeWorker?.close();if(!projectSync){preferences?.close();inbox?.close();store?.close();return Promise.resolve();}return projectSync.close().finally(()=>{preferences?.close();inbox?.close();store?.close();});},async handle(req,res,path,host){
+  return {enabled,store,canonicalMembers,favorites:actor=>preferences.get(actor),projects:actor=>store?.list(actor).projects||[],async close(){codeSource.close();await knowledgeWorker?.close();if(!projectSync){preferences?.close();inbox?.close();store?.close();return Promise.resolve();}return projectSync.close().finally(()=>{preferences?.close();inbox?.close();store?.close();});},async handle(req,res,path,host){
     if(!path.startsWith('/api/workspace/'))return false;
     try{
       if(host!==portalHost()&&!(localTest&&['localhost','127.0.0.1'].includes(host)))throw new WorkspaceError(404,'Not found');
@@ -90,6 +92,22 @@ export function createWorkspaceHttp({mail,knowledgeWorkerEnabled=true,apps=appCo
         else if(route==='members')json(res,200,await mail.projectMembers(actor.subject));
         else if(route==='projects')json(res,200,store.list(actor));
         else if(/^projects\/operations\/[a-f0-9-]+$/.test(route))json(res,200,store.operation(actor,route.split('/')[2]));
+        else if(/^projects\/[a-f0-9-]+\/overview\/code(?:\/pulls\/[1-9][0-9]{0,9}\/checks)?$/.test(route)){
+          const parts=route.split('/'),before=store.get(actor,parts[1]),subject=actor.subject;
+          const params=new URL(req.url,'http://localhost').searchParams;
+          let result;
+          if(parts.length===4){
+            if(params.size)throw new WorkspaceError(400,'invalid_input');
+            result=await codeSource.summary(before.links?.repository||'');
+          }else{
+            if(params.size!==2||!params.has('head')||!params.has('repository'))throw new WorkspaceError(400,'invalid_input');
+            result=await codeSource.checks(before.links?.repository||'',{number:Number(parts[5]),headSha:params.get('head'),repositoryId:params.get('repository')});
+          }
+          actor=await projectActor();const after=store.get(actor,before.id);
+          if(actor.subject!==subject)throw new WorkspaceError(401,'unauthenticated');
+          if(after.revision!==before.revision||after.links?.repository!==before.links?.repository)result={state:'project_changed'};
+          json(res,200,{...result,projectId:before.id,projectRevision:after.revision});
+        }
         else if(/^projects\/[a-f0-9-]+\/overview\/requirements$/.test(route)){
           const id=route.split('/')[1];store.get(actor,id);
           let value={state:'disabled'};

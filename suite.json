@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "name": "CoBuild",
-  "version": "0.12.0-dev.0",
+  "version": "0.13.0-dev.0",
   "distribution": "self-hosted",
   "stage": "project-transfer-local",
   "modules": [

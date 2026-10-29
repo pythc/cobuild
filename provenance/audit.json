@@ -47,7 +47,7 @@
     {
       "path": "apps/platform/server/http.mjs",
       "baselineSha256": "b216182948737823b31dd8b62770694721f7802d289318e50cea25dac12c96b7",
-      "currentSha256": "e6f66745f52fbecf0e3a598a702f68e52030f33ac655219de840d389e1032f5b"
+      "currentSha256": "826d3b4db5e5947f295e463140863b0013ab2a25fec5a855b3644203c506d96c"
     },
     {
       "path": "apps/platform/server/monitoring-http.mjs",
@@ -92,7 +92,7 @@
     {
       "path": "apps/platform/server/workspace-http.mjs",
       "baselineSha256": "9d9c1ade9d545dc6634ebba07ec826ff9a5df3bdc49067124fc54ea82c7e8821",
-      "currentSha256": "737fa10ece20c828081e249ca489502bc59dab19d35b1d0f937198dfd3da6537"
+      "currentSha256": "8d310b10205bd96a258ff50eb506069a875d5ecd4dc2d3e5761dbbe89814fe33"
     },
     {
       "path": "apps/platform/server/workspace-store.mjs",
@@ -137,17 +137,17 @@
     {
       "path": "apps/platform/src/workspace.css",
       "baselineSha256": "143cfbfd6e79117fc657f63fae8422a08a8cab8ee4346b02817781b6ec093046",
-      "currentSha256": "798bae38fd56303d9d2559e6f08e997589e1a0d6ecf478f4896b0f87373ef9c2"
+      "currentSha256": "3a0fcaf6bb36fdfae32544f48f7be00a10dd70e16817fcbd039ef8c639ce45cb"
     },
     {
       "path": "apps/platform/src/workspace.js",
       "baselineSha256": "6d0884f56c2dceaf951b80ace4ec65def32e618d2ef6b8d1e277797fb77838ed",
-      "currentSha256": "7367d3daabfd2f23edf1817e6038178beb81d941a51b2444cf64042eda8bfa04"
+      "currentSha256": "1008e707eb8612851fdf5284fd695b0ec2f7f54fd16e9cd2461ca763fd99955d"
     },
     {
       "path": "apps/platform/tests/workspace-ui.test.mjs",
       "baselineSha256": "eae1a2156c166091b69842803ffe993f9a513e835a0c62ca9174af77b6e540a0",
-      "currentSha256": "5e173b5b03089978a9cb96f1258573930c8fa5b890026bad00eea066a198fe4a"
+      "currentSha256": "f61643bcfc8b67b1dcfeadf9ecf9cc24ce425ba070239657ef20cb698b734635"
     },
     {
       "path": "apps/makit/client/index.html",
@@ -1463,17 +1463,17 @@
     {
       "rule": "lab-service-address",
       "path": "apps/platform/src/workspace.js",
-      "line": 121
+      "line": 122
     },
     {
       "rule": "fixed-private-network",
       "path": "apps/platform/src/workspace.js",
-      "line": 121
+      "line": 122
     },
     {
       "rule": "lab-service-address",
       "path": "apps/platform/src/workspace.js",
-      "line": 1342
+      "line": 1350
     },
     {
       "rule": "lab-service-address",
@@ -2183,17 +2183,17 @@
     {
       "rule": "lab-service-address",
       "path": "apps/platform/tests/workspace-ui.test.mjs",
-      "line": 28
+      "line": 29
     },
     {
       "rule": "lab-service-address",
       "path": "apps/platform/tests/workspace-ui.test.mjs",
-      "line": 141
+      "line": 142
     },
     {
       "rule": "lab-service-address",
       "path": "apps/platform/tests/workspace-ui.test.mjs",
-      "line": 145
+      "line": 146
     },
     {
       "rule": "lab-service-address",
