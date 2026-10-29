@@ -139,7 +139,7 @@ function writeProjectRoute({replace=false}={}) {
   const params=new URLSearchParams(location.search);
   const id=state.pendingProjectId||state.selectedProjectId;
   if(id)params.set('project',id);else params.delete('project');
-  if(state.projectView==='manage')params.set('view','manage');else params.delete('view');
+  if(['manage','access'].includes(state.projectView))params.set('view',state.projectView);else params.delete('view');
   if(state.projectFilter!=='active')params.set('filter',state.projectFilter);else params.delete('filter');
   const next=location.pathname+(params.size?'?'+params:'')+(location.hash||'');
   if(next!==location.pathname+location.search+(location.hash||''))
@@ -148,7 +148,7 @@ function writeProjectRoute({replace=false}={}) {
 function readProjectRoute() {
   if(!PROJECTS_PAGE)return;
   const params=new URLSearchParams(location.search),id=params.get('project'),filter=params.get('filter');
-  state.projectView=params.get('view')==='manage'?'manage':'overview';
+  state.projectView=['manage','access'].includes(params.get('view'))?params.get('view'):'overview';
   state.projectFilter=Object.hasOwn(PROJECT_FILTERS,filter)?filter:'active';
   state.pendingProjectId=isUuid(id)?id:null;
   state.selectedProjectId=null;
@@ -425,7 +425,7 @@ function renderMilestoneDetail(side, item) {
   if (item.milestoneId && project) {
     const ms = (project.milestones || []).find(m => m.id === item.milestoneId);
     if (ms && ms.status !== 'done') {
-      const canFinish = isMemberOrOwner(project) && (sameUser(ms.assignee) || project.canEdit || isAdminLike());
+      const canFinish = ms.canChange === true;
       const btn = el('button', 'ws-btn ws-btn-primary', '完成');
       btn.type = 'button'; btn.disabled = !canFinish;
       btn.onclick = () => openMsDoneDialog(project, ms);
@@ -488,7 +488,7 @@ function renderProjectSide() {
   side.append(meta);
   if(globalThis.__COBUILD__){
     const tabs=el('nav','ws-overview-tabs');tabs.setAttribute('aria-label','项目视图');
-    for(const [value,label] of [['overview','概览'],['manage','管理']]){
+    for(const [value,label] of [['overview','概览'],['access','成员与权限'],['manage','管理']]){
       const b=el('button','ws-btn ws-btn-ghost',label);b.type='button';b.dataset.projectView=value;
       b.setAttribute('aria-pressed',String(state.projectView===value));
       b.onclick=()=>{state.projectView=value;writeProjectRoute();renderProjectSide();
@@ -497,6 +497,7 @@ function renderProjectSide() {
     }
     side.append(tabs);
     if(state.projectView==='overview'){renderProjectOverview(side,project);return;}
+    if(state.projectView==='access'){renderProjectAccess(side,project);return;}
   }
   if (project.summary) side.append(el('p', 'ws-side-row', project.summary));
   const ownerName = project.ownerName || project.ownerEmail || project.ownerSubject || '';
@@ -706,14 +707,59 @@ function renderMilestones(side, project) {
   side.append(ul);
 }
 
+// Presentation only: existing DTO capabilities control entries; commands still authorize on the server.
+function projectActionAvailability(project) {
+  return {
+    edit:project.canEdit===true&&project.phase!=='pending',
+    apply:project.canApply===true&&['exploring','needs_changes'].includes(project.phase),
+    review:project.canReview===true&&project.phase==='pending',
+    addMilestone:project.canEdit===true,
+    archive:(sameUser(project.ownerSubject)||isAdminLike())&&project.phase!=='pending',
+  };
+}
+
+function renderProjectAccess(side,project) {
+  const root=el('div','ws-overview');root.id='ws-project-access';side.append(root);
+  const identity=overviewSection(root,'我的身份');
+  identity.append(sideRow('组织',ROLE_LABEL[state.profile?.role]||'成员'));
+  identity.append(sideRow('项目',sameUser(project.ownerSubject)?'项目负责人':isMemberOrOwner(project)?'项目成员':'未加入此项目'));
+  const scope=overviewSection(root,'访问范围');
+  scope.append(sideRow('项目','拥有 Kick 访问权限的组织成员可见'));
+  scope.append(sideRow('需求',suiteModule('makit')?'由 Makit 独立核对业务权限':'Makit 未启用'));
+  scope.append(sideRow('文档',suiteModule('weknow')?'由 WeKnow 独立核对空间权限':'WeKnow 未启用'));
+  const actions=overviewSection(root,'当前可用入口'),available=projectActionAvailability(project);
+  const labels={edit:'编辑项目与成员',apply:'提交立项',review:'审核立项',addMilestone:'新建里程碑',archive:project.archived?'恢复项目':'归档项目'};
+  const list=el('ul','ws-access-actions');
+  for(const [key,label] of Object.entries(labels))if(available[key])list.append(el('li','ws-badge ws-badge-indigo',label));
+  const milestones=(project.milestones||[]).filter(m=>m.canChange===true);
+  if(milestones.length)list.append(el('li','ws-badge ws-badge-teal','更新 '+milestones.length+' 项里程碑'));
+  if(list.children.length)actions.append(list);else actions.append(el('p','','仅查看项目'));
+  const people=new Map();
+  if(project.ownerSubject)people.set(project.ownerSubject,{subject:project.ownerSubject,name:project.ownerName,email:project.ownerEmail,owner:true});
+  for(const person of project.members||[])if(person.subject&&!people.has(person.subject))people.set(person.subject,person);
+  const members=overviewSection(root,'项目成员 · '+people.size),rows=el('ul','ws-access-members');
+  rows.setAttribute('aria-label','项目成员列表');
+  if(people.size>5)rows.setAttribute('tabindex','0');
+  for(const person of people.values()){
+    const row=el('li','ws-access-member'),copy=el('div','ws-access-person');
+    copy.append(el('strong','',person.name||person.email||'未命名成员'));
+    if(person.name&&person.email)copy.append(el('span','ws-access-email',person.email));
+    row.append(copy,el('span','ws-badge '+(person.owner?'ws-badge-indigo':''),person.owner?'负责人':'成员'));
+    if(sameUser(person.subject))row.setAttribute('aria-label',(person.name||person.email||'成员')+'，我');
+    rows.append(row);
+  }
+  if(people.size)members.append(rows);else members.append(el('p','','尚未配置成员'));
+}
+
 function renderProjectActions(side, project) {
+  const available=projectActionAvailability(project);
   const actions = el('div', 'ws-side-actions');
   const add = (cls, text, fn, enabled = true) => { if (!enabled) return; const b = el('button', 'ws-btn ' + cls, text); b.type = 'button'; b.onclick = fn; actions.append(b); };
-  add('ws-btn-ghost', '编辑', () => openProjectDialog(project), project.canEdit && project.phase !== 'pending');
-  add('ws-btn-primary', '提交立项', () => openApplyDialog(project), project.canApply && (project.phase === 'exploring' || project.phase === 'needs_changes'));
-  add('ws-btn-primary', '审核', () => openReviewDialog(project), project.canReview && project.phase === 'pending');
-  add('ws-btn-ghost', '新建里程碑', () => openMilestoneDialog(project), project.canEdit);
-  add(project.archived ? 'ws-btn-ghost' : 'ws-btn-danger', project.archived ? '取消归档' : '归档', () => openArchiveDialog(project), (sameUser(project.ownerSubject)||isAdminLike()) && project.phase !== 'pending');
+  add('ws-btn-ghost', '编辑', () => openProjectDialog(project), available.edit);
+  add('ws-btn-primary', '提交立项', () => openApplyDialog(project), available.apply);
+  add('ws-btn-primary', '审核', () => openReviewDialog(project), available.review);
+  add('ws-btn-ghost', '新建里程碑', () => openMilestoneDialog(project), available.addMilestone);
+  add(project.archived ? 'ws-btn-ghost' : 'ws-btn-danger', project.archived ? '取消归档' : '归档', () => openArchiveDialog(project), available.archive);
   add('ws-btn-ghost','操作记录',()=>showHistory(project));
   if (actions.children.length > 0) side.append(actions);
 }

@@ -109,6 +109,22 @@ try{
  check(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'overview fits a narrow viewport');
  await requirements.scrollIntoViewIfNeeded();await screenshot(page,'project-overview-narrow-detail');
  await page.setViewportSize({width:1440,height:1000});
+ const accessTab=page.locator('[data-project-view=access]'),accessView=page.locator('#ws-project-access');
+ await accessTab.focus();await page.keyboard.press('Enter');await accessView.waitFor();
+ check(await accessView.getByText('项目：项目负责人',{exact:true}).isVisible(),'access view separates project ownership from organization role');
+ check(await accessView.getByText('项目：拥有 Kick 访问权限的组织成员可见',{exact:true}).isVisible()&&await accessView.getByText('文档：由 WeKnow 独立核对空间权限',{exact:true}).isVisible(),'access view states actual project and document boundaries');
+ check(await accessView.locator('.ws-access-member').count()===2&&await accessView.getByRole('button').count()===0,'member roster is read only and includes the owner once');
+ const beforeAccess=await api(c,'/api/workspace/projects/'+projectId+'/audit');
+ let accessProviderReads=0;
+ const countProviderRead=request=>{if(request.url().includes('/overview/requirements'))accessProviderReads++;};
+ page.on('request',countProviderRead);await page.reload();await accessView.waitFor();
+ check(new URL(page.url()).searchParams.get('view')==='access'&&accessProviderReads===0,'member view reload retains state without fetching Makit');page.off('request',countProviderRead);
+ check(JSON.stringify(await api(c,'/api/workspace/projects/'+projectId+'/audit'))===JSON.stringify(beforeAccess),'member view does not write an audit or project update');
+ await screenshot(page,'project-access-desktop');
+ await page.setViewportSize({width:390,height:844});await accessView.scrollIntoViewIfNeeded();await screenshot(page,'project-access-narrow');
+ check(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'member view fits narrow viewport');await page.setViewportSize({width:1440,height:1000});
+ await page.locator('[data-project-view=manage]').click();await page.goBack();await accessView.waitFor();
+ check(new URL(page.url()).searchParams.get('view')==='access','browser back restores member view');await page.goForward();
  await page.locator('[data-project-view=manage]').click();await page.reload();
  check(new URL(page.url()).searchParams.get('view')==='manage','project view is retained in URL');
  await page.locator('#ws-project-side h3').filter({hasText:projectName}).waitFor();
@@ -174,9 +190,17 @@ try{
  await until(async()=> (await wk.locator('body').innerText()).includes(projectName),'WeKnow visible project space');
  check(true,'Makit opens managed WeKnow project space');await screenshot(wk,'weknow-project-desktop');
  // Independent ordinary member follows the same chain and keeps read-only project management.
+ await api(c,'/api/workspace/projects/'+projectId+'/milestones',{title:'Member delivery',assignee:memberIdentity.subject,dueAt:null});
  await login(mp,memberEmail,'Browser synthetic local password 123');await mp.goto(base+'/projects?view=manage&project='+projectId);
  await mp.locator('#ws-project-side h3').filter({hasText:projectName}).waitFor();
  check(await mp.locator('#ws-project-side').getByRole('button',{name:'归档',exact:true}).count()===0,'ordinary member has no archive control');
+ await mp.locator('[data-project-view=access]').click();
+ const memberAccess=mp.locator('#ws-project-access');
+ check(await memberAccess.getByText('项目：项目成员',{exact:true}).isVisible()&&await memberAccess.getByText('更新 1 项里程碑',{exact:true}).isVisible(),'ordinary member sees their assigned milestone capability');
+ check(await memberAccess.getByText('编辑项目与成员',{exact:true}).count()===0,'member view does not imply project administration');await screenshot(mp,'project-access-member');
+ await mp.goto(base+'/workbench');const memberTodo=mp.locator('#ws-todo-list li').filter({hasText:'Member delivery'});await memberTodo.focus();await mp.keyboard.press('Enter');
+ const finishMilestone=mp.locator('#cb-todo-dialog').getByRole('button',{name:'完成',exact:true});await finishMilestone.waitFor();
+ check(await finishMilestone.isEnabled(),'milestone todo follows the server supplied capability');await mp.keyboard.press('Escape');
  check((await api(member,'/api/workspace/projects/'+projectId+'/overview/requirements')).state==='not_connected','overview does not silently provision an unconnected member in Makit');
  const denied=await member.request.post(archivePath,{headers:{Origin:base,'X-CSRF-Token':(await(await member.request.get(base+'/api/auth/session')).json()).csrf},data:{revision:project.revision,archived:true,requestId:crypto.randomUUID()}});check(denied.status()===403,'ordinary member cannot archive via direct API');
  await mp.goto(origins.makit+'/projects?project='+projectId);await connect(mp,'makit');await mp.locator('aside h2').filter({hasText:projectName}).waitFor();check(true,'ordinary member reaches Makit project');
@@ -205,6 +229,11 @@ try{
  await api(c,'/api/organization/users/'+memberIdentity.id,{role:'member'});
  await mp.evaluate(()=>window.dispatchEvent(new Event('focus')));await mp.locator('#ws-dialog-project').waitFor({state:'hidden'});
  check(await mp.locator('#ws-field-summary').inputValue()!=='Revoked draft','permission downgrade removes editable draft');
+ await mp.goto(base+'/projects?view=access&project='+projectId);await memberAccess.waitFor();
+ check(await memberAccess.getByText('编辑项目与成员',{exact:true}).count()===0&&await memberAccess.getByText('更新 1 项里程碑',{exact:true}).isVisible(),'access view reflects a live organization role downgrade');
+ await api(c,'/api/organization/users/'+memberIdentity.id,{active:false});
+ await mp.evaluate(()=>window.dispatchEvent(new Event('focus')));await memberAccess.waitFor({state:'hidden'});
+ check(await mp.locator('#ws-project-side').getByText('Browser Member',{exact:true}).count()===0,'deactivated account loses the loaded member and permission view');
  report.passed=true;report.browserVersion=browser.version();
 }catch(error){report.error=String(error.stack||error);for(const [ci,c] of browser.contexts().entries())for(const [pi,p] of c.pages().entries())if(!p.isClosed()){await screenshot(p,'failure-'+ci+'-'+pi);report.error+='\nPage '+ci+'-'+pi+': '+p.url()+' '+(await p.locator('body').innerText()).slice(0,1500);}process.exitCode=1;}
 finally{await browser.close();writeFileSync(output+'/report.json',JSON.stringify(report,null,2)+'\n');console.log(JSON.stringify(report));}

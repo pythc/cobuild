@@ -2,6 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {runInNewContext} from 'node:vm';
+import {mkdtempSync,rmSync} from 'node:fs';
+import {tmpdir} from 'node:os';
+import {join} from 'node:path';
+import {openWorkspaceStore} from '../server/workspace-store.mjs';
 import {handleWorkspaceRequest} from '../src/embedded-workspace.js';
 
 const flowState='s'.repeat(43),ticket='t'.repeat(43);
@@ -25,9 +29,63 @@ async function ui({embedded=true,pathname,search='',fetchImpl}={}){
         path.endsWith('session')?profile:path.endsWith('projects')?{projects:[]}:path.endsWith('members')?{members:[],source:'feishu',unavailable:false}:{items:[]};
       return {ok:true,json:async()=>value};}};
   window.history={pushState(_s,_t,url){const u=new URL(url,'https://example.test');context.location.search=u.search;},replaceState(_s,_t,url){this.pushState(_s,_t,url);}};
-  runInNewContext(source+';globalThis.h={state,projectPicker,doLogin,doLogout,handleParentMessage,loadProjects,loadMembers,clearIdentity,renderTodos,renderRequirementsSource,renderShell,renderMemberPicker,refreshMemberPicker,openProjectDialog,collectProjectForm,navigateToProject,bindEvents,renderMilestones,renderKnowledgeSync,openArchiveDialog,submitArchiveForm,readProjectRoute,selectProjectFilter,PROJECTS_PAGE,EMBEDDED,isUuid};',context);
+  runInNewContext(source+';globalThis.h={state,projectPicker,doLogin,doLogout,handleParentMessage,loadProjects,loadMembers,clearIdentity,renderTodos,renderRequirementsSource,renderShell,renderMemberPicker,refreshMemberPicker,openProjectDialog,collectProjectForm,navigateToProject,bindEvents,renderMilestones,renderMilestoneDetail,renderProjectAccess,projectActionAvailability,renderKnowledgeSync,openArchiveDialog,submitArchiveForm,readProjectRoute,selectProjectFilter,PROJECTS_PAGE,EMBEDDED,isUuid};',context);
   return {...context.h,el,parent,sent,requests,navigated,context,events};
 }
+
+const textOf=node=>[node.textContent||'',...(node.children||[]).map(textOf)].join(' ');
+test('project access view distinguishes organization governance, project membership and document permission',async()=>{
+  const h=await ui({pathname:'/projects',embedded:false});
+  h.context.__COBUILD__={modules:['kick','weknow']};
+  h.state.profile={...profile,role:'admin'};
+  const project={id:projectId,ownerSubject:'owner',ownerName:'Owner',ownerEmail:'owner@example.test',members:[{subject:'reader',name:'Reader',email:'reader@example.test'}],phase:'active',canEdit:true,canApply:false,canReview:false,milestones:[{canChange:true}]};
+  const side=h.el('access');h.renderProjectAccess(side,project);
+  const text=textOf(side);
+  assert.match(text,/未加入此项目/);assert.match(text,/拥有 Kick 访问权限的组织成员可见/);
+  assert.match(text,/由 WeKnow 独立核对空间权限/);assert.match(text,/编辑项目与成员/);assert.match(text,/更新 1 项里程碑/);
+  assert.equal(h.requests.length,0,'view reuses the loaded project without another provider read');
+  h.state.profile=profile;side.replaceChildren();h.renderProjectAccess(side,{...project,canEdit:false,milestones:[{canChange:false}]});
+  assert.match(textOf(side),/仅查看项目/);assert.doesNotMatch(textOf(side),/编辑项目与成员|归档项目|更新 1/);
+});
+
+test('access view reflects phase capabilities and deduplicates the owner in a long roster',async()=>{
+  const h=await ui();h.state.profile={...profile,role:'super_admin'};h.context.__COBUILD__={modules:['kick']};
+  const project={ownerSubject:profile.subject,ownerName:'Owner',phase:'pending',canEdit:false,canReview:true,
+    members:[{subject:profile.subject,name:'Duplicate'},...Array.from({length:8},(_,i)=>({subject:'reader:'+i,name:'Reader '+i}))]};
+  const side=h.el('access');h.renderProjectAccess(side,project);
+  assert.match(textOf(side),/审核立项/);assert.doesNotMatch(textOf(side),/编辑项目与成员|归档项目|Duplicate/);
+  assert.match(textOf(side),/项目成员 · 9/);assert.match(textOf(side),/WeKnow 未启用/);
+  const root=side.children[0],roster=root.children.at(-1).children.at(-1);
+  assert.equal(roster.attrs.tabindex,'0');assert.equal(roster.children.length,9);
+  assert.equal(h.projectActionAvailability({...project,phase:'active',archived:true}).archive,true,'restore entry stays available to the owner');
+});
+
+test('member view survives URL navigation and is wiped when project access is revoked',async()=>{
+  const h=await ui({pathname:'/projects',search:'?project='+projectId+'&view=access',fetchImpl:async()=>({ok:false,status:403,json:async()=>({error:'Forbidden'})})});
+  h.context.__COBUILD__={modules:['kick']};h.state.profile=profile;h.readProjectRoute();
+  assert.equal(h.state.projectView,'access');
+  h.state.projects=[{id:projectId,name:'Private fixture',ownerSubject:profile.subject,members:[],milestones:[]}];
+  h.navigateToProject(projectId);assert.match(h.context.location.search,/view=access/);
+  assert.match(textOf(h.el('ws-project-side')),/项目成员/);
+  await h.loadProjects();assert.equal(h.state.projects.length,0);assert.doesNotMatch(textOf(h.el('ws-project-side')),/Private fixture|项目成员/);
+  h.context.location.search='?view=unknown';h.readProjectRoute();assert.equal(h.state.projectView,'overview');
+});
+
+test('milestone todo honors authoritative capability for an outside admin and an archived project',async()=>{
+  const directory=mkdtempSync(join(tmpdir(),'cobuild-access-ui-')),store=openWorkspaceStore({directory});
+  try{
+    const owner={subject:'owner',name:'Owner',email:'owner@example.test',role:'member'};
+    const admin={subject:'admin',name:'Admin',email:'admin@example.test',role:'admin'};
+    let p=store.create(owner,{name:'Capability fixture',summary:'Synthetic capability fixture',members:[],links:{repository:'',requirements:'',docs:'',demo:''}});
+    p=store.addMilestone(owner,p.id,{title:'Delivery',assignee:owner.subject,dueAt:null});
+    const h=await ui();h.state.profile=admin;h.state.projects=[store.get(admin,p.id)];
+    const side=h.el('todo'),item={projectId:p.id,milestoneId:p.milestones[0].id};
+    h.renderMilestoneDetail(side,item);assert.equal(side.children[0].children.at(-1).disabled,false);
+    p=store.archive(owner,p.id,{revision:p.revision,archived:true});
+    h.state.profile=owner;h.state.projects=[p];side.replaceChildren();h.renderMilestoneDetail(side,item);
+    assert.equal(side.children[0].children.at(-1).disabled,true);
+  }finally{store.close();rmSync(directory,{recursive:true,force:true});}
+});
 
 test('nonempty workbench todos render and remain keyboard selectable',async()=>{
   const h=await ui({embedded:false});h.state.profile=profile;

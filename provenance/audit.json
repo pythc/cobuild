@@ -137,17 +137,17 @@
     {
       "path": "apps/platform/src/workspace.css",
       "baselineSha256": "143cfbfd6e79117fc657f63fae8422a08a8cab8ee4346b02817781b6ec093046",
-      "currentSha256": "d8c006a384b2bb51409c76e4be664bfe53cdc73846c91afa406cabf4656c0af6"
+      "currentSha256": "798bae38fd56303d9d2559e6f08e997589e1a0d6ecf478f4896b0f87373ef9c2"
     },
     {
       "path": "apps/platform/src/workspace.js",
       "baselineSha256": "6d0884f56c2dceaf951b80ace4ec65def32e618d2ef6b8d1e277797fb77838ed",
-      "currentSha256": "0b7bd7765fdcf609fad528de683b82bfa9632dd5a1381c4cc22cce8e42beaf86"
+      "currentSha256": "49de58a0c52b52b32dc8f4409e098c6d9ac9a8d64da9d8923479db7f4d30a5f8"
     },
     {
       "path": "apps/platform/tests/workspace-ui.test.mjs",
       "baselineSha256": "eae1a2156c166091b69842803ffe993f9a513e835a0c62ca9174af77b6e540a0",
-      "currentSha256": "e0c2068803b9f89c444b50e8d8d89003a1b4e5823e0340c18c97f2f09976bef9"
+      "currentSha256": "5e173b5b03089978a9cb96f1258573930c8fa5b890026bad00eea066a198fe4a"
     },
     {
       "path": "apps/makit/client/index.html",
@@ -1473,7 +1473,7 @@
     {
       "rule": "lab-service-address",
       "path": "apps/platform/src/workspace.js",
-      "line": 1242
+      "line": 1288
     },
     {
       "rule": "lab-service-address",
@@ -2183,17 +2183,17 @@
     {
       "rule": "lab-service-address",
       "path": "apps/platform/tests/workspace-ui.test.mjs",
-      "line": 24
+      "line": 28
     },
     {
       "rule": "lab-service-address",
       "path": "apps/platform/tests/workspace-ui.test.mjs",
-      "line": 83
+      "line": 141
     },
     {
       "rule": "lab-service-address",
       "path": "apps/platform/tests/workspace-ui.test.mjs",
-      "line": 87
+      "line": 145
     },
     {
       "rule": "lab-service-address",

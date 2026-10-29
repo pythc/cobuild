@@ -2,9 +2,9 @@
 
 面向实验室和小型研发团队的自部署协作套件。以项目为主线，连接项目发起、需求推进与知识沉淀。
 
-**当前阶段：只读项目概览（0.10.0-dev.0），仅本地验证，尚未达到公开发行条件。** Kick 汇总项目目标、负责人、里程碑、Makit 需求统计和知识空间关联；来源失败独立显示，管理操作保留在原管理视图。
+**当前阶段：项目成员与权限视图（0.11.0-dev.0），仅本地验证，尚未达到公开发行条件。** Kick 在只读概览之外展示组织身份、项目身份、当前可用入口和成员名单；项目权限与各业务应用权限保持独立。
 
-当前完成度与待办见 [实施状态](docs/design/collaboration-framework/STATUS.md)，本批边界见 [实施记录 05](docs/design/collaboration-framework/IMPLEMENTATION-05.md)，整体目标见 [改造方案](docs/design/collaboration-framework/README.md)。历史验证记录保持原样；**没有发布线上或公开发行。**
+当前完成度与待办见 [实施状态](docs/design/collaboration-framework/STATUS.md)，本批边界见 [实施记录 06](docs/design/collaboration-framework/IMPLEMENTATION-06.md)，整体目标见 [改造方案](docs/design/collaboration-framework/README.md)。历史验证记录保持原样；**没有发布线上或公开发行。**
 
 ## 产品范围
 
@@ -56,7 +56,7 @@ npm run release:check
 
 容器部署步骤见 [独立部署、备份恢复与升级](deploy/README.md)。实际部署只需本机 Docker / Compose 与 Python；`npm run test:deployment` 则使用专属资源演练完整生命周期，测试工具另需 Node.js 24。
 
-账号恢复、所有权转让及 Kick → Makit → WeKnow 的操作步骤也在该说明中。当前本地模式的需求写入与操作历史正常执行；未配置的 AI 评审、邮件和飞书通知明确显示未启用，不会伪装成发送成功。
+账号恢复、组织所有权转让及 Kick → Makit → WeKnow 的操作步骤也在该说明中。当前本地模式的需求写入与操作历史正常执行；未配置的 AI 评审、邮件和飞书通知明确显示未启用，不会伪装成发送成功。
 
 ## 开发单个应用
 

@@ -579,3 +579,10 @@ body.is-workbench-embedded main.shell { padding-top: 10px; }
 .ws-overview-notice { padding:10px 12px; background:#fff5df; color:#704b0a; border-radius:8px; margin-top:8px; }
 .ws-overview-warning { color:#944416; }
 .ws-overview-actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
+.ws-access-actions { display:flex; flex-wrap:wrap; gap:8px; list-style:none; margin:0; padding:0; }
+.ws-access-members { list-style:none; margin:0; padding:0; max-height:340px; overflow-y:auto; scrollbar-gutter:stable; }
+.ws-access-member { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 0; border-bottom:1px solid var(--ws-line); }
+.ws-access-member:last-child { border:0; }
+.ws-access-person { display:grid; gap:4px; min-width:0; overflow-wrap:anywhere; }
+.ws-access-email { font-size:13px; color:var(--ws-slate); }
+.ws-access-member>.ws-badge { flex:none; }
