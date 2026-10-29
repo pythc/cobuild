@@ -88,12 +88,13 @@
         "weknow"
       ],
       "acceptance": "项目只创建一次，显式 ID 关联，改名归档和成员变化可恢复且不重复建空间",
-      "scopeNote": "Stable project IDs, durable edit/rename receipts, managed-space rename conflict handling, archive/restore convergence and native live ACL intersections verified locally. Archive/restore command replay, ownership transfer, explicit visibility policy and deliberate legacy-space conversion remain open.",
+      "scopeNote": "Stable IDs, durable edit/rename/archive/restore replay, coalesced snapshot receipts, managed-space rename and live ACL boundaries verified locally. Ownership transfer, explicit visibility policy and deliberate legacy-space conversion remain open.",
       "evidence": [
         "provenance/collaboration-checks.json",
         "docs/LOCAL-RUNTIME.md",
         "provenance/core-managed-checks.json",
-        "provenance/project-lifecycle-checks.json"
+        "provenance/project-lifecycle-checks.json",
+        "provenance/project-state-checks.json"
       ]
     },
     {
@@ -142,9 +143,10 @@
         "provenance/migration-checks.json",
         "provenance/https-checks.json",
         "provenance/core-managed-checks.json",
-        "provenance/project-lifecycle-checks.json"
+        "provenance/project-lifecycle-checks.json",
+        "provenance/project-state-checks.json"
       ],
-      "scopeNote": "Exact local 0.6-to-managed-core migration and 0.7-to-0.8 runtime transition verified. Same-schema, exact-plan replacement candidate, interrupted forward resume and cold restore retain sessions/documents/attachments/new writes. Arbitrary runtime/schema repairs, other historical baselines and cross-host/engine restore remain open."
+      "scopeNote": "Exact local 0.6-to-managed-core, 0.7-to-0.8 and 0.8-to-0.9 transitions verified. Same-schema exact-plan repair replacement, interrupted resume and cold restore retain sessions/documents/attachments/new writes. Arbitrary repairs, other historical baselines and cross-host/engine restore remain open."
     },
     {
       "id": "workflow-acceptance",
@@ -155,11 +157,12 @@
         "weknow"
       ],
       "acceptance": "两个真实测试账号完成项目、文档、需求和交付全流程及越权验证，无实验室服务请求或真实外发",
-      "scopeNote": "Synthetic local project/requirement/knowledge flow, native ACL narrowing, recipient SQL, OAuth/MCP and live collaboration revocation verified. Actual GitHub/AI delivery, outbound notifications, browser UX and external integrations remain unaccepted.",
+      "scopeNote": "Synthetic local collaboration and native live ACL verified. This batch adds 34 real Chrome project navigation, archive replay, draft/error/revocation and two-account cross-app checks over local HTTP. Full-site/browser visual acceptance, portable branding, GitHub/AI delivery, outbound notifications and external integrations remain open.",
       "evidence": [
         "provenance/collaboration-checks.json",
         "docs/LOCAL-RUNTIME.md",
-        "provenance/core-managed-checks.json"
+        "provenance/core-managed-checks.json",
+        "provenance/project-state-checks.json"
       ]
     }
   ]

@@ -82,9 +82,12 @@ def main():
         p=start('makit-restarted',['node','dist/selfhost/server.cjs'],ROOT/'apps/makit',makit);wait(cfg['origins']['makit']+'/healthz',p)
         p=start('weknow-restarted',['node','dist/main.js'],ROOT/'integrations/weknow/source/apps/server',weknow);wait(cfg['origins']['weknow']+'/api/auth/identity/status',p)
         run('restart-e2e',['node','tests/local-core-restart.mjs'],ROOT,env)
+        if '--with-browser' in sys.argv:
+          browser_env={**env,**{k:os.environ[k] for k in ['COBUILD_PLAYWRIGHT_MODULE','COBUILD_CHROMIUM_EXECUTABLE'] if k in os.environ}}
+          run('project-state-browser',['node','tests/project-state-browser.mjs'],ROOT,browser_env)
         if '--browser-review' in sys.argv:
           release=tmp/'finish-browser-review'
-          metadata={'origins':cfg['origins'],'receipt':json.loads((tmp/'flow.json').read_text()),'releaseFile':str(release)}
+          metadata={'origins':cfg['origins'],'receipt':json.loads((tmp/'flow.json').read_text()),'releaseFile':str(release),'configFile':str(config)}
           (LOCAL/'browser-review.json').write_text(json.dumps(metadata))
           deadline=time.monotonic()+900
           while not release.exists() and time.monotonic()<deadline:time.sleep(.25)

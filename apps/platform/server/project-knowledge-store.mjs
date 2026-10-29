@@ -55,7 +55,9 @@ export function projectKnowledgeStore(db,{now=Date.now,lifecycle=false,operation
         if(r.changes&&url)db.prepare(`UPDATE projects SET links_json=json_set(links_json,'$.knowledgeSpace',?),revision=revision+1,updated_at=?
           WHERE id=? AND coalesce(json_extract(links_json,'$.knowledgeSpace'),'')=''`)
           .run(url,new Date(now()).toISOString(),job.id);
-        if(r.changes)operations?.project('weknow.project-space.v1',job.id,job.revision,'succeeded',{spaceId,url,name,mode:mode||'managed'});
+        if(r.changes)operations?.project('weknow.project-space.v1',job.id,job.revision,'succeeded',{
+          spaceId,url,name,mode:mode||'managed',confirmation:'snapshot-converged',throughGeneration:job.revision,archived:!!job.archived,
+        });
         db.exec('RELEASE knowledge_finish');return !!r.changes;
       }catch(e){db.exec('ROLLBACK TO knowledge_finish; RELEASE knowledge_finish');throw e;}
     },

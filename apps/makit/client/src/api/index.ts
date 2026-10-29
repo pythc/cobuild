@@ -129,7 +129,7 @@ async function request<T>(config: {
       signal: config.signal,
     })) as BackendResponse<T>;
     if (response.status === 403) {
-      throw new Error('无操作权限，请联系应用管理员');
+      throw Object.assign(new Error('无操作权限，请联系应用管理员'), {status:403});
     }
     return response.data;
   } catch (error) {
@@ -138,10 +138,10 @@ async function request<T>(config: {
       error as { response?: { status?: number } }
     )?.response?.status;
     if (status === 403) {
-      throw new Error('无操作权限，请联系应用管理员');
+      throw Object.assign(new Error('无操作权限，请联系应用管理员'), {status:403});
     }
     const message: string = backendErrorMessage(error);
-    if (message) throw new Error(message);
+    if (message) throw Object.assign(new Error(message), {status});
     throw error;
   }
 }

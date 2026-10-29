@@ -234,3 +234,12 @@ python3 deploy/suite.py resume-upgrade /srv/cobuild/team --release release-fixed
 预检后原子登记候选替换记录，异常停止本部署，保留数据和 pending。再次中断可不带 `--release` 继续。成功后 `last-recovery.json` 保存本次候选链；该文件位于部署目录，运维审计需要另行留存，冷备份自动保存的是业务 state 和当前发行版本。此入口不能修订已提交 SQL、扩大迁移范围、替换基础镜像或修改持有 schema 的源码。
 
 隔离验证：`npm run test:runtime-repair`。它创建实际启动失败的派生镜像，验证替换为修复候选、再次中断继续、数据保留、重启及冷备份恢复；只清理测试自己创建的部署和数据卷，保留不可变镜像证据，不清理其他工程镜像。
+
+`0.9.0-dev.0` 另加 `core-project-state-v1.json`，使用同一种受限运行时迁移，只允许精确 0.8 基线到归档重试候选的两份 store 摘要变化；不修改前面的 0.7 → 0.8 计划。封装该版本时将 `--base-release` 指向经核实的 0.8 发行清单、`--migration-plan` 指向新计划。对应的本地顺序演练如下（不要与其他容器测试并行）：
+
+```sh
+COBUILD_REPAIR_BASE=cobuild-suite:lifecycle-candidate \
+COBUILD_REPAIR_CANDIDATE=cobuild-suite:project-state-candidate \
+COBUILD_REPAIR_PLAN=core-project-state-v1.json \
+npm run test:runtime-repair
+```

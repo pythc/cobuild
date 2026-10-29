@@ -44,11 +44,15 @@
       ],
       "actions": [
         "kick.project.rename",
-        "kick.project.update"
+        "kick.project.update",
+        "kick.project.archive",
+        "kick.project.restore"
       ],
       "events": [
         "kick.project.renamed.v1",
-        "kick.project.updated.v1"
+        "kick.project.updated.v1",
+        "kick.project.archived.v1",
+        "kick.project.restored.v1"
       ]
     },
     {

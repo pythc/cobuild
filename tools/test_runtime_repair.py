@@ -20,9 +20,9 @@ def main():
   check(r.returncode==0,'baseline seed' if seed else 'sessions, documents, attachments and new writes survive')
   report['stages'].append(json.loads(r.stdout.strip().splitlines()[-1]))
  try:
-  suite.seal('cobuild-suite:managed-migration-candidate','0.7.0-repair-baseline',directory/'base.json')
-  base=suite.read(directory/'base.json');plan=suite.read(ROOT/'deploy/migrations/core-runtime-v1.json')
-  suite.seal('cobuild-suite:lifecycle-candidate','0.8.0-lifecycle-local',directory/'fixed.json',base,plan)
+  suite.seal(os.environ.get('COBUILD_REPAIR_BASE','cobuild-suite:managed-migration-candidate'),'repair-baseline',directory/'base.json')
+  base=suite.read(directory/'base.json');plan=suite.read(ROOT/'deploy/migrations'/os.environ.get('COBUILD_REPAIR_PLAN','core-runtime-v1.json'))
+  suite.seal(os.environ.get('COBUILD_REPAIR_CANDIDATE','cobuild-suite:lifecycle-candidate'),'runtime-candidate-local',directory/'fixed.json',base,plan)
   fixed=suite.read(directory/'fixed.json')
   context=directory/'broken-image';context.mkdir()
   (context/'platform.mjs').write_text('throw new Error("Isolated runtime repair fixture failure");\n')

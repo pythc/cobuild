@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { LiveProject, ProjectAction } from '@shared/project-actions';
 import { projectAction } from '@/api';
@@ -66,7 +66,11 @@ export default function ProjectActionsDialog({
     },
     retry: false,
   });
-  const p = query.data;
+  const denied = [401,403].includes((query.error as {status?:number}|null)?.status || 0);
+  const p = denied ? undefined : query.data;
+  useEffect(()=>{
+    if(denied || (p && !p.canEdit)){setTitle('');setDue('');setAssignee('');setUrl(null);request.current=null;}
+  },[denied,p?.canEdit]);
   const people = p
     ? [{ subject: p.ownerSubject, name: p.ownerName }, ...p.members]
     : [];

@@ -126,18 +126,65 @@ function openApp(id) {
 function navigateToProject(projectId) {
   if (!isUuid(projectId)) return;
   if (PROJECTS_PAGE) {
-    // On the project page we only need to switch selection to the requested id
-    // after the project list has loaded.
-    if (state.projects.some((p) => p.id === projectId)) {
-      state.selectedProjectId = projectId; state.pendingProjectId = null;
-      renderProjects(); renderProjectSide();
-    } else {
-      state.pendingProjectId = projectId;
-    }
+    selectProject(projectId);
     return;
   }
   if (EMBEDDED) { postToParent({ type: '110lab-workspace-open-app', id: 'projects', projectId }); return; }
   try { location.assign('/projects?project=' + encodeURIComponent(projectId)); } catch { /* ignore */ }
+}
+
+// Only navigation state belongs in the URL; form drafts stay in the dialog.
+function writeProjectRoute({replace=false}={}) {
+  if(!PROJECTS_PAGE)return;
+  const params=new URLSearchParams(location.search);
+  const id=state.pendingProjectId||state.selectedProjectId;
+  if(id)params.set('project',id);else params.delete('project');
+  if(state.projectFilter!=='active')params.set('filter',state.projectFilter);else params.delete('filter');
+  const next=location.pathname+(params.size?'?'+params:'')+(location.hash||'');
+  if(next!==location.pathname+location.search+(location.hash||''))
+    window.history?.[replace?'replaceState':'pushState'](null,'',next);
+}
+function readProjectRoute() {
+  if(!PROJECTS_PAGE)return;
+  const params=new URLSearchParams(location.search),id=params.get('project'),filter=params.get('filter');
+  state.projectFilter=Object.hasOwn(PROJECT_FILTERS,filter)?filter:'active';
+  state.pendingProjectId=isUuid(id)?id:null;
+  state.selectedProjectId=null;
+}
+function reconcileProjectSelection() {
+  const requested=state.pendingProjectId||state.selectedProjectId;
+  const project=state.projects.find(p=>p.id===requested);
+  if(project){
+    state.selectedProjectId=project.id;state.pendingProjectId=null;
+    if(!filteredProjects().some(p=>p.id===project.id))state.projectFilter=project.archived?'archived':'active';
+  } else {
+    // Retain the requested ID, never silently show an unrelated project.
+    state.pendingProjectId=requested;state.selectedProjectId=null;
+  }
+}
+function selectProject(id) {
+  state.pendingProjectId=id;state.selectedProjectId=null;
+  reconcileProjectSelection();writeProjectRoute();renderProjects();renderProjectSide();
+}
+function selectProjectFilter(value) {
+  if(!Object.hasOwn(PROJECT_FILTERS,value))return;
+  state.projectFilter=value;
+  if(!filteredProjects().some(p=>p.id===state.selectedProjectId))state.selectedProjectId=null;
+  state.pendingProjectId=null;
+  writeProjectRoute();renderProjects();renderProjectSide();
+}
+function discardProjectDialog() {
+  if(!activeDialogContext?.project)return;
+  const dlg=activeDialog;closeDialog(dlg);dlg?.querySelector('form')?.reset();
+  projectPicker.selected.clear();projectPicker.profiles.clear();
+}
+function checkProjectDialogAccess() {
+  const previous=activeDialogContext?.project;
+  if(!previous)return;
+  const current=state.projects.find(p=>p.id===previous.id);
+  if(!current||(!sameUser(current.ownerSubject)&&!isAdminLike())){
+    discardProjectDialog();setStatus('项目访问或管理权限已变更','error');
+  }
 }
 
 function toastError(err) {
@@ -398,9 +445,12 @@ function renderProjectTodoDetail(side, item) {
 function renderProjects() {
   const list = $('ws-project-list'), empty = $('ws-project-empty');
   if (!list) return;
+  for(const chip of document.querySelectorAll('[data-project-filter]'))chip.setAttribute('aria-pressed',String(chip.dataset.projectFilter===state.projectFilter));
+  const focusedId=document.activeElement?.closest?.('#ws-project-list .ws-item')?.dataset.projectId;
   const items = filteredProjects(); clear(list);
   for (const p of items) {
     const li = el('li', 'ws-item');
+    li.dataset.projectId=p.id;
     li.setAttribute('role', 'button'); li.setAttribute('tabindex', '0');
     if (state.selectedProjectId === p.id) li.setAttribute('aria-current', 'true');
     const row = el('div', 'ws-item-row');
@@ -414,10 +464,11 @@ function renderProjects() {
     meta.append(el('span', '', '· 共 ' + memberCount + ' 人'));
     if (p.archived) meta.append(el('span', 'ws-badge', '已归档'));
     li.append(meta);
-    const activate = () => { state.selectedProjectId = p.id; renderProjects(); renderProjectSide(); };
+    const activate = () => selectProject(p.id);
     li.onclick = activate;
     li.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activate(); } };
     list.append(li);
+    if(focusedId===p.id)li.focus?.({preventScroll:true});
   }
   if (empty) {empty.hidden = items.length > 0;if(empty.id==='ws-todo-empty')empty.textContent='当前没有已加载的待办';}
   updateCounts();
@@ -427,7 +478,7 @@ function renderProjectSide() {
   const side = $('ws-project-side'); if (!side) return;
   clear(side);
   const project = state.projects.find(p => p.id === state.selectedProjectId);
-  if (!project) { side.append(el('p', 'ws-side-hint', '选择左侧项目查看详情。')); return; }
+  if (!project) { side.append(el('p', 'ws-side-hint', state.pendingProjectId?'项目不存在或当前无权访问。':'选择左侧项目查看详情。')); return; }
   side.append(el('h3', '', project.name || '(未命名)'));
   const meta = el('div', 'ws-side-meta');
   meta.append(el('span', 'ws-badge ' + (PHASE_BADGE[project.phase] || 'ws-badge-indigo'), project.unconfigured?'待完善':PHASE_LABEL[project.phase] || project.phase || ''));
@@ -779,7 +830,7 @@ function openArchiveDialog(project) {
   $('ws-form-archive-title').textContent = project.archived ? '取消归档' : '归档项目';
   $('ws-form-archive-project').textContent = project.name || '';
   $('ws-form-archive-submit').textContent = project.archived ? '取消归档' : '归档';
-  openDialog('ws-dialog-archive', { project });
+  openDialog('ws-dialog-archive', { project, requestId:crypto.randomUUID() });
 }
 function openMilestoneDialog(project) {
   $('ws-form-milestone').reset();
@@ -804,7 +855,7 @@ function openRecruitDialog(item) {
 async function runSubmit(dlgId, formId, buildRequest, onSuccess) {
   const dlg = $(dlgId), form = $(formId);
   if (!dlg || !form || state.busy) return;
-  const ctx = activeDialogContext || {};
+  const ctx = activeDialogContext || {}, epoch = state.generation;
   let req;
   try { req = buildRequest(ctx); } catch (e) { setFormError(dlg, e.message || '输入无效'); return; }
   if (!req) return;
@@ -812,10 +863,12 @@ async function runSubmit(dlgId, formId, buildRequest, onSuccess) {
   state.busy = true; setFormBusy(form, true); setFormError(dlg, '');
   try {
     const result = await api(req.path, { method: 'POST', data: req.data });
+    if(epoch!==state.generation || ctx!==activeDialogContext)return;
     closeDialog(dlg);
     if (req.status) setStatus(typeof req.status === 'function' ? req.status(result) : req.status, 'ok');
     if (typeof onSuccess === 'function') await onSuccess(result);
   } catch (err) {
+    if(epoch!==state.generation || ctx!==activeDialogContext)return;
     setFormError(dlg, err.message || '操作失败');
     if (err.status === 401 || err.status === 403) toastError(err);
   } finally {
@@ -870,8 +923,8 @@ function submitArchiveForm(e) {
   e.preventDefault();
   return runSubmit('ws-dialog-archive', 'ws-form-archive', (ctx) => ({
     path: 'projects/' + encodeURIComponent(ctx.project.id) + '/archive',
-    data: { revision: ctx.project.revision, archived: !ctx.project.archived },
-    status: ctx.project.archived ? '已取消归档' : '已归档',
+    data: { revision: ctx.project.revision, archived: !ctx.project.archived, ...(globalThis.__COBUILD__?{requestId:ctx.requestId}:{}) },
+    status: result => (result.archived ? '项目已归档' : '项目已恢复')+(result.operation&&result.operation.state!=='succeeded'?'，关联应用正在同步':''),
   }), async () => { await Promise.all([loadProjects(),loadTodos()]); });
 }
 
@@ -964,21 +1017,16 @@ let projectsRead=0,todosRead=0;
 async function loadProjects() {
   if(!suiteModule('kick')){state.projects=[];return;}
   const epoch=state.generation,serial=++projectsRead;
-  if(state.applicationAccess?.projects?.allowed===false){state.projects=[];state.selectedProjectId=null;renderProjects();renderProjectSide();return;}
+  if(state.applicationAccess?.projects?.allowed===false){state.projects=[];state.selectedProjectId=null;discardProjectDialog();renderProjects();renderProjectSide();return;}
   try{
     const r=await api('projects');if(epoch!==state.generation||serial!==projectsRead||!state.profile)return;
     state.projects=r.projects||[];
-    // If a specific project id was requested (via query string, parent host
-    // message, or todo navigation) prefer it as the active selection.
-    const requested = state.pendingProjectId;
-    if (requested && state.projects.some((p) => p.id === requested)) {
-      state.selectedProjectId = requested;
-      state.pendingProjectId = null;
-    } else if(!filteredProjects().some(x=>x.id===state.selectedProjectId)) {
-      state.selectedProjectId=filteredProjects()[0]?.id||null;
-    }
+    reconcileProjectSelection();writeProjectRoute({replace:true});checkProjectDialogAccess();
     renderProjects();renderProjectSide();
-  }catch(e){if(epoch===state.generation&&serial===projectsRead)toastError(e);}
+  }catch(e){if(epoch===state.generation&&serial===projectsRead){
+    if(e.status===403){state.projects=[];state.pendingProjectId=state.selectedProjectId||state.pendingProjectId;state.selectedProjectId=null;discardProjectDialog();renderProjects();renderProjectSide();setStatus('无权访问项目','error');}
+    else toastError(e);
+  }}
 }
 async function loadTodos() {
   const epoch=state.generation,serial=++todosRead;
@@ -1074,19 +1122,14 @@ async function handleParentMessage(ev) {
   // real parent frame (checked above via ev.source === window.parent).
   if (data.type === '110lab-workspace-select-project' && isUuid(data.projectId)) {
     if (!PROJECTS_PAGE) return;
-    if (state.projects.some((p) => p.id === data.projectId)) {
-      state.selectedProjectId = data.projectId; state.pendingProjectId = null;
-      renderProjects(); renderProjectSide();
-    } else {
-      state.pendingProjectId = data.projectId;
-    }
+    selectProject(data.projectId);
     return;
   }
 }
 
 function finishLogin(){clearTimeout(state.loginTimer);state.loginFlow=null;state.busy=false;if($('ws-login'))$('ws-login').disabled=false;}
 async function doLogin() {
-  if(globalThis.__COBUILD__){location.assign('/login?next='+encodeURIComponent(PROJECTS_PAGE?'/projects':'/workbench'));return;}
+  if(globalThis.__COBUILD__){location.assign('/login?next='+encodeURIComponent(PROJECTS_PAGE?location.pathname+location.search:'/workbench'));return;}
   if(state.busy)return;state.busy=true;$('ws-login').disabled=true;setStatus('');
   try{
     const flow=await api('auth/start',{method:'POST',data:EMBEDDED?{}:{returnTo:PROJECTS_PAGE?'/projects':'/workbench'}});
@@ -1110,14 +1153,10 @@ function bindEvents() {
   $('ws-recruit-history').onclick=()=>showHistory();
   if (EMBEDDED && document && document.body) document.body.classList.add('is-workbench-embedded');
   if (PROJECTS_PAGE && document && document.body) document.body.classList.add('is-workspace-projects');
-  // On the standalone projects page, honor ?project=<uuid> if it was supplied.
-  if (PROJECTS_PAGE && typeof location !== 'undefined' && typeof location.search === 'string') {
-    try {
-      const params = new URLSearchParams(location.search);
-      const requested = params.get('project');
-      if (isUuid(requested)) state.pendingProjectId = requested;
-    } catch { /* ignore */ }
-  }
+  readProjectRoute();
+  window.addEventListener('popstate',()=>{
+    readProjectRoute();reconcileProjectSelection();writeProjectRoute({replace:true});renderProjects();renderProjectSide();
+  });
   // Member picker events — bound once, read picker state on each interaction.
   const memberSearch = $('ws-field-members-search');
   if (memberSearch) memberSearch.addEventListener('input', (e) => {
@@ -1145,11 +1184,7 @@ function bindEvents() {
   }
   for (const chip of document.querySelectorAll('[data-project-filter]')) {
     chip.onclick = () => {
-      const value = chip.dataset.projectFilter;
-      if (!PROJECT_FILTERS[value]) return;
-      state.projectFilter = value;
-      for (const o of document.querySelectorAll('[data-project-filter]')) o.setAttribute('aria-pressed', String(o.dataset.projectFilter === value));
-      state.selectedProjectId = null; renderProjects(); renderProjectSide();
+      selectProjectFilter(chip.dataset.projectFilter);
     };
   }
   const todosRefresh = $('ws-todos-refresh');
@@ -1174,17 +1209,17 @@ function bindEvents() {
   for (const [id, handler] of formHandlers) { const f = $(id); if (f) f.addEventListener('submit', handler); }
   if (typeof window !== 'undefined') {
     window.addEventListener('message', handleParentMessage);
-    window.addEventListener('focus', () => { if (!state.busy && !state.dialogOpen && state.profile) { void loadSession(); } });
+    window.addEventListener('focus', () => { if (!state.busy && state.profile) { void loadSession(); } });
     document.addEventListener('visibilitychange', () => {
-      if (!document.hidden && !state.busy && !state.dialogOpen && state.profile) { void loadSession(); }
+      if (!document.hidden && !state.busy && state.profile) { void loadSession(); }
     });
     setInterval(() => {
-      if (document.hidden || state.busy || state.dialogOpen || !state.profile) return;
+      if (document.hidden || state.busy || !state.profile) return;
       void loadSession();
     }, 60000);
     let syncing = false;
     setInterval(async () => {
-      if (syncing || document.hidden || state.busy || state.dialogOpen || !state.profile || !state.projects.some(p => (['queued', 'syncing', 'retrying'].includes(p.requirementsSync?.state)||['queued','working','retrying'].includes(p.knowledgeSpace?.state)))) return;
+      if (syncing || document.hidden || state.busy || !state.profile || !state.projects.some(p => (['queued', 'syncing', 'retrying'].includes(p.requirementsSync?.state)||['queued','working','retrying'].includes(p.knowledgeSpace?.state)))) return;
       syncing = true;
       try { await loadProjects(); } finally { syncing = false; }
     }, 5000);

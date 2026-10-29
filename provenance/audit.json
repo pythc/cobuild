@@ -62,7 +62,7 @@
     {
       "path": "apps/platform/server/project-knowledge-store.mjs",
       "baselineSha256": "88f5fed65d83cb0259fdee71b4a6d0c4f3c3d0bfcbc97ae1a13841bbe53cc158",
-      "currentSha256": "fa44c57fa8f37df2f674a27fa4e75f6f8990aac558958adb043398da0e3986b6"
+      "currentSha256": "7b126e6537054c9a8ca358e1c3a77aa8e88391b09415706655e0913baa990a38"
     },
     {
       "path": "apps/platform/server/project-sync-store.mjs",
@@ -97,7 +97,7 @@
     {
       "path": "apps/platform/server/workspace-store.mjs",
       "baselineSha256": "b847a21809bbcfbf8388e16639dbd4fdd4db297739d6024955a3db43432a43bb",
-      "currentSha256": "cf0f700c5998a74ad715983afad564eda4240f55c0b652ec5dabd6103ca47023"
+      "currentSha256": "00fef8700eda45fafaa240cd7282cb8a94aa30deefbf641711a6e69a1c345e12"
     },
     {
       "path": "apps/platform/src/lab-session.js",
@@ -137,12 +137,17 @@
     {
       "path": "apps/platform/src/workspace.js",
       "baselineSha256": "6d0884f56c2dceaf951b80ace4ec65def32e618d2ef6b8d1e277797fb77838ed",
-      "currentSha256": "94ed5efc1014a65bbb1685e062c9db37ede890df483cb46643409ba765784984"
+      "currentSha256": "30af2c26401f7578e91fc95a6a0c0d586b5ce036518e2e24ecea330bc15d2c97"
     },
     {
       "path": "apps/platform/tests/workspace-ui.test.mjs",
       "baselineSha256": "eae1a2156c166091b69842803ffe993f9a513e835a0c62ca9174af77b6e540a0",
-      "currentSha256": "7970863b01d09f5d5f6432d0993a554ced76ea1412a3c926a422f341408bd463"
+      "currentSha256": "e0c2068803b9f89c444b50e8d8d89003a1b4e5823e0340c18c97f2f09976bef9"
+    },
+    {
+      "path": "apps/makit/client/src/api/index.ts",
+      "baselineSha256": "eb1026b54feb0f8c8a4603a82b51c477b2f92f72bfca814db9459068fbd7e298",
+      "currentSha256": "94d0006ea5e8b2bc98127d4b2ec3587da916d21f433b5bdcc5054accd0043327"
     },
     {
       "path": "apps/makit/client/src/components/CoBuildBrand.tsx",
@@ -157,12 +162,12 @@
     {
       "path": "apps/makit/client/src/pages/ProjectsPage/ProjectActionsDialog.tsx",
       "baselineSha256": "e72a97573fe0608ab7d1565488ae728c33bb4af93bbab22fa18dc4b7bd9a2d34",
-      "currentSha256": "9ecc600cfdb4bf502f42e84f522f9889c60eb0ab5e66b159b8a91a4737a7a339"
+      "currentSha256": "e182de2e18a5d9bd2b491ffa3543ea644947d81dafc707b00ee80ca0bac301a9"
     },
     {
       "path": "apps/makit/client/src/pages/ProjectsPage/ProjectsPage.tsx",
       "baselineSha256": "37c24222e3c0a7347c074d596e8044c106239154416d55d55d7689c479dd9483",
-      "currentSha256": "e204c0a47bd6b8e4e3025cde0638632cc23f8ecd6627405461da3328a743c7b0"
+      "currentSha256": "dcf2e315c8778ddcd2d716434843f495997f00a64bcca611c034b696f6471316"
     },
     {
       "path": "apps/makit/client/src/pages/RelayPage/RelayPage.tsx",
@@ -1433,7 +1438,7 @@
     {
       "rule": "lab-service-address",
       "path": "apps/platform/src/workspace.js",
-      "line": 1094
+      "line": 1137
     },
     {
       "rule": "lab-service-address",
@@ -1842,6 +1847,11 @@
     },
     {
       "rule": "lab-service-address",
+      "path": "apps/platform/tests/project-commands.test.mjs",
+      "line": 189
+    },
+    {
+      "rule": "lab-service-address",
       "path": "apps/platform/tests/protocol.test.mjs",
       "line": 20
     },
@@ -2143,12 +2153,12 @@
     {
       "rule": "lab-service-address",
       "path": "apps/platform/tests/workspace-ui.test.mjs",
-      "line": 72
+      "line": 83
     },
     {
       "rule": "lab-service-address",
       "path": "apps/platform/tests/workspace-ui.test.mjs",
-      "line": 76
+      "line": 87
     },
     {
       "rule": "lab-service-address",
@@ -2163,12 +2173,12 @@
     {
       "rule": "lab-service-address",
       "path": "apps/makit/client/src/pages/ProjectsPage/ProjectActionsDialog.tsx",
-      "line": 137
+      "line": 141
     },
     {
       "rule": "lab-service-address",
       "path": "apps/makit/client/src/pages/ProjectsPage/ProjectsPage.tsx",
-      "line": 95
+      "line": 112
     },
     {
       "rule": "lab-service-address",

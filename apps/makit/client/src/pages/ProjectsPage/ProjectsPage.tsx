@@ -1,6 +1,6 @@
 import {suiteRuntime} from '@/lib/suite-runtime';
 import ProjectActionsDialog from './ProjectActionsDialog';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link, useSearchParams } from 'react-router-dom';
 import {
@@ -39,14 +39,23 @@ const COLORS: Record<string, string> = {
 };
 export default function ProjectsPage() {
   const [params, setParams] = useSearchParams();
-  const [search, setSearch] = useState('');
-  const [filter, setFilter] = useState('all');
+  const search = params.get('q') || '';
+  const allowedFilters = ['all','active','exploring','pending','needs_changes','unconfigured','archived'];
+  const filter = allowedFilters.includes(params.get('filter') || '') ? params.get('filter')! : 'all';
+  function navigate(values: Record<string,string|null>, replace=false) {
+    setParams(previous=>{
+      const next=new URLSearchParams(previous);
+      for(const [key,value] of Object.entries(values)){if(value)next.set(key,value);else next.delete(key);}
+      return next;
+    },{replace});
+  }
   const query = useQuery({
     queryKey: ['project-management'],
     queryFn: ({ signal }) => getProjectManagement(signal),
     refetchInterval: 30000,
   });
-  const projects: ManagedProject[] = query.data?.projects || [];
+  const denied = [401,403].includes((query.error as {status?:number}|null)?.status || 0);
+  const projects: ManagedProject[] = denied ? [] : query.data?.projects || [];
   const selected: ManagedProject | undefined = projects.find(
     (p: ManagedProject) => p.projectId === params.get('project'),
   );
@@ -60,8 +69,16 @@ export default function ProjectsPage() {
         .toLowerCase()
         .includes(search.toLowerCase()),
   );
+  useEffect(()=>{
+    if(!selected || query.isError)return;
+    const phase=selected.snapshot?.archived?'archived':selected.snapshot?.phase||'unconfigured';
+    const patch: Record<string,string|null>={};
+    if((phase==='archived'&&filter!=='archived')||(phase!=='archived'&&filter!=='all'&&filter!==phase))patch.filter=phase==='archived'?'archived':null;
+    if(search && !(selected.projectName+' '+selected.projectSummary+' '+selected.snapshot?.ownerName).toLowerCase().includes(search.toLowerCase()))patch.q=null;
+    if(Object.keys(patch).length)navigate(patch,true);
+  },[params,selected,query.isError]);
   if (query.isPending) return <LoadingState label="正在加载项目" />;
-  if (query.isError && !query.data)
+  if (query.isError && (!query.data || denied))
     return (
       <ErrorState
         message={query.error.message}
@@ -148,6 +165,7 @@ export default function ProjectsPage() {
             ['active', '已立项'],
             ['exploring', '探索中'],
             ['pending', '待审批'],
+            ['needs_changes', '待修改'],
             ['unconfigured', '待完善'],
             ['archived', '已归档'],
           ].map(([value, label]) => (
@@ -156,7 +174,7 @@ export default function ProjectsPage() {
               size="sm"
               variant={filter === value ? 'secondary' : 'ghost'}
               aria-pressed={filter === value}
-              onClick={() => setFilter(value)}
+              onClick={() => navigate({filter:value==='all'?null:value,project:null})}
             >
               {label}
             </Button>
@@ -166,10 +184,11 @@ export default function ProjectsPage() {
           aria-label="搜索项目"
           placeholder="搜索项目、简介或负责人"
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => navigate({q:e.target.value||null,project:null},true)}
           className="w-full sm:max-w-72"
         />
       </div>
+      {params.get('project') && !selected && !query.isError ? <p role="status">项目不存在或当前无权访问。</p> : null}
       <div
         className={`grid items-start gap-5 ${selected ? 'lg:grid-cols-[minmax(0,1fr)_minmax(320px,0.85fr)]' : ''}`}
       >
@@ -184,7 +203,7 @@ export default function ProjectsPage() {
             return (
               <button
                 key={p.projectId}
-                onClick={() => setParams({ project: p.projectId })}
+                onClick={() => navigate({project:p.projectId})}
                 aria-pressed={selected?.projectId === p.projectId}
                 className={`group flex min-h-52 flex-col gap-4 rounded-2xl border bg-card p-5 text-left transition hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md focus-visible:outline focus-visible:outline-primary ${selected?.projectId === p.projectId ? 'border-primary ring-1 ring-primary/20' : ''}`}
               >
@@ -235,7 +254,7 @@ export default function ProjectsPage() {
           ) : null}
         </div>
         {selected ? (
-          <ProjectDetails key={selected.projectId} project={selected} onClose={() => setParams({})} />
+          <ProjectDetails key={selected.projectId} project={selected} onClose={() => navigate({project:null})} />
         ) : null}
       </div>
     </div>

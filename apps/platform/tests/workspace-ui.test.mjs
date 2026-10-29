@@ -7,14 +7,14 @@ import {handleWorkspaceRequest} from '../src/embedded-workspace.js';
 const flowState='s'.repeat(43),ticket='t'.repeat(43);
 const profile={subject:'fixture:alice',name:'虚构成员',role:'member',csrf:'fixture-csrf'};
 async function ui({embedded=true,pathname,search='',fetchImpl}={}){
-  const elements=new Map(),sent=[],requests=[],navigated=[];
+  const elements=new Map(),sent=[],requests=[],navigated=[],events={};
   const node=()=>({hidden:false,disabled:false,dataset:{},children:[],textContent:'',attrs:{},value:'',checked:false,
-    classList:{add(){},remove(){}},
+    classList:{add(){},remove(){}},showModal(){this.open=true;},close(){this.open=false;},reset(){},
     append(...children){this.children.push(...children);},replaceChildren(...children){this.children=children;this.textContent='';},
     setAttribute(k,v){this.attrs[k]=v;},getAttribute(k){return this.attrs[k];},removeAttribute(k){delete this.attrs[k];},
     addEventListener(){},querySelector(){return null;},querySelectorAll(){return [];}});
   const el=id=>{if(!elements.has(id))elements.set(id,node());return elements.get(id);};
-  const parent={postMessage:m=>sent.push(m)},window={parent,addEventListener(){},open(){throw new Error('Unexpected popup');}};
+  const parent={postMessage:m=>sent.push(m)},window={parent,addEventListener:(name,fn)=>{events[name]=fn;},open(){throw new Error('Unexpected popup');}};
   const source=(await readFile(new URL('../src/workspace.js',import.meta.url),'utf8')).replace(/^import .*persistent-login.*\n/m,'').replace('export function initWorkspace','function initWorkspace').replace('export default initWorkspace;','');
   const resolvedPath=pathname||(embedded?'/workbench/embedded':'/workbench');
   const context={window,location:{pathname:resolvedPath,search,assign:u=>navigated.push(u)},
@@ -24,9 +24,20 @@ async function ui({embedded=true,pathname,search='',fetchImpl}={}){
       const value=path.endsWith('auth/start')?{state:flowState,launchUrl:'https://internal.110-lab.cn/mail/auth/launch?state='+flowState}:
         path.endsWith('session')?profile:path.endsWith('projects')?{projects:[]}:path.endsWith('members')?{members:[],source:'feishu',unavailable:false}:{items:[]};
       return {ok:true,json:async()=>value};}};
-  runInNewContext(source+';globalThis.h={state,projectPicker,doLogin,doLogout,handleParentMessage,loadProjects,loadMembers,clearIdentity,renderRequirementsSource,renderShell,renderMemberPicker,refreshMemberPicker,openProjectDialog,collectProjectForm,navigateToProject,bindEvents,renderMilestones,renderKnowledgeSync,PROJECTS_PAGE,EMBEDDED,isUuid};',context);
-  return {...context.h,el,parent,sent,requests,navigated,context};
+  window.history={pushState(_s,_t,url){const u=new URL(url,'https://example.test');context.location.search=u.search;},replaceState(_s,_t,url){this.pushState(_s,_t,url);}};
+  runInNewContext(source+';globalThis.h={state,projectPicker,doLogin,doLogout,handleParentMessage,loadProjects,loadMembers,clearIdentity,renderTodos,renderRequirementsSource,renderShell,renderMemberPicker,refreshMemberPicker,openProjectDialog,collectProjectForm,navigateToProject,bindEvents,renderMilestones,renderKnowledgeSync,openArchiveDialog,submitArchiveForm,readProjectRoute,selectProjectFilter,PROJECTS_PAGE,EMBEDDED,isUuid};',context);
+  return {...context.h,el,parent,sent,requests,navigated,context,events};
 }
+
+test('nonempty workbench todos render and remain keyboard selectable',async()=>{
+  const h=await ui({embedded:false});h.state.profile=profile;
+  h.state.todos=[{kind:'project_review',id:'review-fixture',projectId:'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',title:'Project review'}];
+  h.renderTodos();const rows=h.el('ws-todo-list').children;
+  assert.equal(rows.length,1);assert.equal(h.el('ws-todo-empty').hidden,true);
+  rows[0].onkeydown({key:'Enter',preventDefault(){}});
+  assert.equal(h.el('ws-todo-list').children[0].getAttribute('aria-current'),'true');
+  assert.equal(h.el('cb-todo-dialog').open,true);
+});
 
 test('a lost WeKnow grant is distinguished from project approval and transient creation failures',async()=>{
   const h=await ui(),side=h.el('test-side');
@@ -267,4 +278,46 @@ test('knowledge status distinguishes manual links and recoverable archive failur
   h.state.profile=profile;const denied=h.el('other-side');
   h.renderKnowledgeSync(denied,{ownerSubject:'other',knowledgeSpace:{state:'blocked'}});
   assert.equal(denied.children.some(n=>n.textContent==='重试 WeKnow 同步'),false);
+});
+
+
+test('project routes preserve archived identity, history and missing targets on refresh',async()=>{
+  let projects=[{id:projectId,name:'Archived',archived:true,ownerSubject:profile.subject},{id:otherProjectId,name:'Active',archived:false}];
+  const h=await ui({pathname:'/projects',search:'?project='+projectId,fetchImpl:async()=>({ok:true,json:async()=>({projects})})});
+  h.state.profile=profile;h.bindEvents();await h.loadProjects();
+  assert.equal(h.state.selectedProjectId,projectId);assert.equal(h.state.projectFilter,'archived');
+  assert.match(h.context.location.search,/filter=archived/);
+  await h.loadProjects();assert.equal(h.state.selectedProjectId,projectId);
+  h.navigateToProject(otherProjectId);assert.equal(h.state.projectFilter,'active');
+  h.context.location.search='?project='+projectId;h.events.popstate();
+  assert.equal(h.state.selectedProjectId,projectId);assert.equal(h.state.projectFilter,'archived');
+  h.selectProjectFilter('active');assert.equal(h.state.selectedProjectId,null);assert.equal(h.state.pendingProjectId,null);
+  assert.ok(!h.context.location.search.includes('project='));
+  h.navigateToProject(projectId);projects=projects.filter(p=>p.id!==projectId);await h.loadProjects();
+  assert.equal(h.state.selectedProjectId,null);assert.equal(h.state.pendingProjectId,projectId);
+  assert.match(h.el('ws-project-side').children[0].textContent,/不存在或当前无权/);
+  assert.equal(h.state.projects.length,1,'unrelated project remains available but is never selected');
+});
+
+
+test('archive dialog keeps its retry key and ignores a reply after identity revocation',async()=>{
+  let posts=0,resolveReply;
+  const project={id:projectId,name:'Retry fixture',archived:false,revision:3,ownerSubject:profile.subject};
+  const h=await ui({pathname:'/projects',fetchImpl:async(path,options)=>{
+    if(options.method==='POST'){
+      posts++;
+      if(posts===1)throw new Error('Lost reply');
+      return new Promise(resolve=>{resolveReply=resolve;});
+    }
+    return {ok:true,json:async()=>({projects:[project]})};
+  }});
+  h.context.__COBUILD__={modules:['kick']};h.state.profile=profile;
+  h.openArchiveDialog(project);await h.submitArchiveForm({preventDefault(){}});
+  assert.equal(h.el('ws-dialog-archive').open,true);
+  const pending=h.submitArchiveForm({preventDefault(){}});
+  const bodies=h.requests.filter(r=>r.options.method==='POST').map(r=>JSON.parse(r.options.body));
+  assert.deepEqual(bodies[0],bodies[1]);assert.ok(bodies[0].requestId);
+  h.clearIdentity();resolveReply({ok:true,json:async()=>({...project,archived:true,revision:4,operation:{state:'queued'}})});await pending;
+  assert.equal(h.state.profile,null);assert.equal(h.state.projects.length,0);
+  assert.ok(!h.el('ws-status').textContent.includes('已归档'),'late response does not render old identity success');
 });

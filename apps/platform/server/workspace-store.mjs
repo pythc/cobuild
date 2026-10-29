@@ -726,12 +726,13 @@ export function openWorkspaceStore({directory, now = Date.now, syncProjects = fa
       authorize: () => authorizeProjectCommand(actor, id),
       mutate: () => {
         const before = loadProjectOrFail(id), project = mutate();
-        const event = before.name === project.name ? {type:'kick.project.updated.v1',data:{}} : {
+        const lifecycleChanged = !!before.archived !== project.archived;
+        const event = lifecycleChanged ? {type:project.archived?'kick.project.archived.v1':'kick.project.restored.v1',data:{archived:project.archived}} : before.name === project.name ? {type:'kick.project.updated.v1',data:{}} : {
           type:'kick.project.renamed.v1', data:{previousName:before.name, name:project.name},
         };
         const generation = syncProjects ? requirementsSync.generation(id) : 0;
         const projections=generation?[{consumer:'makit.project-snapshot.v1',key:id,generation}]:[];
-        if(project.phase==='active'&&project.knowledgeSpace&&project.knowledgeSpace.state!=='legacy'&&before.name!==project.name)
+        if(project.phase==='active'&&project.knowledgeSpace&&project.knowledgeSpace.state!=='legacy'&&(before.name!==project.name||lifecycleChanged))
           projections.push({consumer:'weknow.project-space.v1',key:id,generation:project.revision});
         return {revision:project.revision,event,projections};
       },
@@ -899,6 +900,13 @@ export function openWorkspaceStore({directory, now = Date.now, syncProjects = fa
   }
 
   function archive(actor, id, input) {
+    requireActor(actor);
+    if (!operations) return performArchive(actor,id,input);
+    const {requestId=randomUUID(),...data}=parse(archiveInputSchema.extend({requestId:z.uuid().optional()}),input);
+    return projectCommand(actor,id,requestId,data.archived?'kick.project.archive':'kick.project.restore',data,()=>performArchive(actor,id,data));
+  }
+
+  function performArchive(actor, id, input) {
     requireActor(actor);
     const data = parse(archiveInputSchema, input);
     return tx(() => {

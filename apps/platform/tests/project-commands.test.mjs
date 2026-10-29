@@ -180,3 +180,49 @@ test('archive before first space creation does not invent a remote link; legacy 
   p=f.store.get(alice,p.id);p=f.store.rename(alice,p.id,{requestId:randomUUID(),revision:p.revision,name:'Unrelated'});
   assert.equal(f.store.knowledgeSpaces.claim(),null);assert.equal(p.operation.state,'succeeded');
 });
+
+test('archive and restore receipts survive lost replies and coalesced downstream retries',t=>{
+  const f=fixture(t),admin={...bob,role:'admin'};
+  let p=f.store.create(alice,{...fields,createKnowledgeSpace:true});
+  p=f.store.apply(alice,p.id,{revision:p.revision,application:'Fixture'});
+  p=f.store.review(admin,p.id,{revision:p.revision,decision:'approve',note:''});
+  const spaceId=randomUUID(),url='https://knowledge.110-lab.cn/s/fixture';
+  f.store.knowledgeSpaces.finish(f.store.knowledgeSpaces.claim(),{spaceId,url,mode:'managed'});
+  p=f.store.get(alice,p.id);
+  const input={requestId:randomUUID(),revision:p.revision,archived:true};
+  const archived=f.store.archive(alice,p.id,input);
+  assert.equal(archived.operation.action,'kick.project.archive');
+  assert.equal(archived.operation.deliveries.length,2);
+  const old=f.store.knowledgeSpaces.claim();
+  f.restart();
+  const replay=f.store.archive(alice,p.id,input);
+  assert.equal(replay.operation.id,archived.operation.id);assert.equal(replay.revision,archived.revision);
+  assert.equal(f.store.audit(alice,p.id).filter(e=>e.action==='archive').length,1);
+  assert.throws(()=>f.store.archive(alice,p.id,{...input,archived:false}),e=>e.code==='REQUEST_CONFLICT');
+  assert.throws(()=>f.store.archive(alice,p.id,{...input,requestId:randomUUID()}),e=>e.status===409&&e.message==='revision_conflict');
+  assert.throws(()=>f.store.archive(bob,p.id,input),e=>e.status===403);
+  const restore={requestId:randomUUID(),revision:replay.revision,archived:false};
+  const restored=f.store.archive(admin,p.id,restore);
+  assert.equal(restored.operation.action,'kick.project.restore');
+  assert.throws(()=>f.store.archive(bob,p.id,restore),e=>e.status===403);
+  assert.throws(()=>f.store.operation(bob,restored.operation.id),e=>e.status===403);
+  assert.equal(f.store.knowledgeSpaces.finish(old,{spaceId,url,mode:'managed'}),false);
+  const makit=f.store.requirementsSync.claim();
+  f.store.requirementsSync.finish(makit,{projectId:p.id,url:'https://example.test/project'});
+  let knowledge=f.store.knowledgeSpaces.claim();
+  f.store.knowledgeSpaces.fail(knowledge,{permanent:true,code:'FIXTURE_UNAVAILABLE'});
+  const partial=f.store.operation(alice,archived.operation.id);
+  assert.equal(partial.state,'blocked');
+  assert.equal(partial.deliveries.find(d=>d.consumer.startsWith('makit')).state,'succeeded');
+  f.restart();f.store.knowledgeSpaces.retry(p.id);knowledge=f.store.knowledgeSpaces.claim();
+  f.store.knowledgeSpaces.finish(knowledge,{spaceId,url,mode:'managed'});
+  for(const id of [archived.operation.id,restored.operation.id]){
+    const operation=f.store.operation(alice,id),receipt=operation.deliveries.find(d=>d.consumer.startsWith('weknow')).receipt;
+    assert.equal(operation.state,'succeeded');assert.equal(receipt.confirmation,'snapshot-converged');
+    assert.equal(receipt.throughGeneration,knowledge.revision);assert.ok(receipt.throughGeneration>=restored.revision);assert.equal(receipt.archived,false);
+  }
+  const late=f.store.archive(alice,p.id,input);
+  assert.equal(late.archived,false,'replay returns current project, not old archived content');
+  assert.equal(late.operation.id,archived.operation.id);
+  assert.equal(f.store.get(alice,p.id).knowledgeSpace.spaceId,spaceId);
+});

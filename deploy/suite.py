@@ -132,7 +132,8 @@ def validate_release(value):
         manifest=schema_manifest(value['images']['core']['id'])
         checked_policy(policy.validate_candidate,value['migration'],value['contract'],manifest,approved_runner)
         if value['migration']['kind'] in ['core-managed-v1','core-runtime-v1']:
-            if value['migration']['plan']!=read(ROOT/('deploy/migrations/'+value['migration']['kind']+'.json')):raise Failure('Core plan differs from the reviewed release plan')
+            reviewed=['core-managed-v1.json'] if value['migration']['kind']=='core-managed-v1' else ['core-runtime-v1.json','core-project-state-v1.json']
+            if not any(value['migration']['plan']==read(ROOT/'deploy/migrations'/name) for name in reviewed):raise Failure('Core plan differs from the reviewed release plan')
             if manifest.get('coreRunnerDigest')!=digest(ROOT/'deploy/runtime/core-migrate.mjs'):raise Failure('Core runner differs from reviewed implementation')
     return value
 

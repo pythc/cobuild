@@ -1,0 +1,335 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-29",
+  "version": "0.9.0-dev.0",
+  "baseCommit": "04f4ec17ccbb48ec04dc1c5e00dd71abbf91006d",
+  "scope": "retryable archive/restore operations and project navigation/draft state; local synthetic data only",
+  "productionAccess": false,
+  "externalMessages": false,
+  "publicReleaseReady": false,
+  "checks": {
+    "regression": {
+      "rootPassed": 60,
+      "projectPassed": 66,
+      "failed": 0
+    },
+    "deploymentPolicyUnits": {
+      "passed": 42,
+      "failed": 0
+    },
+    "nativeRun": {
+      "productionAccess": false,
+      "stages": [
+        {
+          "name": "makit-migrations",
+          "exitCode": 0
+        },
+        {
+          "name": "makit-role",
+          "exitCode": 0
+        },
+        {
+          "name": "core-e2e",
+          "exitCode": 0
+        },
+        {
+          "name": "managed-native-queries",
+          "exitCode": 0
+        },
+        {
+          "name": "collections",
+          "exitCode": 0
+        },
+        {
+          "name": "restart-e2e",
+          "exitCode": 0
+        },
+        {
+          "name": "project-state-browser",
+          "exitCode": 0
+        }
+      ],
+      "passed": true,
+      "ownedContainersRemoved": true
+    },
+    "browser": {
+      "passed": true,
+      "checks": [
+        "invalid form stays open with inline error",
+        "Kick selection is shareable in URL",
+        "populated workbench renders project review and supports keyboard opening",
+        "Kick reload retains project",
+        "background refresh retains draft",
+        "background refresh retains text focus",
+        "lost response keeps retry dialog open",
+        "lost-response retry preserves request ID and input",
+        "real browser retry returns original operation",
+        "archived deep link survives reload and refresh",
+        "archived route matches active filter",
+        "explicit incompatible filter clears selection",
+        "browser back restores project and filter",
+        "browser forward restores cleared selection",
+        "lost-response retry produces one business archive",
+        "Kick link opens Makit using generic identity",
+        "Makit reload retains search",
+        "Makit reload retains phase filter",
+        "Makit back restores selected project and filters",
+        "Makit refresh does not replace milestone draft",
+        "Makit opens managed WeKnow project space",
+        "ordinary member has no archive control",
+        "ordinary member cannot archive via direct API",
+        "ordinary member reaches Makit project",
+        "ordinary member reaches managed WeKnow space",
+        "return to Kick retains project identity",
+        "missing target is explicit, with no unrelated fallback",
+        "transient source failure keeps target with error",
+        "Kick narrow viewport has no horizontal overflow",
+        "keyboard project selection works",
+        "keyboard focus stays on the selected row",
+        "Makit narrow viewport has no horizontal overflow",
+        "Makit forbidden refresh removes cached private project details",
+        "permission downgrade removes editable draft"
+      ],
+      "externalMessages": false,
+      "productionAccess": false,
+      "screenshots": [
+        "kick-edit-desktop.png",
+        "kick-archived-desktop.png",
+        "makit-edit-desktop.png",
+        "weknow-project-desktop.png",
+        "kick-narrow.png",
+        "makit-narrow.png"
+      ],
+      "visualStyles": {
+        "kick-edit-desktop": [
+          {
+            "background": "rgb(255, 255, 255)",
+            "opacity": "1",
+            "ancestors": [
+              {
+                "tag": "DIALOG",
+                "class": "ws-dialog ws-dialog-wide",
+                "opacity": "1",
+                "filter": "none"
+              },
+              {
+                "tag": "SECTION",
+                "class": "ws-region",
+                "opacity": "1",
+                "filter": "none"
+              },
+              {
+                "tag": "MAIN",
+                "class": "shell cb-main",
+                "opacity": "1",
+                "filter": "none"
+              },
+              {
+                "tag": "DIV",
+                "class": "cb-layout",
+                "opacity": "1",
+                "filter": "none"
+              },
+              {
+                "tag": "BODY",
+                "class": "cb-shell is-project-page is-workspace-projects",
+                "opacity": "1",
+                "filter": "none"
+              },
+              {
+                "tag": "HTML",
+                "class": "",
+                "opacity": "1",
+                "filter": "none"
+              }
+            ]
+          }
+        ],
+        "kick-archived-desktop": [],
+        "makit-edit-desktop": [],
+        "weknow-project-desktop": [],
+        "kick-narrow": [],
+        "makit-narrow": []
+      },
+      "browserVersion": "156.0.8078.73"
+    },
+    "runtimeRepair": {
+      "format": 1,
+      "productionAccess": false,
+      "externalMessages": false,
+      "checks": [
+        "baseline seed",
+        "schema evidence retained after real broken runtime",
+        "failed candidate and unsafe old writers stopped",
+        "replacement is atomic and retains original candidate",
+        "interrupted repaired runtime is stopped",
+        "repair retains exact committed migration history",
+        "resume starts fixed runtime without replaying destructive changes",
+        "sessions, documents, attachments and new writes survive",
+        "completed recovery audit retained",
+        "downgrade rejection preserves healthy fixed runtime",
+        "sessions, documents, attachments and new writes survive",
+        "sessions, documents, attachments and new writes survive",
+        "backup restore retains repaired schema identity"
+      ],
+      "stages": [
+        {
+          "passed": true,
+          "checks": 8,
+          "scope": "baseline seed"
+        },
+        {
+          "passed": true,
+          "checks": 11,
+          "scope": "upgrade persistence"
+        },
+        {
+          "passed": true,
+          "checks": 7,
+          "scope": "upgrade persistence"
+        },
+        {
+          "passed": true,
+          "checks": 7,
+          "scope": "upgrade persistence"
+        }
+      ],
+      "images": {
+        "base": "sha256:3eab4ddab5fd178ef2b764433d01250ae8a36534cecfde3e681195899f7cf48a",
+        "broken": "sha256:e8800759226ac426bfd39d3f2c640ea1ef44ecc7e9d8fc1fbb0a8725e0580add",
+        "fixed": "sha256:d795cbd40e38d9183ede27c3e52ceecdc2e04f43ada8cae4ae05ad2f82d2edd6"
+      },
+      "injectedFailure": "Core security migration committed; old runtime remains stopped. Repair the candidate and use resume-upgrade; data and backup are retained.",
+      "passed": true,
+      "unrelatedServicesUnchanged": true
+    },
+    "sourceBoundary": {
+      "importedFiles": 2776,
+      "modifiedFiles": 85,
+      "missingFiles": 0,
+      "boundaryViolations": 0,
+      "portabilityFindings": 425
+    },
+    "cleanup": {
+      "unrelatedContainers": 11,
+      "idsAndStartTimesUnchanged": true,
+      "nativeOwnedContainersRemoved": true,
+      "repairCleanupErrors": []
+    },
+    "builds": {
+      "platform": true,
+      "makitSelfhost": true,
+      "makitClientTypes": true,
+      "dockerLinuxArm64": true
+    },
+    "nativeCore": {
+      "passed": true,
+      "checks": 196,
+      "scope": "native identity + directory + Kick/Makit/WeKnow collaboration",
+      "externalMessages": false
+    },
+    "nativeBulkAcl": {
+      "passed": true,
+      "checks": 4,
+      "scope": "native bulk ACL SQL; transaction rolled back"
+    },
+    "collections": {
+      "passed": true,
+      "checks": 7,
+      "scope": "native collection restart preservation and fail-closed initialization"
+    },
+    "restart": {
+      "passed": true,
+      "checks": 15,
+      "scope": "three-service restart and account password revocation"
+    },
+    "publicReleaseGate": {
+      "exitCode": 2,
+      "publicReleaseReady": false
+    },
+    "diffWhitespace": {
+      "passed": true
+    }
+  },
+  "images": {
+    "base": "sha256:3eab4ddab5fd178ef2b764433d01250ae8a36534cecfde3e681195899f7cf48a",
+    "broken": "sha256:e8800759226ac426bfd39d3f2c640ea1ef44ecc7e9d8fc1fbb0a8725e0580add",
+    "fixed": "sha256:d795cbd40e38d9183ede27c3e52ceecdc2e04f43ada8cae4ae05ad2f82d2edd6"
+  },
+  "review": {
+    "performed": true,
+    "independent": false,
+    "focus": [
+      "authorization before replay and current resource response",
+      "transactional archive events and projection receipts",
+      "coalesced snapshots and stale leases",
+      "URL selection, live permissions and draft preservation",
+      "keyboard focus and populated workbench regression",
+      "exact migration plans and owned-resource cleanup"
+    ],
+    "visualReview": {
+      "scope": "desktop and 390px project flows, forms, errors, keyboard and cross-app landing",
+      "screenshots": [
+        "kick-edit-desktop.png",
+        "kick-archived-desktop.png",
+        "makit-edit-desktop.png",
+        "weknow-project-desktop.png",
+        "kick-narrow.png",
+        "makit-narrow.png"
+      ],
+      "fullSiteVisualAcceptance": false,
+      "knownExistingIssue": "Makit header icon still uses a legacy hosted storage path and is broken in standalone deployment; tracked for portable branding work."
+    }
+  },
+  "earlierFailures": [
+    "An overbroad focus edit introduced undefined variables in nonempty todo rendering; fixed and covered by unit and final real-browser tests.",
+    "An earlier repair run completed its stage assertions but failed inventory comparison while a separate owned native fixture exited. Retained failure report and reran sequentially; only final successful run counts.",
+    "Early browser selector/timing and cached build failures were not counted as acceptance."
+  ],
+  "limitations": [
+    "no production release or public distribution",
+    "browser acceptance uses isolated local HTTP; this batch did not repeat TLS or embedded plugin acceptance",
+    "drafts and in-form retry IDs do not survive full reload or closing the form",
+    "legacy requests without requestId cannot replay the same receipt",
+    "snapshot convergence does not imply delivery of every intermediate state",
+    "no cross-machine, physical power-loss or long-duration capacity acceptance",
+    "legacy branding asset portability remains open"
+  ],
+  "logSha256": {
+    "project-state-verify.log": "360ded3b70fb8859fdf26eaaa5caf5ab6b0578f3e4cdfaf698d6d33ecc7549e5",
+    "project-state-deploy-tests.log": "e4ac2a28b525aeb7ff873b227b0252594aa31a77490cfc9a40f9298fad49d9f9",
+    "project-state-image-build.log": "d0303f58a1d437907ca4e5f84faa3a173f78c079a9e7ba9c52794528e3058521",
+    "project-state-native-run.log": "2027a28ed1de422936fa0e2eb31a0655fe5f96b6706f52bf50a309369ea41000",
+    "project-state-repair-run.log": "c308dbd0d7b0c834894ee97f61381876658e75b93a28aa1f4fad9c7f3aa32466",
+    "project-state-typecheck.log": "5de4c739afd533e2467ccf8cc61ee38975e0cd63a2b89969d99259b0a72b4c1e",
+    "project-state-makit-build.log": "1c63d6b448e0034fb7a61d5519231166c617f395f20ee0a43cde0dff948c84ba",
+    "project-state-platform-build.log": "fe4037d06ecbec9ef1bcaaa22b9b4b05140fc81f02ad4e752097953dc18f1de0",
+    "project-state-audit.log": "595c8ef54737507354dfc54e85c662caef8639872fe67dff72625f1efe7542b3",
+    "project-state-release-check.log": "f9797769b584d10a920b35d6dd4df3aa64c9037da8f493cf6fd649edae534419"
+  },
+  "screenshotSha256": {
+    "kick-edit-desktop.png": "0fa33e6761eec8bff46f41061539f2a2e08932d16bb5905d16b9d02d316e9ae2",
+    "kick-archived-desktop.png": "2af8f3ebb84929214e179d6fae9594a893068da7e9fe4f11c199f81023dbf8f1",
+    "makit-edit-desktop.png": "0a45ed12b76bb17c1c3ce08a704c8f07621b480766870866e3d45a59264c12ef",
+    "weknow-project-desktop.png": "f55eb81e3a1bfbe652c8bf454fb1af7c6c10662770b4c198d462c3814e4dca6d",
+    "kick-narrow.png": "e6dfdd5881207a8209020035414ac25dc5f2c78e58cbdff35ac3c6431a7117a1",
+    "makit-narrow.png": "36dc52ea077bfe7b13438043f10c436a26a350397e934ac6a8ac6bc0c26c991d"
+  },
+  "sourceSha256": {
+    "apps/makit/client/src/api/index.ts": "94d0006ea5e8b2bc98127d4b2ec3587da916d21f433b5bdcc5054accd0043327",
+    "apps/makit/client/src/pages/ProjectsPage/ProjectActionsDialog.tsx": "e182de2e18a5d9bd2b491ffa3543ea644947d81dafc707b00ee80ca0bac301a9",
+    "apps/makit/client/src/pages/ProjectsPage/ProjectsPage.tsx": "dcf2e315c8778ddcd2d716434843f495997f00a64bcca611c034b696f6471316",
+    "apps/platform/server/project-knowledge-store.mjs": "7b126e6537054c9a8ca358e1c3a77aa8e88391b09415706655e0913baa990a38",
+    "apps/platform/server/workspace-store.mjs": "00fef8700eda45fafaa240cd7282cb8a94aa30deefbf641711a6e69a1c345e12",
+    "apps/platform/src/workspace.js": "30af2c26401f7578e91fc95a6a0c0d586b5ce036518e2e24ecea330bc15d2c97",
+    "apps/platform/tests/project-commands.test.mjs": "b1841f371156ec818e766368859c285c21c20400353c2636d64a35d72e7ea2c8",
+    "apps/platform/tests/workspace-ui.test.mjs": "e0c2068803b9f89c444b50e8d8d89003a1b4e5823e0340c18c97f2f09976bef9",
+    "deploy/migrations/core-project-state-v1.json": "24d96461605a80c113ffd5478f7a7966f0e4e747bdf4bbb607f34e33ac92e84f",
+    "deploy/suite.py": "3d28681514eea89e3dd1e95db4fe60bb8815dc7c9ced033c264b0e9fcc9a4d2f",
+    "package.json": "7df1dedeb446a400c334dd54a152062b40c0eda1551b37c47650199803813a5d",
+    "suite.json": "1ff6c36eac2aba388a4a729c329844a6da5f7ca359b3e41e18994492c303a9d1",
+    "tests/project-state-browser.mjs": "f79e2f7401ae33869b0b8d1f494cea14350c1abf61681d4b9193798ec3b0995b",
+    "tools/test_local_suite.py": "60e63abb716a6d060d1bd077b452b725a9be2a41727b5790ff356aa4ea6e2ee9",
+    "tools/test_runtime_repair.py": "6aaa1fc329003c1bd708a6d735a26f2181d4961f0e08d6d0c82d669cded4df57"
+  }
+}
