@@ -85,6 +85,7 @@ import { NotificationDeliveryModule } from '../notifications/notification-delive
     RequirementAiReviewService,
   ],
   exports: [
+    PortalProjectService,
     LabIdentityService,
     RequirementUpdateJobsService,
     RequirementPlatformRoleService,

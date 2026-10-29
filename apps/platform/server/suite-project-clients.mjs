@@ -1,3 +1,4 @@
+import {z} from 'zod';
 import { join } from "node:path";
 import { createHash } from "node:crypto";
 import { serviceRequest } from "../../../packages/service/channel.mjs";
@@ -20,6 +21,19 @@ export function suiteProjectClients(config, directory, organizationId) {
       join(directory, app + ".service.key"),
     );
   return {
+    projectOverviewClient: config.modules.includes('makit') ? {
+      async requirements(actor, projectId) {
+        const raw=await serviceRequest(config.origins.makit,'/openapi/suite/project-overview',
+          {organizationId,subject:actor.subject,projectId},join(directory,'makit.service.key'),{timeoutMs:8000});
+        const count=z.number().int().nonnegative();
+        const schema=z.object({projectId:z.literal(projectId),revision:count,
+          counts:z.object({total:count,inProgress:count,completed:count,blocked:count,overdue:count}).strict(),
+          fetchedAt:z.iso.datetime(),stale:z.boolean()}).strict();
+        const value=schema.parse(raw.data??raw);
+        if(Object.values(value.counts).some(n=>n>value.counts.total))throw Error('Invalid project counts');
+        return {state:'ready',...value};
+      }
+    } : null,
     projectSyncClient: {
       async ensure(job) {
         const input = {

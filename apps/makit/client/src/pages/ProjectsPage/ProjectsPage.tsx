@@ -343,7 +343,7 @@ function ProjectDetails({
         </Button>
         <Button asChild size="sm" variant="outline">
           <a href={p.sourceUrl} target="_blank" rel="noreferrer">
-            {s?.phase === 'unconfigured' ? '完善立项' : '管理立项'}
+            {suiteRuntime()?.native ? '项目概览' : s?.phase === 'unconfigured' ? '完善立项' : '管理立项'}
             <ArrowUpRight className="size-4" />
           </a>
         </Button>

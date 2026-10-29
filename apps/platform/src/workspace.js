@@ -27,7 +27,7 @@ const state = {
   // Enterprise directory metadata. Preserved across searches and refreshes so a
   // transient directory failure never clears the already picked members list.
   membersSource: '', membersUnavailable: false, membersLoaded: false, membersLoading: false, membersError: '',
-  pendingProjectId: null,
+  pendingProjectId: null, projectView: 'overview', overview: null,
 };
 // Picker local state for the currently open project dialog.
 const projectPicker = { profiles:new Map(), selected: new Set(), search: '', ownerSubject: '' };
@@ -139,6 +139,7 @@ function writeProjectRoute({replace=false}={}) {
   const params=new URLSearchParams(location.search);
   const id=state.pendingProjectId||state.selectedProjectId;
   if(id)params.set('project',id);else params.delete('project');
+  if(state.projectView==='manage')params.set('view','manage');else params.delete('view');
   if(state.projectFilter!=='active')params.set('filter',state.projectFilter);else params.delete('filter');
   const next=location.pathname+(params.size?'?'+params:'')+(location.hash||'');
   if(next!==location.pathname+location.search+(location.hash||''))
@@ -147,6 +148,7 @@ function writeProjectRoute({replace=false}={}) {
 function readProjectRoute() {
   if(!PROJECTS_PAGE)return;
   const params=new URLSearchParams(location.search),id=params.get('project'),filter=params.get('filter');
+  state.projectView=params.get('view')==='manage'?'manage':'overview';
   state.projectFilter=Object.hasOwn(PROJECT_FILTERS,filter)?filter:'active';
   state.pendingProjectId=isUuid(id)?id:null;
   state.selectedProjectId=null;
@@ -478,12 +480,24 @@ function renderProjectSide() {
   const side = $('ws-project-side'); if (!side) return;
   clear(side);
   const project = state.projects.find(p => p.id === state.selectedProjectId);
-  if (!project) { side.append(el('p', 'ws-side-hint', state.pendingProjectId?'项目不存在或当前无权访问。':'选择左侧项目查看详情。')); return; }
+  if (!project) { state.overview=null;overviewRead++;side.append(el('p', 'ws-side-hint', state.pendingProjectId?'项目不存在或当前无权访问。':'选择左侧项目查看详情。')); return; }
   side.append(el('h3', '', project.name || '(未命名)'));
   const meta = el('div', 'ws-side-meta');
   meta.append(el('span', 'ws-badge ' + (PHASE_BADGE[project.phase] || 'ws-badge-indigo'), project.unconfigured?'待完善':PHASE_LABEL[project.phase] || project.phase || ''));
   if (project.archived) meta.append(el('span', 'ws-badge', '已归档'));
   side.append(meta);
+  if(globalThis.__COBUILD__){
+    const tabs=el('nav','ws-overview-tabs');tabs.setAttribute('aria-label','项目视图');
+    for(const [value,label] of [['overview','概览'],['manage','管理']]){
+      const b=el('button','ws-btn ws-btn-ghost',label);b.type='button';b.dataset.projectView=value;
+      b.setAttribute('aria-pressed',String(state.projectView===value));
+      b.onclick=()=>{state.projectView=value;writeProjectRoute();renderProjectSide();
+        $('ws-project-side')?.querySelector('[data-project-view="'+value+'"]')?.focus({preventScroll:true});};
+      tabs.append(b);
+    }
+    side.append(tabs);
+    if(state.projectView==='overview'){renderProjectOverview(side,project);return;}
+  }
   if (project.summary) side.append(el('p', 'ws-side-row', project.summary));
   const ownerName = project.ownerName || project.ownerEmail || project.ownerSubject || '';
   if (ownerName) side.append(sideRow('负责人', ownerName));
@@ -522,6 +536,97 @@ function renderProjectSide() {
   renderKnowledgeSync(side, project);
   renderMilestones(side, project);
   renderProjectActions(side, project);
+}
+
+// Lightweight read-only view: Kick data renders immediately; Makit has its own bounded read.
+let overviewRead=0;
+function overviewLink(parent,label,url) {
+  if(!isSafeHttpsUrl(url))return;
+  const a=el('a','ws-btn ws-btn-ghost',label);a.href=url;a.target='_blank';a.rel='noopener noreferrer';parent.append(a);
+}
+function overviewSection(parent,title) {
+  const section=el('section','ws-overview-section');section.append(el('h4','',title));parent.append(section);return section;
+}
+function renderProjectOverview(side,p) {
+  const root=el('div','ws-overview');root.id='ws-project-overview';side.append(root);
+  const goal=overviewSection(root,'项目目标');
+  goal.append(el('p','ws-side-row',p.summary||'尚未填写项目目标'));
+  goal.append(sideRow('负责人',p.ownerName||'尚未指定'));
+  if(p.phase==='pending')goal.append(el('p','ws-overview-notice','待管理员审批立项'));
+  if(p.phase==='needs_changes')goal.append(el('p','ws-overview-notice',p.reviewNote||'立项需修改'));
+  if(p.archived)goal.append(el('p','ws-overview-notice','项目已归档'));
+  const milestones=overviewSection(root,'里程碑');
+  const list=[...(p.milestones||[])].sort((a,b)=>(a.status==='done')-(b.status==='done')||
+    (Date.parse(a.dueAt)||Infinity)-(Date.parse(b.dueAt)||Infinity));
+  const done=list.filter(m=>m.status==='done').length;
+  milestones.append(el('p','ws-overview-summary',list.length?done+' / '+list.length+' 已完成':'尚无里程碑'));
+  const ul=el('ul','ws-overview-milestones');
+  for(const m of list.slice(0,4)){
+    const item=el('li','');item.append(el('span','',m.title));
+    const overdue=m.status!=='done'&&isOverdue(m.dueAt);
+    item.append(el('span',overdue?'ws-overview-warning':'',m.status==='done'?'已完成':(overdue?'逾期 · ':'')+(fmtDateOnly(m.dueAt)||'未设日期')));ul.append(item);
+  }
+  milestones.append(ul);
+  if(list.length>4)milestones.append(el('p','ws-side-hint','另有 '+(list.length-4)+' 项，可在管理中查看'));
+  const requirements=overviewSection(root,'需求进展');requirements.id='ws-overview-requirements';
+  renderOverviewRequirements(requirements,p);
+  const knowledge=overviewSection(root,'知识空间');
+  const sync=p.knowledgeSpace;
+  const labels={awaiting_approval:'待立项审批后创建',queued:'等待同步',working:'正在同步',retrying:'同步未完成，将自动重试',blocked:'同步需要处理',ready:'空间已关联',archived:'项目已归档，空间访问暂停',legacy:'已关联既有空间'};
+  knowledge.append(el('p','',!suiteModule('weknow')?'WeKnow 未启用':labels[sync?.state]||(p.links?.knowledgeSpace?'已关联既有空间':'尚未关联空间')));
+  if(suiteModule('weknow'))overviewLink(knowledge,'打开 WeKnow 空间',sync?.url||p.links?.knowledgeSpace);
+  if(sync?.updatedAt)knowledge.append(el('p','ws-side-hint','同步状态更新于 '+fmtDateTime(sync.updatedAt)));
+  if(sync?.url||p.links?.knowledgeSpace)knowledge.append(el('p','ws-side-hint','访问权限由 WeKnow 核对'));
+  const projection=p.requirementsSync;
+  if(projection&&['queued','syncing','retrying','blocked'].includes(projection.state)){
+    const status=overviewSection(root,'项目同步');status.append(el('p','ws-overview-notice',
+      ['retrying','blocked'].includes(projection.state)?'Makit 项目信息同步未完成':'Makit 项目信息同步中'));
+  }
+}
+function renderOverviewRequirements(node,p) {
+  const restoreRefreshFocus=node.contains(document.activeElement)&&document.activeElement?.hasAttribute('data-overview-refresh');
+  clear(node);node.append(el('h4','','需求进展'));
+  const result=state.overview?.projectId===p.id?state.overview:null;
+  const labels={loading:'正在读取需求进展…',disabled:'Makit 未启用',restricted:'无权读取 Makit 需求',not_connected:'请先打开 Makit 完成连接',not_synced:'项目尚未同步到 Makit',conflict:'项目名称关联存在冲突，请在管理中核对',unavailable:'需求进展暂时无法读取'};
+  const status=!suiteModule('makit')?'disabled':result?.state||'loading';
+  node.setAttribute('aria-busy',String(status==='loading'));
+  if(status==='ready'){
+    if(result.stale)node.append(el('p','ws-overview-notice','当前显示缓存数据'));
+    const dl=el('dl','ws-overview-stats');
+    for(const [key,label] of [['total','需求总数'],['inProgress','进行中'],['completed','已完成'],['blocked','阻塞'],['overdue','逾期']]){
+      const item=el('div','');item.append(el('dt','',label),el('dd','',result.counts[key]));dl.append(item);
+    }
+    node.append(dl,el('p','ws-side-hint','数据更新于 '+fmtDateTime(result.fetchedAt)+' · 不含已归档需求'));
+  }else {const message=el('p',status==='unavailable'?'ws-overview-warning':'',labels[status]||labels.unavailable);message.setAttribute('role','status');node.append(message);}
+  if(status!=='disabled'){
+    const actions=el('div','ws-overview-actions');
+    const reload=el('button','ws-btn ws-btn-ghost','刷新需求进展');reload.type='button';reload.dataset.overviewRefresh='';
+    reload.setAttribute('aria-disabled',String(status==='loading'));
+    reload.onclick=()=>{if(status!=='loading')void loadOverviewRequirements(p);};actions.append(reload);
+    const origin=globalThis.__COBUILD__?.catalog?.systems?.requirements;
+    // Use the configured Makit origin and stable project ID, never a guessed name link.
+    if(origin)overviewLink(actions,'打开 Makit 项目',origin.replace(/\/$/,'')+'/projects?project='+encodeURIComponent(p.id));
+    node.append(actions);
+    if(restoreRefreshFocus)reload.focus({preventScroll:true});
+  }
+  if(status==='loading'&&!result)void loadOverviewRequirements(p);
+}
+async function loadOverviewRequirements(p) {
+  const serial=++overviewRead,epoch=state.generation;
+  state.overview={projectId:p.id,state:'loading'};
+  const render=()=>{const node=$('ws-overview-requirements');if(node&&state.selectedProjectId===p.id&&state.projectView==='overview')renderOverviewRequirements(node,p);};
+  render();
+  try{
+    const result=await api('projects/'+p.id+'/overview/requirements');
+    if(serial!==overviewRead||epoch!==state.generation||!state.profile||state.selectedProjectId!==p.id)return;
+    state.overview={...result,projectId:p.id};
+  }catch(e){
+    if(serial!==overviewRead||epoch!==state.generation||!state.profile||state.selectedProjectId!==p.id)return;
+    if(e.status===401){clearIdentity();return;}
+    if(e.status===403){state.projects=[];state.overview=null;state.pendingProjectId=p.id;state.selectedProjectId=null;discardProjectDialog();renderProjects();renderProjectSide();return;}
+    state.overview={projectId:p.id,state:'unavailable'};
+  }
+  render();
 }
 
 function renderProjectSync(side, project) {
@@ -965,7 +1070,7 @@ function clearIdentity() {
   state.generation++;state.profile=null;state.csrf='';state.members=[];state.projects=[];state.todos=[];state.todoSources=null;state.requirements=null;
   state.selectedProjectId=null;state.selectedTodoKey=null;state.reqRequestId=null;state.todosReady=false;
   state.membersSource=''; state.membersUnavailable=false; state.membersLoaded=false; state.membersLoading=false; state.membersError='';
-  state.pendingProjectId=null;
+  state.pendingProjectId=null;state.overview=null;overviewRead++;
   projectPicker.selected = new Set(); projectPicker.profiles.clear(); projectPicker.search = ''; projectPicker.ownerSubject = '';
   clearTimeout(state.reqTimer);finishLogin();
   for(const dlg of document.querySelectorAll('.ws-dialog')){closeDialog(dlg);dlg.querySelector('form')?.reset();}
@@ -1020,7 +1125,7 @@ async function loadProjects() {
   if(state.applicationAccess?.projects?.allowed===false){state.projects=[];state.selectedProjectId=null;discardProjectDialog();renderProjects();renderProjectSide();return;}
   try{
     const r=await api('projects');if(epoch!==state.generation||serial!==projectsRead||!state.profile)return;
-    state.projects=r.projects||[];
+    state.projects=r.projects||[];state.overview=null;overviewRead++;
     reconcileProjectSelection();writeProjectRoute({replace:true});checkProjectDialogAccess();
     renderProjects();renderProjectSide();
   }catch(e){if(epoch===state.generation&&serial===projectsRead){

@@ -28,7 +28,7 @@ async function body(req){
   try{return JSON.parse(Buffer.concat(chunks).toString('utf8'));}catch{throw new WorkspaceError(400,'请求格式无效');}
 }
 
-export function createWorkspaceHttp({mail,knowledgeWorkerEnabled=true,apps=appConfig.apps,recruitment,honorsTodos=()=>[],localTest=false,now=Date.now,directory=mail?.workspaceDirectory,projectSyncEnabled=process.env.PORTAL_PROJECT_SYNC_ENABLED==='true',projectSyncClient,knowledgeProjectClient,projectBridgeSecret}={}){
+export function createWorkspaceHttp({mail,knowledgeWorkerEnabled=true,apps=appConfig.apps,recruitment,honorsTodos=()=>[],localTest=false,now=Date.now,directory=mail?.workspaceDirectory,projectSyncEnabled=process.env.PORTAL_PROJECT_SYNC_ENABLED==='true',projectSyncClient,knowledgeProjectClient,projectOverviewClient,projectBridgeSecret}={}){
   const enabled=!!mail?.enabled&&!!directory;
   const store=enabled?openWorkspaceStore({directory,now,syncProjects:projectSyncEnabled,organizationId:mail.auth?.organizationId}):null;
   let inbox;try{inbox=enabled&&moduleEnabled('hiflow')?openWorkspaceRecruitment({directory,source:()=>recruitment.labInbox(),canManage:a=>recruitment.store?.canManage?.(a)||['admin','super_admin'].includes(a.role),now}):null;}catch(e){store?.close();throw e;}
@@ -89,6 +89,25 @@ export function createWorkspaceHttp({mail,knowledgeWorkerEnabled=true,apps=appCo
         else if(route==='members')json(res,200,await mail.projectMembers(actor.subject));
         else if(route==='projects')json(res,200,store.list(actor));
         else if(/^projects\/operations\/[a-f0-9-]+$/.test(route))json(res,200,store.operation(actor,route.split('/')[2]));
+        else if(/^projects\/[a-f0-9-]+\/overview\/requirements$/.test(route)){
+          const id=route.split('/')[1];store.get(actor,id);
+          let value={state:'disabled'};
+          if(projectOverviewClient){
+            try {
+              await mail.authorizeApplication?.(actor,'requirements');
+              value=await projectOverviewClient.requirements(actor,id);
+              // Re-check both current app access and session after the remote read.
+              actor=await projectActor();
+              await mail.authorizeApplication?.(actor,'requirements');
+              store.get(actor,id);
+            }catch(e){
+              const states={401:'restricted',403:'restricted',404:'not_synced',409:'conflict',412:'not_connected'};
+              value={state:states[e.status]||'unavailable'};
+            }
+          }
+          actor=await projectActor();store.get(actor,id);
+          json(res,200,value);
+        }
         else if(route==='todos'){
           const allowed={};for(const id of ['projects','honors','recruitment-test']){try{await mail.authorizeApplication?.(actor,id);allowed[id]=true;}catch(e){if(e.status!==403)throw e;allowed[id]=false;}}
           actor=mail.identity(req,{embedded});for(const id of Object.keys(allowed))if(allowed[id]){try{mail.assertApplication?.(actor,id);}catch(e){if(e.status!==403)throw e;allowed[id]=false;}}

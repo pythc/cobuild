@@ -35,6 +35,11 @@ export class MakitAccessGuard implements CanActivate {
         if(payload.organizationId!==process.env.LAB_IDENTITY_TENANT_KEY)throw Error();req.body=payload.input;return true;
       }catch{throw new UnauthorizedException('服务接入凭据无效');}
     }
+    if(req.path === '/openapi/suite/project-overview') {
+      if(process.env.COBUILD_IDENTITY_MODE!=='local'||req.method!=='POST')throw new UnauthorizedException('连接未启用');
+      try { req.body=verifyService(req.headers,req.body,req.path,process.env.COBUILD_SERVICE_KEY_FILE!);return true; }
+      catch { throw new UnauthorizedException('服务接入凭据无效'); }
+    }
     // Native Relay and GitHub endpoints verify their dedicated signatures in
     // their controllers. No gateway key can grant browser administrative access.
     if (/^\/openapi\/relay-native\/?$/.test(req.path)) return true;

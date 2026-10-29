@@ -2,9 +2,9 @@
 
 面向实验室和小型研发团队的自部署协作套件。以项目为主线，连接项目发起、需求推进与知识沉淀。
 
-**当前阶段：归档重试与项目页面状态（0.9.0-dev.0），仅本地验证，尚未达到公开发行条件。** 归档 / 恢复支持持久操作回放；Kick、Makit 保留项目导航与筛选，后台刷新不覆盖编辑草稿，撤权仍清理旧数据。复用现有任务和数据库，没有增加服务或中间件。
+**当前阶段：只读项目概览（0.10.0-dev.0），仅本地验证，尚未达到公开发行条件。** Kick 汇总项目目标、负责人、里程碑、Makit 需求统计和知识空间关联；来源失败独立显示，管理操作保留在原管理视图。
 
-升级失败后可用同 schema、同迁移计划的修复候选继续恢复，不能修改已提交迁移。详见 [本批实施记录](docs/design/collaboration-framework/IMPLEMENTATION-04.md)、[项目联动与受限修复](docs/design/collaboration-framework/IMPLEMENTATION-03.md)、[核心迁移与权限边界](docs/design/collaboration-framework/IMPLEMENTATION-02.md) 和 [整体方案](docs/design/collaboration-framework/README.md)。历史验证记录保持原样；**没有发布线上或公开发行。**
+当前完成度与待办见 [实施状态](docs/design/collaboration-framework/STATUS.md)，本批边界见 [实施记录 05](docs/design/collaboration-framework/IMPLEMENTATION-05.md)，整体目标见 [改造方案](docs/design/collaboration-framework/README.md)。历史验证记录保持原样；**没有发布线上或公开发行。**
 
 ## 产品范围
 

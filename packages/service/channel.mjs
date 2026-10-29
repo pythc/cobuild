@@ -40,7 +40,7 @@ export function verifyService(headers, body, path, keyFile) {
     throw Object.assign(Error("Invalid service signature"), { status: 401 });
   return body.payload;
 }
-export async function serviceRequest(origin, path, payload, keyFile) {
+export async function serviceRequest(origin, path, payload, keyFile, {timeoutMs = 15000} = {}) {
   const url = new URL(origin);
   if (
     url.origin !== origin ||
@@ -67,7 +67,7 @@ export async function serviceRequest(origin, path, payload, keyFile) {
     },
     body: JSON.stringify(body),
     redirect: "error",
-    signal: AbortSignal.timeout(15000),
+    signal: AbortSignal.timeout(timeoutMs),
   });
   const chunks = [];
   let size = 0;

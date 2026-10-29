@@ -59,3 +59,9 @@ test('secret values never appear in invalid configuration errors', () => {
   const config = example(); config.origins.platform = 'https://user:very-private-value@example.com';
   assert.throws(() => validateConfig(config), error => !error.message.includes('very-private-value'));
 });
+
+test('suite manifest and package publish the same development version', () => {
+  const manifest=JSON.parse(readFileSync(new URL('../suite.json',import.meta.url)));
+  const pkg=JSON.parse(readFileSync(new URL('../package.json',import.meta.url)));
+  assert.equal(manifest.version,pkg.version);
+});

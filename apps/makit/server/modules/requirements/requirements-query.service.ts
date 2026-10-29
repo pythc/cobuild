@@ -1098,6 +1098,13 @@ export class RequirementsQueryService {
     };
   }
 
+  async projectOverviewAs(actor: CurrentUserSummary, projectName: string) {
+    const parsed=await this.parsedWorkspace(actor,false,false);
+    const items=parsed.requirements.filter(item=>item.project===projectName);
+    const {mine,...counts}=requirementListStats(items);
+    return {counts,fetchedAt:parsed.freshness.loadedAt,stale:parsed.freshness.stale};
+  }
+
   async workspaceSummary(
     identity: RequestIdentity,
     forceRefresh: boolean,

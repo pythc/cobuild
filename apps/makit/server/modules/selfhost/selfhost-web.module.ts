@@ -1,3 +1,4 @@
+import {ProjectOverviewController} from '../../common/selfhost/project-overview.controller';
 import { Module } from '@nestjs/common';
 import { RequirementsModule } from '../requirements/requirements.module';
 import { MakitSessionService } from '../../common/selfhost/session.service';
@@ -13,7 +14,7 @@ import { NotificationDeliveryModule } from '../notifications/notification-delive
 import { NotificationDeliveryApiModule } from '../notifications/notification-delivery-api.module';
 
 @Module({
-  imports: [RequirementsModule, NotificationDeliveryModule, NotificationDeliveryApiModule], controllers: [MakitAuthController, MakitFilesController, MakitDirectoryController, MakitOrganizationController, MakitIterationBotController],
+  imports: [RequirementsModule, NotificationDeliveryModule, NotificationDeliveryApiModule], controllers: [ProjectOverviewController, MakitAuthController, MakitFilesController, MakitDirectoryController, MakitOrganizationController, MakitIterationBotController],
   providers: [MakitSessionService, MakitAccessGuard, MakitOrganizationService, MakitNotificationWorker], exports: [MakitSessionService, MakitAccessGuard],
 })
 export class MakitWebModule {}
