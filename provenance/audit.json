@@ -92,12 +92,12 @@
     {
       "path": "apps/platform/server/workspace-http.mjs",
       "baselineSha256": "9d9c1ade9d545dc6634ebba07ec826ff9a5df3bdc49067124fc54ea82c7e8821",
-      "currentSha256": "68192be83648c77ccaa37ff4ffcbca6ed29520827e91628f92b8a0787393ec32"
+      "currentSha256": "737fa10ece20c828081e249ca489502bc59dab19d35b1d0f937198dfd3da6537"
     },
     {
       "path": "apps/platform/server/workspace-store.mjs",
       "baselineSha256": "b847a21809bbcfbf8388e16639dbd4fdd4db297739d6024955a3db43432a43bb",
-      "currentSha256": "00fef8700eda45fafaa240cd7282cb8a94aa30deefbf641711a6e69a1c345e12"
+      "currentSha256": "191f9b6997a589fa347d8b53fb3f37c99648071ff6d680d511d75ee96f2d9ba9"
     },
     {
       "path": "apps/platform/src/lab-session.js",
@@ -142,7 +142,7 @@
     {
       "path": "apps/platform/src/workspace.js",
       "baselineSha256": "6d0884f56c2dceaf951b80ace4ec65def32e618d2ef6b8d1e277797fb77838ed",
-      "currentSha256": "49de58a0c52b52b32dc8f4409e098c6d9ac9a8d64da9d8923479db7f4d30a5f8"
+      "currentSha256": "7367d3daabfd2f23edf1817e6038178beb81d941a51b2444cf64042eda8bfa04"
     },
     {
       "path": "apps/platform/tests/workspace-ui.test.mjs",
@@ -1068,7 +1068,7 @@
     {
       "rule": "lab-service-address",
       "path": "apps/platform/server/workspace-store.mjs",
-      "line": 168
+      "line": 169
     },
     {
       "rule": "lab-service-address",
@@ -1473,7 +1473,7 @@
     {
       "rule": "lab-service-address",
       "path": "apps/platform/src/workspace.js",
-      "line": 1288
+      "line": 1342
     },
     {
       "rule": "lab-service-address",

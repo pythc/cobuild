@@ -131,8 +131,8 @@ def validate_release(value):
         approved_runner=digest(ROOT/'deploy/runtime/migrate.mjs')
         manifest=schema_manifest(value['images']['core']['id'])
         checked_policy(policy.validate_candidate,value['migration'],value['contract'],manifest,approved_runner)
-        if value['migration']['kind'] in ['core-managed-v1','core-runtime-v1']:
-            reviewed=['core-managed-v1.json'] if value['migration']['kind']=='core-managed-v1' else ['core-runtime-v1.json','core-project-state-v1.json']
+        if value['migration']['kind'] in ['core-managed-v1','core-runtime-v1','core-project-transfer-v1']:
+            reviewed={'core-managed-v1':['core-managed-v1.json'],'core-runtime-v1':['core-runtime-v1.json','core-project-state-v1.json'],'core-project-transfer-v1':['core-project-transfer-v1.json']}[value['migration']['kind']]
             if not any(value['migration']['plan']==read(ROOT/'deploy/migrations'/name) for name in reviewed):raise Failure('Core plan differs from the reviewed release plan')
             if manifest.get('coreRunnerDigest')!=digest(ROOT/'deploy/runtime/core-migrate.mjs'):raise Failure('Core runner differs from reviewed implementation')
     return value
@@ -397,7 +397,7 @@ class Deployment:
         docker('rm','-f',name)
     def migration_history(self, release=None):
         release=release or self.release
-        if release.get('migration',{}).get('kind') in ['core-managed-v1','core-runtime-v1']:
+        if release.get('migration',{}).get('kind') in ['core-managed-v1','core-runtime-v1','core-project-transfer-v1']:
             if self.core_running():raise Failure('Stop core writers before inspecting migration state')
             raw=docker('run','--rm','--network',self.project+'-net','--user',str(os.getuid())+':'+str(os.getgid()),
                 '--cap-drop','ALL','--security-opt','no-new-privileges:true','--memory','512m','--pids-limit','128','--read-only',
@@ -431,7 +431,7 @@ class Deployment:
         if state and state['status']!='migrating' and release['contract']['schema'] in state['compatibleSchemas']:
             return None
         if not release.get('migration'):raise Failure('Schema change requires an explicit additive migration plan')
-        if release['migration']['kind'] in ['core-managed-v1','core-runtime-v1'] and not {'kick','weknow'}<=set(read(self.path/'state/config.json')['modules']):raise Failure('Core migration requires initialized Kick and WeKnow')
+        if release['migration']['kind'] in ['core-managed-v1','core-runtime-v1','core-project-transfer-v1'] and not {'kick','weknow'}<=set(read(self.path/'state/config.json')['modules']):raise Failure('Core migration requires initialized Kick and WeKnow')
         if release['migration']['kind']=='makit-additive-v1' and 'makit' not in read(self.path/'state/config.json')['modules']:raise Failure('Enable Makit and initialize its database before migrating its schema')
         evidence=checked_policy(policy.authorize_transition,self.release,release,schema_manifest(self.release['images']['core']['id']),schema_manifest(release['images']['core']['id']))
         if state:
@@ -456,8 +456,8 @@ class Deployment:
             docker('run','--rm','--name',self.project+'-migration','--label','cobuild.deployment='+self.instance['id'],
                 '--network',self.project+'-net','--user',str(os.getuid())+':'+str(os.getgid()),
                 '--cap-drop','ALL','--security-opt','no-new-privileges:true','--memory','512m','--pids-limit','128','--read-only',
-                '--mount','type=bind,src='+str(self.path/'state')+',dst=/state'+('' if new['migration']['kind'] in ['core-managed-v1','core-runtime-v1'] else ',readonly'),
-                '--entrypoint','node',new['images']['core']['id'],'deploy/runtime/migrate.mjs',*(['--core'] if new['migration']['kind'] in ['core-managed-v1','core-runtime-v1'] else []),timeout=180)
+                '--mount','type=bind,src='+str(self.path/'state')+',dst=/state'+('' if new['migration']['kind'] in ['core-managed-v1','core-runtime-v1','core-project-transfer-v1'] else ',readonly'),
+                '--entrypoint','node',new['images']['core']['id'],'deploy/runtime/migrate.mjs',*(['--core'] if new['migration']['kind'] in ['core-managed-v1','core-runtime-v1','core-project-transfer-v1'] else []),timeout=180)
         finally:self.stop_migration()
         state=self.finish_migration_state(old,new,evidence)
         if state['status']!='complete':raise Failure('Candidate did not finish the declared migration history')

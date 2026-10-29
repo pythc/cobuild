@@ -1,0 +1,297 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-29",
+  "version": "0.12.0-dev.0",
+  "baseCommit": "cf37a89b5cc546cf8c350770e37416c66d8407e0",
+  "scope": "Recipient-confirmed project ownership transfer; isolated local self-hosted suite",
+  "productionAccess": false,
+  "externalMessages": false,
+  "publicReleaseReady": false,
+  "rules": {
+    "initiator": "current owner or organization administrator",
+    "recipient": "existing active project member; confirms personally",
+    "formerOwner": "retained as project member; organization role and milestone assignments unchanged",
+    "expiryHours": 24,
+    "knowledge": "existing mapping and native ACL unchanged"
+  },
+  "checks": {
+    "regression": {
+      "rootPassed": 63,
+      "projectPassed": 85,
+      "deploymentPassed": 46,
+      "failed": 0
+    },
+    "nativeRun": {
+      "productionAccess": false,
+      "stages": [
+        {
+          "name": "makit-migrations",
+          "exitCode": 0
+        },
+        {
+          "name": "makit-role",
+          "exitCode": 0
+        },
+        {
+          "name": "core-e2e",
+          "exitCode": 0
+        },
+        {
+          "name": "managed-native-queries",
+          "exitCode": 0
+        },
+        {
+          "name": "collections",
+          "exitCode": 0
+        },
+        {
+          "name": "restart-e2e",
+          "exitCode": 0
+        },
+        {
+          "name": "project-state-browser",
+          "exitCode": 0
+        }
+      ],
+      "passed": true,
+      "ownedContainersRemoved": true
+    },
+    "nativeAssertions": {
+      "core": 196,
+      "managedNativeQueries": 4,
+      "collections": 7,
+      "restart": 15
+    },
+    "browser": {
+      "passed": true,
+      "checks": 77,
+      "browserVersion": "156.0.8078.73",
+      "hostNode": "24.19.0",
+      "screenshots": [
+        "project-overview-desktop.png",
+        "project-overview-narrow.png",
+        "project-overview-narrow-detail.png",
+        "project-access-desktop.png",
+        "project-access-narrow.png",
+        "kick-edit-desktop.png",
+        "kick-archived-desktop.png",
+        "project-overview-populated.png",
+        "makit-edit-desktop.png",
+        "weknow-project-desktop.png",
+        "project-access-member.png",
+        "kick-narrow.png",
+        "makit-narrow.png",
+        "project-transfer-request.png",
+        "project-transfer-accept.png",
+        "project-transfer-accept-narrow.png",
+        "project-transfer-complete.png"
+      ],
+      "visualReview": "Reviewed request, narrow recipient confirmation, and completed member roster; inherited opaque surface restored."
+    },
+    "upgradeRecovery": {
+      "format": 1,
+      "productionAccess": false,
+      "externalMessages": false,
+      "checks": [
+        "baseline seed",
+        "schema evidence retained after real broken runtime",
+        "failed candidate and unsafe old writers stopped",
+        "replacement is atomic and retains original candidate",
+        "interrupted repaired runtime is stopped",
+        "repair retains exact committed migration history",
+        "resume starts fixed runtime without replaying destructive changes",
+        "sessions, documents, attachments and new writes survive",
+        "completed recovery audit retained",
+        "downgrade rejection preserves healthy fixed runtime",
+        "sessions, documents, attachments and new writes survive",
+        "sessions, documents, attachments and new writes survive",
+        "backup restore retains repaired schema identity"
+      ],
+      "stages": [
+        {
+          "passed": true,
+          "checks": 8,
+          "scope": "baseline seed"
+        },
+        {
+          "passed": true,
+          "checks": 18,
+          "scope": "upgrade persistence"
+        },
+        {
+          "passed": true,
+          "checks": 9,
+          "scope": "upgrade persistence"
+        },
+        {
+          "passed": true,
+          "checks": 12,
+          "scope": "upgrade persistence"
+        }
+      ],
+      "images": {
+        "base": "sha256:d795cbd40e38d9183ede27c3e52ceecdc2e04f43ada8cae4ae05ad2f82d2edd6",
+        "broken": "sha256:826f4aa266c4b7f112680f6c10ddfb99b9ba58b014481e7b7c3337507ab1d53d",
+        "fixed": "sha256:bee6ac9a9067cfb55829907be0e4565d666e2161c4203770f745b4412996b9ec"
+      },
+      "injectedFailure": "Core security migration committed; old runtime remains stopped. Repair the candidate and use resume-upgrade; data and backup are retained.",
+      "passed": true,
+      "unrelatedServicesUnchanged": true,
+      "lifecycleChecks": 13,
+      "stageAssertions": 47
+    },
+    "builds": {
+      "platform": true,
+      "makit": true,
+      "weknow": "unchanged retained Linux baseline",
+      "image": "offline overlay on exact retained baseline with dependency inputs checked",
+      "cleanFullDockerfileBuild": "not_completed_missing_dependency_cache"
+    },
+    "candidateSource": {
+      "image": "sha256:bee6ac9a9067cfb55829907be0e4565d666e2161c4203770f745b4412996b9ec",
+      "passed": true,
+      "sha256": {
+        "apps/platform/server/project-transfer-store.mjs": "69f6ea502ca940797c4a0c04c6ff7946f2bfd5973dc62723cfffae18d759c535",
+        "apps/platform/server/workspace-store.mjs": "191f9b6997a589fa347d8b53fb3f37c99648071ff6d680d511d75ee96f2d9ba9",
+        "apps/platform/server/workspace-http.mjs": "737fa10ece20c828081e249ca489502bc59dab19d35b1d0f937198dfd3da6537",
+        "apps/platform/src/workspace.js": "7367d3daabfd2f23edf1817e6038178beb81d941a51b2444cf64042eda8bfa04",
+        "packages/operations/migrations.mjs": "db312d8d531d6b128e46e80892b05b528477d1c3da18b879feb1a0695f3a3c79",
+        "packages/operations/migrations/0002_project_transfers.sql": "8208db62e7ee95c2c9ec05efdd13687744e006721c85ad8fbcfc5839ea838090",
+        "deploy/runtime/contract.mjs": "e25601b4cb0cd5a2d2c07f861e590299f3b6bcbb43b6b56e52e2424bc0ea0e25",
+        "deploy/runtime/schema-inspect.mjs": "d851047ae6d93966d0b5f04918ff4ab0b5f769969fff0009efbd41b8a2429fe7",
+        "package.json": "cf62e6ef1e870709c5b8e20a31e60e4cb38249ab42d48813cb3c0e468e8be79f",
+        "suite.json": "8f7f29a359b45622c9a6d829d5b1d7a8642b7a6841dfd364a6ccf55a821b461c",
+        "apps/platform/dist/workbench.html": "fa1734c0573ceca92749834fda31c3d1a36601ba42fff1628d72e32ef1d6c8f2",
+        "apps/platform/dist/index.html": "fa1734c0573ceca92749834fda31c3d1a36601ba42fff1628d72e32ef1d6c8f2",
+        "apps/platform/dist/workbench-release.json": "58eca3d075a05aad18a202cda9a5b46fc36ef151c183bee1cc1f53b6892f9279"
+      }
+    },
+    "cleanup": {
+      "unrelatedContainers": 11,
+      "idsAndStartTimesUnchanged": true,
+      "allStillRunning": true,
+      "ownedContainersRemoved": true,
+      "remainingSuiteNodePids": [],
+      "ownedServicesStopped": true
+    },
+    "audit": {
+      "importedFiles": 2776,
+      "modifiedFiles": 92,
+      "missingFiles": 0,
+      "boundaryViolations": 0,
+      "portabilityFindings": 425
+    },
+    "releaseGate": {
+      "exitCode": 2,
+      "openBlockers": 10,
+      "publicReleaseReady": false
+    }
+  },
+  "selfReview": [
+    "Current owner or organization administrator can initiate, but only the recipient can accept.",
+    "All write actions use persistent subject/action/input-bound request IDs; replay never cancels a newer request.",
+    "Commit retains former owner and milestones; owner/revision/audit/snapshot queue mutate in one transaction.",
+    "Acceptance rechecks live profiles, initiator eligibility, recipient membership, project revision and application access.",
+    "Participant failure maps to conflict; current actor authentication failures retain the existing authentication error path.",
+    "Platform migration validates immutable ledger prefix and exact collaboration schema; retained ledgers are separated from the appended step.",
+    "Real runtime failure, interrupted repair, downgrade denial, restart and cold restore retain data and pending transfers."
+  ],
+  "failedAttempts": [
+    "First browser found an invalid dialog-helper argument; corrected.",
+    "Visual review found transparent dynamic dialog caused by missing workspace style scope; mount point and field structure fixed, then browser rerun.",
+    "A browser rerun lacked required runtime environment variables and did not execute cases; final Node 24 run passed.",
+    "Full offline Dockerfile build lacked dependency cache and was stopped; initial exact-byte dependency check exposed expected npm runtime metadata differences. Dependency identity and graph comparison then passed."
+  ],
+  "sourceSha256": {
+    "apps/platform/server/project-transfer-store.mjs": "69f6ea502ca940797c4a0c04c6ff7946f2bfd5973dc62723cfffae18d759c535",
+    "apps/platform/server/workspace-http.mjs": "737fa10ece20c828081e249ca489502bc59dab19d35b1d0f937198dfd3da6537",
+    "apps/platform/server/workspace-store.mjs": "191f9b6997a589fa347d8b53fb3f37c99648071ff6d680d511d75ee96f2d9ba9",
+    "apps/platform/src/workspace.js": "7367d3daabfd2f23edf1817e6038178beb81d941a51b2444cf64042eda8bfa04",
+    "apps/platform/tests/project-transfer.test.mjs": "b41438512ec465004bf8e8dd6101b11fff00c89ade5fee6ae9074ba8ca78398a",
+    "deploy/migration_policy.py": "fefd511c4240f70915bb61efec2d21d6f3b72962adad3f1480d964f685a86fef",
+    "deploy/migrations/core-project-transfer-v1.json": "7329bef72a43060857703df2f498f1b1d926a659455f8008b2be79f0a5b89ac6",
+    "deploy/runtime/contract.mjs": "e25601b4cb0cd5a2d2c07f861e590299f3b6bcbb43b6b56e52e2424bc0ea0e25",
+    "deploy/runtime/schema-inspect.mjs": "d851047ae6d93966d0b5f04918ff4ab0b5f769969fff0009efbd41b8a2429fe7",
+    "deploy/suite.py": "4abb9cd05563e284a0a6b1fdf943f9b85468a00e46ff943356169ffd2b5945a7",
+    "deploy/test_project_transfer.py": "9b75e54bb474c4571579236228974cb424cb0fc7eb2241d756f3535b880ac43d",
+    "package.json": "cf62e6ef1e870709c5b8e20a31e60e4cb38249ab42d48813cb3c0e468e8be79f",
+    "packages/operations/migrations.mjs": "db312d8d531d6b128e46e80892b05b528477d1c3da18b879feb1a0695f3a3c79",
+    "packages/operations/migrations/0002_project_transfers.sql": "8208db62e7ee95c2c9ec05efdd13687744e006721c85ad8fbcfc5839ea838090",
+    "suite.json": "8f7f29a359b45622c9a6d829d5b1d7a8642b7a6841dfd364a6ccf55a821b461c",
+    "tests/core-upgrade-fixture.mjs": "f1b7ee299d624e736bfa7a98226bdaf7a0d1d2a8cdb0ace26a27163ee1988784",
+    "tests/platform-migrations.test.mjs": "c946917c8350f4be3aa33392de72e21bd68232e78e73309096195748e02811e2",
+    "tests/project-state-browser.mjs": "7351813cb484f6a128ed4618d9b03ff7c18912fcd49f210d3759706ace4d3482",
+    "tools/test_runtime_repair.py": "f9c4b303f73043d4c93c89c036bd4d63a5c00bc9bc6755246678535022835408"
+  },
+  "documentationSha256": {
+    "README.md": "a4460500da374a7eed195b766ed05348ec008bb4293d177bb1671c6b2b305b17",
+    "deploy/README.md": "6680ff2a1cca29811a6931d1d0401aceefd09f8ecab888ba4f895452b1e4a3ab",
+    "docs/LOCAL-RUNTIME.md": "dfaed22875cf1e1f6cd3f10b927f8207dd6a3bcb0c011081c1fb7bb60139732c",
+    "docs/VERIFICATION.md": "dd8ffbdd8c77deea76f8b068472934cb8a3f3d44173d7a39756044d2d3faa77c",
+    "docs/design/collaboration-framework/IMPLEMENTATION-07.md": "0be8fd41fa6b3e8aaf0cdfaa25eedc1320d5f28c647fe3d27187aaee0e46bc2a",
+    "docs/design/collaboration-framework/README.md": "9f41d8989c7d8a52e572aaf9aa85fd32e5ef43971dc8b11dcf83fe0c56e4b49f",
+    "docs/design/collaboration-framework/REVIEW-07.md": "862cfe8f21d311f4f9066413141de6a224a4aed80c9d4f4b997d1752d078495f",
+    "docs/design/collaboration-framework/STATUS.md": "bbf246ec8805dfc1665cd1e6c22ccd86d7b703c33eb3298bb07bd7b9febd65ca"
+  },
+  "evidenceRoot": ".local/evidence/project-transfer-0.12.0-dev.0",
+  "evidenceSha256": {
+    "native-collections.log": "bdbd9c3e126c4d67ff8153c102854f743a6f3d5e840bcbb29ace9dc5d575e909",
+    "native-core-e2e.log": "404e6d604fcd41ee044d1f81e2694d128d03dbc2ca544efd79f9ff78f935ba40",
+    "native-core-result.json": "8524316603983efe0433aa130e4f87f05c22f3a6fbf02fa67a6078ba6285e7fc",
+    "native-managed-native-queries.log": "e9db4d1f4b04b2cd21ac6d0b6675896ebf6b5ab919cd9fda026c71243a5c04d1",
+    "native-project-state-browser.log": "bf055e7bd7d8b96d8bd2fc0c65c52597bcebc76712ee7cd4109352ee586bc562",
+    "native-restart-e2e.log": "7542b464a8e491e0fba0af8aae0c4e92a3b7544a673d49524350128bda059795",
+    "project-state-browser/failure-0-0.png": "923b07710b2f5031d48bafbfcd2175f575a79285540ea0085794c8b76713734c",
+    "project-state-browser/failure-0-1.png": "b564c7cf89248700981d6ce08c3d48f5003c7fb2b324e239d5913b7214abc7b6",
+    "project-state-browser/failure-0-2.png": "e701578a9b504846eb997a9a7194f17aa2a857d2a8e2b9083c10765c53976518",
+    "project-state-browser/failure-1-0.png": "5f7bc8d7bd856bd7ac370bacf79c24b4fd301594331dacfbba386dafc3b46122",
+    "project-state-browser/failure.png": "5ecd232647f2917da2303e73ebbd9f7b7df9fbc19a61afd48e00540ac2564072",
+    "project-state-browser/kick-archived-desktop.png": "80f640e8fe32f7ce4abb6835aa3e8af156f42360b7fa6842355ead68655dd569",
+    "project-state-browser/kick-edit-desktop.png": "407f05eb01be6c1b357fe05df48f07e0f0fb28c0853b78eb724ae7b0557276e7",
+    "project-state-browser/kick-narrow.png": "f007fa30960959a284106395c30101913a454af30013a97892d62909cd28ead3",
+    "project-state-browser/makit-brand-variants.png": "669b0abb13ad2538f8c96d87b85abb3752d7a3ec741d3c3aa69d05e2ea00c3cc",
+    "project-state-browser/makit-edit-desktop.png": "a6a49567be2000b3882db8f157526746a9aba870e8d710bc50e08d933eef3292",
+    "project-state-browser/makit-narrow.png": "77ea3b6b08e0ceb6341fcc54ee500e875499e9f77f23b37acbd66a05c360b380",
+    "project-state-browser/project-access-desktop.png": "2198b6b5f73cfe08d08324208525788c7d6782ee2e566cf40f1abe267350ba9b",
+    "project-state-browser/project-access-member.png": "a270c90ea2d6d133cf24097f19cef01b343c5e19122fb5815b541172a95bb007",
+    "project-state-browser/project-access-narrow.png": "620e8ea5305917e67a8fd3fc27535a49224abd5571be60c83eae0042e526f4da",
+    "project-state-browser/project-overview-desktop.png": "6b6ae6a8789fab0fa06d0986b59dcefa41f41f6a97172f863e284fec15b8afcd",
+    "project-state-browser/project-overview-narrow-detail.png": "73a58269434daa024b455a40b37b9220a7e7c8095d7c1a2075791fda94106ec1",
+    "project-state-browser/project-overview-narrow.png": "4579f74c557a03c56720969f350987d2caa85e09f78e66122081b9700916c32f",
+    "project-state-browser/project-overview-populated.png": "8e896221629ac04ff1cfb1c8d7124e73d14f6a8dfade46e4d271ceb2c9c53423",
+    "project-state-browser/project-transfer-accept-narrow.png": "e8103c7dbc5dcecf7c942b0733a9eb0733a29866c0b49e6ae1ec63b37beae869",
+    "project-state-browser/project-transfer-accept.png": "52f402b501d5cd4d56dfed0b625c416b45420e1c9e5aa631c555ce774c60e955",
+    "project-state-browser/project-transfer-complete.png": "4fd297c27c3405133461d85cd87b4ec8c17224509f820f7bc13aa81412d66a6f",
+    "project-state-browser/project-transfer-request.png": "65a66b46a71b7f9c18885ff7cb4d84515b7ce624968a980058d813db7f419d11",
+    "project-state-browser/report.json": "8a1c8583bbbecdbf4420d3efc5a4dd2118ee1f0c9a4f82cb3ce45a3114659d65",
+    "project-state-browser/weknow-project-desktop.png": "39a84d45b52984bd9bbf23c002bd17038298d62e111faf9913cf6ccd6997108f",
+    "project-transfer-audit.log": "cc3ba51faf612d235a23b3e4b4d8a1595b4f435c0fce04a3667d56cd2078ec2a",
+    "project-transfer-cleanup.json": "9defe166fcb460a9fdd9612a501d407a8a43f0eb6928d6a855d6732a27ffed9f",
+    "project-transfer-deployment-unit.log": "55febc4178b65e8410f185be42f6a8ab0ede3570954c39a36db5b46b1a176202",
+    "project-transfer-env-failed-native-project-state-browser.log": "bfcb9fcc62b5ba7bcfa4793ae28b508a345c65f55899a59e2b908e404cca7c83",
+    "project-transfer-env-failed-project-transfer-native.log": "03c7c2e7e66b87572209d4a480e1aa3e723ffda62c9eb1a00cc7c2178382ee53",
+    "project-transfer-first-browser-failed.json": "526c05b1da20d91189f503dd22d85f6a2ac0d3c8954d990c0d811b7320ab128a",
+    "project-transfer-first-browser-failed.log": "ebff5d6124eb8b2316c5820246ef9979eb861f686ee3e611720da2eae9723689",
+    "project-transfer-first-native-failed.json": "a3075bd42f0603f4d6b087339e42c971a899442bf6623cd9a08fda23c8656433",
+    "project-transfer-image-build.log": "3329d7122d262c8f90063d68ac342c41c172a935d018922efecba01b9a792b5a",
+    "project-transfer-image-inputs.json": "6525a1b59bc47a7d320d3022f28a5845e8d7038b9b5d268d7266aae5cfc513c3",
+    "project-transfer-image-offline-stopped.log": "a03888ac2942839a5e2aeaa31eead27005a94e3f7f14ec289db73ee414fa8545",
+    "project-transfer-image-source-check.json": "fa4d6ee335b41bfe5f16169dd8ff28bee39a9de34f7c8afde5080042278c7630",
+    "project-transfer-makit-build.log": "9326fb3d2bd3ce233c1787c0050b368aee086c9665a8dc2943dc4032ad9a0125",
+    "project-transfer-native.log": "2027a28ed1de422936fa0e2eb31a0655fe5f96b6706f52bf50a309369ea41000",
+    "project-transfer-platform-build.log": "fe4037d06ecbec9ef1bcaaa22b9b4b05140fc81f02ad4e752097953dc18f1de0",
+    "project-transfer-release-check.log": "9b00c368fc3c25ea6ece92ed9944988abe00b239f11430d9cbc1843d2b31c261",
+    "project-transfer-runtime-repair.log": "5675af730988d3e5cf1cc183d70110cc9042fac53ffa137544347d8b86509329",
+    "project-transfer-schema-manifests.json": "63576d77de46bb653945e9015132052b8a8b83ea34a6390093beeceb07f16ca5",
+    "project-transfer-verify.log": "fa74f8aef4729788f244b9fff590bd471f1e417d6709a62f9d39882d4d3b1136",
+    "runtime-repair-report.json": "1e8fa8c92b022aa7b38fb5f1d6ed85d7bd8ab76823463306a24659a2078724d7"
+  },
+  "limits": [
+    "Local HTTP and synthetic accounts only; no production, original sources, public push, or external notifications.",
+    "No clean independent install, TLS, cross-machine, x86_64, prolonged capacity, or public-release acceptance in this batch.",
+    "Makit transfer snapshot and queue deduplication verified by store test; no separate browser assertion of transferred owner text in Makit.",
+    "WeKnow native space ownership is not transferred. Inactive former-owner takeover is not supported.",
+    "No private project mode, fine-grained project roles, MCP transfer tool, or generic transfer event/notification added.",
+    "Migration requires the exact retained base and initialized Kick/WeKnow, not arbitrary old releases."
+  ]
+}

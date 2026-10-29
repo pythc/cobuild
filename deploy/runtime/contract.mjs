@@ -7,7 +7,7 @@ const hash = createHash('sha256');
 for (const path of readdirSync('apps/platform/server').filter(n=>n.endsWith('-store.mjs')).sort().map(n=>'apps/platform/server/'+n)) {
   hash.update(path); hash.update(readFileSync(path));
 }
-for(const path of ['packages/operations/sqlite-store.mjs','packages/operations/migrations.mjs','packages/operations/migrations/0001_operations.sql']) { hash.update(path);hash.update(readFileSync(path)); }
+for(const path of ['packages/operations/sqlite-store.mjs','packages/operations/migrations.mjs',...readdirSync('packages/operations/migrations').filter(n=>n.endsWith('.sql')).sort().map(n=>'packages/operations/migrations/'+n)]) { hash.update(path);hash.update(readFileSync(path)); }
 for (const directory of ['apps/makit/migrations', 'integrations/weknow/source/apps/server/dist/database/migrations']) {
   const visit = dir => {
     for (const e of readdirSync(dir, { withFileTypes: true }).sort((a,b) => a.name.localeCompare(b.name))) {

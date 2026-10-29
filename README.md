@@ -2,9 +2,9 @@
 
 面向实验室和小型研发团队的自部署协作套件。以项目为主线，连接项目发起、需求推进与知识沉淀。
 
-**当前阶段：项目成员与权限视图（0.11.0-dev.0），仅本地验证，尚未达到公开发行条件。** Kick 在只读概览之外展示组织身份、项目身份、当前可用入口和成员名单；项目权限与各业务应用权限保持独立。
+**当前阶段：项目负责人转让（0.12.0-dev.0），仅本地验证，尚未达到公开发行条件。** 负责人或组织管理员发起，由接收人本人确认；原负责人保留为项目成员，里程碑分配和知识空间权限不自动改变。
 
-当前完成度与待办见 [实施状态](docs/design/collaboration-framework/STATUS.md)，本批边界见 [实施记录 06](docs/design/collaboration-framework/IMPLEMENTATION-06.md)，整体目标见 [改造方案](docs/design/collaboration-framework/README.md)。历史验证记录保持原样；**没有发布线上或公开发行。**
+当前完成度与待办见 [实施状态](docs/design/collaboration-framework/STATUS.md)，本批边界见 [实施记录 07](docs/design/collaboration-framework/IMPLEMENTATION-07.md)，整体目标见 [改造方案](docs/design/collaboration-framework/README.md)。历史验证记录保持原样；**没有发布线上或公开发行。**
 
 ## 产品范围
 

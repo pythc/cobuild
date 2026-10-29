@@ -1,0 +1,28 @@
+{
+  "format": 1,
+  "kind": "core-project-transfer-v1",
+  "rollbackCompatible": false,
+  "changes": {
+    "apps/platform/server/project-transfer-store.mjs": {
+      "before": null,
+      "after": "69f6ea502ca940797c4a0c04c6ff7946f2bfd5973dc62723cfffae18d759c535"
+    },
+    "apps/platform/server/workspace-store.mjs": {
+      "before": "00fef8700eda45fafaa240cd7282cb8a94aa30deefbf641711a6e69a1c345e12",
+      "after": "191f9b6997a589fa347d8b53fb3f37c99648071ff6d680d511d75ee96f2d9ba9"
+    },
+    "packages/operations/migrations.mjs": {
+      "before": "c5a745244c6e5ca6fb77eda152eea7602c22c502b29a3c7ab43e2880c12e9fa9",
+      "after": "db312d8d531d6b128e46e80892b05b528477d1c3da18b879feb1a0695f3a3c79"
+    },
+    "packages/operations/migrations/0002_project_transfers.sql": {
+      "before": null,
+      "after": "8208db62e7ee95c2c9ec05efdd13687744e006721c85ad8fbcfc5839ea838090"
+    }
+  },
+  "ledger": {
+    "platform/0001_operations": "79d56d1e854ee5c66503edee1686effcc3fda4e74c71bdcb181a82a433c0d36f",
+    "platform/0002_project_transfers": "8208db62e7ee95c2c9ec05efdd13687744e006721c85ad8fbcfc5839ea838090",
+    "weknow/20261029T120000-suite-managed-spaces": "c512ac219c99bc4213795eeef7fa90efb182480a9e670582d970597ea3105334"
+  }
+}

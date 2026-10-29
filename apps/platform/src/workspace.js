@@ -16,7 +16,7 @@ const PHASE_LABEL = { exploring: '探索中', pending: '审核中', active: '进
 const PHASE_BADGE = { exploring: 'ws-badge-indigo', pending: 'ws-badge-amber', active: 'ws-badge-teal', needs_changes: 'ws-badge-rose' };
 const PROJECT_FILTERS = { active: 1, mine: 1, archived: 1 };
 const TODO_FILTERS = { all: 1, assigned: 1, reviews: 1, recruitment: 1 };
-const TODO_KIND_LABEL = { honor:'荣誉审核', milestone: '里程碑', project_review: '项目审核', project_revision: '项目修改', recruitment: '招新', requirement: '需求' };
+const TODO_KIND_LABEL = { project_transfer:'负责人转让', honor:'荣誉审核', milestone: '里程碑', project_review: '项目审核', project_revision: '项目修改', recruitment: '招新', requirement: '需求' };
 
 const state = {
   profile: null, csrf: '', members: [], projects: [], todos: [], todoSources: null,
@@ -176,11 +176,17 @@ function selectProjectFilter(value) {
   writeProjectRoute();renderProjects();renderProjectSide();
 }
 function discardProjectDialog() {
-  if(!activeDialogContext?.project)return;
+  if(!activeDialogContext?.project&&!activeDialogContext?.transferProject)return;
   const dlg=activeDialog;closeDialog(dlg);dlg?.querySelector('form')?.reset();
   projectPicker.selected.clear();projectPicker.profiles.clear();
 }
 function checkProjectDialogAccess() {
+  if(activeDialogContext?.transferProject){
+    const ctx=activeDialogContext,p=state.projects.find(p=>p.id===ctx.transferProject.id),t=p?.ownershipTransfer;
+    const allowed=ctx.transferAction==='start'?t?.canStart:ctx.transferAction==='accept'?t?.current?.canAccept:t?.current?.canCancel;
+    if(!allowed||ctx.transferProject.revision!==p?.revision||ctx.transferId&&ctx.transferId!==t?.current?.id){discardProjectDialog();setStatus('项目或转让状态已变更','error');}
+    return;
+  }
   const previous=activeDialogContext?.project;
   if(!previous)return;
   const current=state.projects.find(p=>p.id===previous.id);
@@ -380,7 +386,7 @@ function renderTodoSide() {
   else if (current.kind === 'recruitment') renderRecruitmentDetail(side, current);
   else if (current.kind === 'requirement') renderRequirementDetail(side, current);
   else if (current.kind === 'milestone') renderMilestoneDetail(side, current);
-  else if (current.kind === 'project_review' || current.kind === 'project_revision') renderProjectTodoDetail(side, current);
+  else if (current.kind === 'project_review' || current.kind === 'project_revision' || current.kind === 'project_transfer') renderProjectTodoDetail(side, current);
 }
 
 function renderRecruitmentDetail(side, item) {
@@ -420,7 +426,7 @@ function renderMilestoneDetail(side, item) {
   const actions = el('div', 'ws-side-actions');
   const openBtn = el('button', 'ws-btn ws-btn-ghost', '查看项目');
   openBtn.type = 'button'; openBtn.disabled = !isUuid(item.projectId);
-  openBtn.onclick = () => navigateToProject(item.projectId);
+  openBtn.onclick = () => { if(item.kind==='project_transfer'&&globalThis.__COBUILD__)location.assign('/projects?view=access&project='+encodeURIComponent(item.projectId));else navigateToProject(item.projectId); };
   actions.append(openBtn);
   if (item.milestoneId && project) {
     const ms = (project.milestones || []).find(m => m.id === item.milestoneId);
@@ -439,7 +445,7 @@ function renderProjectTodoDetail(side, item) {
   const actions = el('div', 'ws-side-actions');
   const openBtn = el('button', 'ws-btn ws-btn-primary', '打开项目');
   openBtn.type = 'button'; openBtn.disabled = !isUuid(item.projectId);
-  openBtn.onclick = () => navigateToProject(item.projectId);
+  openBtn.onclick = () => { if(item.kind==='project_transfer'&&globalThis.__COBUILD__)location.assign('/projects?view=access&project='+encodeURIComponent(item.projectId));else navigateToProject(item.projectId); };
   actions.append(openBtn);
   side.append(actions);
 }
@@ -749,6 +755,7 @@ function renderProjectAccess(side,project) {
     rows.append(row);
   }
   if(people.size)members.append(rows);else members.append(el('p','','尚未配置成员'));
+  renderTransferControls(root,project);
 }
 
 function renderProjectActions(side, project) {
@@ -760,8 +767,55 @@ function renderProjectActions(side, project) {
   add('ws-btn-primary', '审核', () => openReviewDialog(project), available.review);
   add('ws-btn-ghost', '新建里程碑', () => openMilestoneDialog(project), available.addMilestone);
   add(project.archived ? 'ws-btn-ghost' : 'ws-btn-danger', project.archived ? '取消归档' : '归档', () => openArchiveDialog(project), available.archive);
+  if(project.ownershipTransfer?.enabled){const b=el('button','ws-btn ws-btn-ghost','负责人转让');b.type='button';b.onclick=()=>{state.projectView='access';writeProjectRoute();renderProjectSide();};actions.append(b);}
   add('ws-btn-ghost','操作记录',()=>showHistory(project));
   if (actions.children.length > 0) side.append(actions);
+}
+
+function renderTransferControls(root,project){
+  const transfer=project.ownershipTransfer;if(!transfer?.enabled)return;
+  const section=overviewSection(root,'负责人转让'),current=transfer.current;section.id='ws-transfer-controls';
+  if(current){
+    const labels={pending:'等待接收',accepted:'已完成',cancelled:'已取消',expired:'已过期',invalidated:'已失效'};
+    section.append(el('p','',current.recipientName+' · '+(labels[current.state]||'已失效')));
+    if(current.state==='pending')section.append(el('p','','有效期至 '+fmtDateTime(current.expiresAt)));
+  }
+  const actions=el('div','ws-side-actions');
+  const add=(text,action,enabled)=>{if(!enabled)return;const b=el('button','ws-btn '+(action==='cancel'?'ws-btn-ghost':'ws-btn-primary'),text);b.type='button';b.onclick=()=>openTransferDialog(project,action);actions.append(b);};
+  add('转让负责人','start',transfer.canStart);add('接收负责人','accept',current?.canAccept);add('取消转让','cancel',current?.canCancel);
+  if(actions.children.length)section.append(actions);
+}
+function openTransferDialog(project,action){
+  let dlg=$('ws-dialog-transfer');if(!dlg){dlg=el('dialog','ws-dialog ws-dialog-small');dlg.id='ws-dialog-transfer';$('ws-dialog-project').parentElement.append(dlg);dlg.addEventListener('close',()=>{if(activeDialog===dlg){activeDialog=null;activeDialogContext=null;state.dialogOpen=false;}});}
+  dlg.replaceChildren();dlg.setAttribute('aria-labelledby','ws-transfer-title');
+  const form=el('form'),title=el('h3','ws-dialog-title',action==='start'?'转让负责人':action==='accept'?'接收项目负责人':'取消转让');title.id='ws-transfer-title';
+  form.append(title,el('p','',project.name));
+  const choice=el('select','ws-input');choice.id='ws-transfer-recipient';
+  if(action==='start'){
+    const label=el('label','','接收人');label.htmlFor=choice.id;
+    const valid=new Set(state.members.map(m=>m.subject));
+    for(const person of project.members||[])if(valid.has(person.subject)){const option=el('option','',person.name||person.email);option.value=person.subject;choice.append(option);}
+    const field=el('div','ws-field');field.append(label,choice);form.append(field);
+    if(!choice.children.length)form.append(el('p','','请先在项目中添加有效成员。'));
+  }
+  if(action!=='cancel')form.append(el('p','','接收后，原负责人保留为普通成员。知识空间权限保持不变。'));
+  const error=el('p','ws-form-error');error.hidden=true;error.setAttribute('role','alert');form.append(error);
+  const actions=el('div','ws-dialog-actions'),back=el('button','ws-btn ws-btn-ghost','返回'),submit=el('button','ws-btn ws-btn-primary',action==='start'?'发送转让请求':action==='accept'?'确认接收':'确认取消');
+  back.type='button';back.onclick=()=>closeDialog(dlg);submit.type='submit';submit.disabled=action==='start'&&!choice.children.length;actions.append(back,submit);form.append(actions);dlg.append(form);
+  const ctx={transferProject:project,transferAction:action,transferId:project.ownershipTransfer.current?.id,requestId:crypto.randomUUID(),input:null};
+  form.onsubmit=async event=>{
+    event.preventDefault();if(state.busy)return;
+    // Once attempted, freeze the exact input until this dialog is closed.
+    ctx.input||={requestId:ctx.requestId,...(action==='start'?{revision:project.revision,recipientSubject:choice.value}:{transferId:ctx.transferId})};
+    const epoch=state.generation;state.busy=true;setFormBusy(form,true);setFormError(dlg,'');
+    try{
+      await api('projects/'+project.id+'/transfer/'+action,{method:'POST',data:ctx.input});
+      if(epoch!==state.generation)return;
+      closeDialog(dlg);await Promise.all([loadProjects(),loadTodos()]);setStatus('转让状态已更新','ok');
+    }catch(e){if(epoch===state.generation){setFormError(dlg,e.message);if([401,403].includes(e.status))toastError(e);}}
+    finally{state.busy=false;setFormBusy(form,false);if(ctx.input)choice.disabled=true;}
+  };
+  openDialog('ws-dialog-transfer',ctx);
 }
 
 async function showHistory(project=null){
@@ -771,7 +825,7 @@ async function showHistory(project=null){
   try{
     const r=await api(project?'projects/'+project.id+'/audit':'recruitment/history');
     if(epoch!==state.generation||!state.profile)return;list.replaceChildren();
-    const labels={create:'创建项目',update:'修改资料',apply:'提交立项',approve:'批准立项',return:'退回修改',archive:'归档项目',restore:'恢复项目',milestone_add:'新建里程碑',milestone_done:'完成里程碑',milestone_reopen:'重开里程碑'};
+    const labels={transfer_start:'发起负责人转让',transfer_accept:'接收项目负责人',transfer_cancel:'取消负责人转让',create:'创建项目',update:'修改资料',apply:'提交立项',approve:'批准立项',return:'退回修改',archive:'归档项目',restore:'恢复项目',milestone_add:'新建里程碑',milestone_done:'完成里程碑',milestone_reopen:'重开里程碑'};
     for(const row of r.events){const li=el('li','ws-item');li.append(el('strong','',row.actorName+' · '+(project?(labels[row.action]||'更新项目'):'处理投递 '+row.id.slice(0,8))),el('p','ws-ms-meta',fmtDateTime(row.at)));if(row.note)li.append(el('p','ws-side-row',row.note));list.append(li);}
     if(!r.events.length)list.append(el('li','ws-side-hint','暂无记录'));
   }catch(e){if(epoch===state.generation){list.replaceChildren(el('li','ws-side-hint',e.message));if([401,403].includes(e.status))toastError(e);}}

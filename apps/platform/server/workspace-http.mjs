@@ -10,8 +10,9 @@ import {MailAccessError} from './mail-access-store.mjs';
 import appConfig from '../src/projects.json' with {type:'json'};
 import {openWorkbenchPreferencesStore,WorkbenchPreferencesError} from './workbench-preferences-store.mjs';
 import {projectSyncWorker} from './project-sync-worker.mjs';
+import {parseProjectTransferInput} from './project-transfer-store.mjs';
 
-const messages={unauthenticated:'请先通过飞书登录',forbidden:'没有此操作的权限',not_found:'项目或里程碑不存在',revision_conflict:'内容已被更新 请重新加载后再操作',pending_locked:'项目正在审批 暂时不能修改',invalid_phase:'项目状态已改变 请重新加载',archived:'项目已归档 请先恢复',member_has_open_milestones:'请先处理该成员尚未完成的里程碑',milestone_quota:'单个项目最多可添加 100 个里程碑',owner_quota:'已达到个人项目数量上限',project_quota:'已达到实验室项目数量上限',invalid_note:'退回时请填写原因',invalid_due:'请选择有效的截止日期',assignee_out_of_scope:'负责人必须是项目成员',invalid_input:'请检查填写的内容',no_change:'状态已更新 请刷新',store_unavailable:'工作台暂时不可用',store_corrupt:'工作台暂时不可用'};
+const messages={transfer_identity_changed:'相关成员已停用或身份已变更',transfer_pending:'已有待确认的转让，请先取消或等待处理',transfer_inactive:'转让已结束、过期或项目已变化，请刷新后重新发起',unauthenticated:'请先通过飞书登录',forbidden:'没有此操作的权限',not_found:'项目或里程碑不存在',revision_conflict:'内容已被更新 请重新加载后再操作',pending_locked:'项目正在审批 暂时不能修改',invalid_phase:'项目状态已改变 请重新加载',archived:'项目已归档 请先恢复',member_has_open_milestones:'请先处理该成员尚未完成的里程碑',milestone_quota:'单个项目最多可添加 100 个里程碑',owner_quota:'已达到个人项目数量上限',project_quota:'已达到实验室项目数量上限',invalid_note:'退回时请填写原因',invalid_due:'请选择有效的截止日期',assignee_out_of_scope:'负责人必须是项目成员',invalid_input:'请检查填写的内容',no_change:'状态已更新 请刷新',store_unavailable:'工作台暂时不可用',store_corrupt:'工作台暂时不可用'};
 const json=(res,status,value)=>{res.writeHead(status,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','X-Robots-Tag':'noindex'});res.end(JSON.stringify(value));};
 async function body(req){
   if(req.headers['content-type']!=='application/json')throw new WorkspaceError(415,'请求格式无效');
@@ -30,7 +31,7 @@ async function body(req){
 
 export function createWorkspaceHttp({mail,knowledgeWorkerEnabled=true,apps=appConfig.apps,recruitment,honorsTodos=()=>[],localTest=false,now=Date.now,directory=mail?.workspaceDirectory,projectSyncEnabled=process.env.PORTAL_PROJECT_SYNC_ENABLED==='true',projectSyncClient,knowledgeProjectClient,projectOverviewClient,projectBridgeSecret}={}){
   const enabled=!!mail?.enabled&&!!directory;
-  const store=enabled?openWorkspaceStore({directory,now,syncProjects:projectSyncEnabled,organizationId:mail.auth?.organizationId}):null;
+  const store=enabled?openWorkspaceStore({directory,now,syncProjects:projectSyncEnabled,organizationId:mail.auth?.organizationId,resolveProjectActor:mail.suite?mail.profile:undefined}):null;
   let inbox;try{inbox=enabled&&moduleEnabled('hiflow')?openWorkspaceRecruitment({directory,source:()=>recruitment.labInbox(),canManage:a=>recruitment.store?.canManage?.(a)||['admin','super_admin'].includes(a.role),now}):null;}catch(e){store?.close();throw e;}
   let preferences;try{preferences=enabled?openWorkbenchPreferencesStore({directory,allowedAppIds:apps.map(app=>app.id),now}):null;}catch(e){inbox?.close();store?.close();throw e;}
   const projectSync=store?projectSyncWorker({store,mail,client:projectSyncClient,enabled:projectSyncEnabled}):null;
@@ -141,6 +142,23 @@ export function createWorkspaceHttp({mail,knowledgeWorkerEnabled=true,apps=appCo
           z.object({}).strict().parse(input);
           const p=store.get(actor,retry[1]);if(p.ownerSubject!==actor.subject&&!['admin','super_admin'].includes(actor.role))throw new WorkspaceError(403,'forbidden');
           store.requirementsSync.retry(p.id);json(res,200,store.get(actor,p.id));return true;
+        }
+        const transfer=/^projects\/([\w-]+)\/transfer\/(start|accept|cancel)$/.exec(route);
+        if(transfer){
+          if(!mail.suite)throw new WorkspaceError(404,'Not found');
+          parseProjectTransferInput(transfer[2],input);
+          if(transfer[2]!=='cancel'){
+            const p=store.get(actor,transfer[1]),t=p.ownershipTransfer?.current;
+            const subjects=transfer[2]==='start'?[p.ownerSubject,input.recipientSubject]:[p.ownerSubject,t?.initiatorSubject,t?.recipientSubject];
+            try{
+              for(const subject of new Set(subjects.filter(Boolean)))await mail.authorizeApplication(mail.profile(subject),'projects');
+            }catch(e){if([401,403,404].includes(e.status))throw new WorkspaceError(409,'transfer_identity_changed');throw e;}
+            actor=await projectActor();
+            try{
+              for(const subject of new Set(subjects.filter(Boolean)))mail.assertApplication?.(mail.profile(subject),'projects');
+            }catch(e){if([401,403,404].includes(e.status))throw new WorkspaceError(409,'transfer_identity_changed');throw e;}
+          }
+          json(res,200,store.transfer(actor,transfer[1],transfer[2],input));return true;
         }
         const m=/^projects\/([\w-]+)\/(update|rename|apply|review|archive|milestones)(?:\/([\w-]+))?$/.exec(route);
         if(!m||m[3]&&m[2]!=='milestones')throw new WorkspaceError(404,'Not found');

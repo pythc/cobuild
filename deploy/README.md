@@ -189,7 +189,7 @@ python3 deploy/suite.py schema-status /srv/cobuild/team
 python3 deploy/suite.py resume-upgrade /srv/cobuild/team
 ```
 
-此命令只接受 pending 中的**原精确候选**，重新核验镜像、计划及已提交历史，补做未提交步骤；已完成步骤不重复建表，健康后提交版本记录。不要编辑 pending、删迁移历史或手工启动旧镜像。`recover` 在已提交核心步骤时也会保持停止，不自动恢复旧快照。更换成另一个修复镜像的向前迁移入口尚未实现；候选自身有代码缺陷时，须另行制作和审核恢复方案。
+此命令只接受 pending 中的**原精确候选**，重新核验镜像、计划及已提交历史，补做未提交步骤；已完成步骤不重复建表，健康后提交版本记录。不要编辑 pending、删迁移历史或手工启动旧镜像。`recover` 在已提交核心步骤时也会保持停止，不自动恢复旧快照。候选自身有代码缺陷时，可按下文“同结构修复候选与项目联动版本”制作保留完整 schema 和执行器的修复候选；不能任意替换迁移范围。
 
 控制器被强杀时，候选进程可能仍在运行，pending 并不代表进程已全部停止。`recover` / `resume-upgrade` 都会先停止本部署写进程，再检查实际历史；不要手工并行启动另一套消费者。
 
@@ -243,3 +243,19 @@ COBUILD_REPAIR_CANDIDATE=cobuild-suite:project-state-candidate \
 COBUILD_REPAIR_PLAN=core-project-state-v1.json \
 npm run test:runtime-repair
 ```
+
+## 项目转让表的追加迁移
+
+`0.12.0-dev.0` 使用独立的 `core-project-transfer-v1.json`。审核范围固定为新增请求表、迁移列表和两份相关 store；`0001_operations` 与 WeKnow 受管空间迁移保持原摘要。恢复状态把这两项作为已存在的历史，只将 `0002_project_transfers` 记为本次新增步骤。不得改写旧计划或把该计划直接套在任意旧镜像上。
+
+本次本地基线是保留的 `cobuild-suite:project-state-candidate`（0.9 运行镜像）；0.10 / 0.11 未产生新的 schema 变化。候选 `cobuild-suite:project-transfer-candidate` 用于隔离验证，不是已发布的公共镜像。封存时依旧要求精确源镜像和文件摘要。
+
+```sh
+COBUILD_REPAIR_BASE=cobuild-suite:project-state-candidate \
+COBUILD_REPAIR_CANDIDATE=cobuild-suite:project-transfer-candidate \
+COBUILD_REPAIR_PLAN=core-project-transfer-v1.json \
+COBUILD_UPGRADE_TRANSFER=1 \
+npm run test:runtime-repair
+```
+
+该测试追加检查请求和接收人会话经过重启、冷备份恢复后仍然有效，并由接收人确认；重复确认只提交一次。迁移提交后只允许兼容的新运行时，不能启动旧二进制。恢复旧快照仍是有数据损失边界的独立操作。本批没有 down migration，也没有扩大迁移工具支持的模块组合：该核心迁移要求 Kick 与 WeKnow 已初始化。

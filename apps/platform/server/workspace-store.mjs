@@ -1,3 +1,4 @@
+import {projectTransferStore} from './project-transfer-store.mjs';
 import {operationStore} from '../../../packages/operations/sqlite-store.mjs';
 import {ContractError} from '../../../packages/contracts/index.mjs';
 import {capabilities} from '../../../packages/config/index.mjs';
@@ -348,7 +349,7 @@ function tightenSidecars(path) {
 
 // ---------- Public factory ----------
 
-export function openWorkspaceStore({directory, now = Date.now, syncProjects = false, organizationId = null}) {
+export function openWorkspaceStore({directory, now = Date.now, syncProjects = false, organizationId = null, resolveProjectActor}) {
   if (typeof directory !== 'string' || directory.length === 0)
     throw new WorkspaceError(500, 'invalid_directory');
   if (typeof now !== 'function')
@@ -504,6 +505,24 @@ export function openWorkspaceStore({directory, now = Date.now, syncProjects = fa
   const catalog = projectCatalogStore(db,{now});
   const requirementsSync = projectSyncStore(db, {enabled:syncProjects,now,operations});
 
+  const transfers=operations&&typeof resolveProjectActor==='function'?projectTransferStore(db,{
+    now,resolveActor:resolveProjectActor,loadProject:loadProjectOrFail,fail:E,isConfigured:id=>!catalog.info(id).unconfigured,
+    commit(row,recipient,former){
+      if(countProjectsByOwner.get(recipient.subject).c>=MAX_PROJECTS_PER_OWNER)E(409,'owner_quota');
+      const members=JSON.parse(row.members_json).filter(m=>m.subject!==recipient.subject&&m.subject!==former.subject);
+      members.push({subject:former.subject,name:former.name,email:former.email});
+      if(members.length>MAX_MEMBERS)E(409,'invalid_input');
+      const r=db.prepare('UPDATE projects SET owner_subject=?,owner_name=?,owner_email=?,members_json=?,revision=revision+1,updated_at=? WHERE id=? AND revision=?')
+        .run(recipient.subject,recipient.name,recipient.email,JSON.stringify(members),nowIso(),row.id,row.revision);
+      if(r.changes!==1)E(409,'revision_conflict');
+      queueProject(row.id);
+    },
+  }):null;
+  function transfer(actor,id,action,input){
+    requireActor(actor);if(!transfers||!['start','accept','cancel'].includes(action))E(404,'not_found');
+    let result;try{result=transfers.execute(actor,id,action,input);}catch(e){if(e.code==='REQUEST_CONFLICT')throw new ContractError('REQUEST_CONFLICT',409);throw e;}return {...get(actor,id),transferResult:result};
+  }
+
   function rowToProject(row, actor) {
     let members, links;
     try {
@@ -545,6 +564,7 @@ export function openWorkspaceStore({directory, now = Date.now, syncProjects = fa
       createdAt: row.created_at,
       updatedAt: row.updated_at,
       milestones,
+      ...(transfers?{ownershipTransfer:transfers.summary(row,actor)}:{}),
       canEdit,
       canApply,
       canReview,
@@ -1028,6 +1048,10 @@ export function openWorkspaceStore({directory, now = Date.now, syncProjects = fa
   function listTodos(actor) {
     requireActor(actor);
     const items = [];
+    for(const t of transfers?.pendingFor(actor)||[]){
+      const p=loadProjectOrFail(t.project_id);
+      items.push({id:'transfer:'+t.id,kind:'project_transfer',title:p.name,projectId:p.id,projectName:p.name,dueAt:new Date(t.expires_at).toISOString(),status:'pending',action:'project'});
+    }
     // Admin: all pending projects.
     if (isAdmin(actor)) {
       for (const row of pendingProjects.all()) {
@@ -1121,6 +1145,7 @@ export function openWorkspaceStore({directory, now = Date.now, syncProjects = fa
     update: wrapInternal(update),
     rename: wrapInternal(rename),
     operation: wrapInternal(operation),
+    transfer: wrapInternal(transfer),
     apply: wrapInternal(apply),
     review: wrapInternal(review),
     archive: wrapInternal(archive),

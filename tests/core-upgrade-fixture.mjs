@@ -14,6 +14,36 @@ async function req(url,body,headers={}) {
  return {status:r.status,data,text,headers:r.headers};
 }
 const post=(p,b)=>req(base+p,b,{'X-CSRF-Token':saved.csrf});
+// An independent recipient session is persisted only in the private fixture file.
+async function recipient(path,body){
+ const r=await fetch(base+path,{method:body?'POST':'GET',headers:{Cookie:saved.transfer.cookie,Origin:base,'Content-Type':'application/json','X-CSRF-Token':saved.transfer.csrf},body:body?JSON.stringify(body):undefined});
+ return {status:r.status,data:await r.json()};
+}
+async function verifyTransfer(){
+ if(!saved.transfer){
+  const invited=await post('/api/organization/invitations',{email:'transfer@example.test'});check(invited.status===201||invited.status===200,'invite isolated transfer recipient');
+  const r=await fetch(base+'/api/auth/accept',{method:'POST',headers:{Origin:base,'Content-Type':'application/json'},body:JSON.stringify({token:invited.data.token,name:'Transfer Recipient',password:'Isolated recipient password 123'})});
+  const person=await r.json();check(r.status===200,'recipient has separate local identity');
+  saved.transfer={cookie:r.headers.getSetCookie().map(c=>c.split(';')[0]).join('; '),csrf:person.csrf,subject:person.subject};
+  let p=await post('/api/workspace/projects',{requestId:randomUUID(),name:'Transfer through restart and restore',summary:'Isolated transfer persistence fixture',members:[{subject:person.subject}],links:{repository:'',requirements:'',docs:'',demo:''},createKnowledgeSpace:false});
+  check(p.status===201,'create transfer fixture');saved.transfer.projectId=p.data.id;saved.transfer.formerOwner=p.data.ownerSubject;
+  for(let n=0;n<160&&p.data.requirementsSync.state!=='synced';n++){await new Promise(r=>setTimeout(r,250));p=await req(base+'/api/workspace/projects/'+saved.transfer.projectId);}
+  check(p.data.requirementsSync.state==='synced','initial project synchronization settled before transfer');
+  const request={requestId:randomUUID(),revision:p.data.revision,recipientSubject:person.subject};
+  const started=await post('/api/workspace/projects/'+p.data.id+'/transfer/start',request);
+  check(started.status===200,'persistent transfer request committed');saved.transfer.id=started.data.ownershipTransfer.current.id;saved.transfer.request=request;saved.transfer.revision=p.data.revision;
+ }
+ const t=saved.transfer,prefix='/api/workspace/projects/'+t.projectId;
+ const p=await recipient(prefix);check(p.status===200&&p.data.ownershipTransfer.current.id===t.id&&p.data.ownershipTransfer.current.canAccept,'pending transfer and recipient session retained');
+ const replay=await post(prefix+'/transfer/start',t.request);check(replay.status===200&&replay.data.ownershipTransfer.current.id===t.id,'start replay retains one transfer after recovery');
+ if(process.env.COBUILD_UPGRADE_ACCEPT_TRANSFER==='1'){
+  const request={requestId:randomUUID(),transferId:t.id};
+  const accepted=await recipient(prefix+'/transfer/accept',request),repeated=await recipient(prefix+'/transfer/accept',request);
+  check(accepted.status===200&&repeated.status===200&&accepted.data.revision===t.revision+1&&repeated.data.revision===accepted.data.revision,'restored recipient confirms once with replay');
+  check(accepted.data.ownerSubject===t.subject&&accepted.data.members.some(m=>m.subject===t.formerOwner),'restored acceptance retains the former owner as member');
+  const audit=await req(base+prefix+'/audit');check(audit.data.events.filter(e=>e.action==='transfer_accept').length===1,'restored acceptance has one audit');
+ }
+}
 async function project(name){
  let r=await post('/api/workspace/projects',{requestId:randomUUID(),name,summary:'Isolated upgrade fixture',members:[],links:{repository:'',requirements:'',docs:'',demo:''},createKnowledgeSpace:true});
  check(r.status===201,'create project');const id=r.data.id;
@@ -53,6 +83,7 @@ if(seed){
  // A retry verification may find no name change, which still creates a durable command receipt.
  check(op.status===200,'new command route available');
  check(!!op.data.operation?.id,'new operation ledger committed');
+ if(process.env.COBUILD_UPGRADE_TRANSFER==='1')await verifyTransfer();
 }
 saved.cookies=[...jars];writeFileSync(path,JSON.stringify(saved),{mode:0o600});
 console.log(JSON.stringify({passed:true,checks,scope:seed?'baseline seed':'upgrade persistence'}));

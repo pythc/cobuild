@@ -11,9 +11,11 @@ def main():
  def check(v,label):
   if not v:raise AssertionError(label)
   report['checks'].append(label)
- def fixture(dep,seed=False):
+ def fixture(dep,seed=False,accept_transfer=False):
   env={k:os.environ[k] for k in ['PATH','HOME','TMPDIR','LANG'] if k in os.environ}
   env.update(COBUILD_CONFIG=str(dep.path/'state/config.json'),COBUILD_DATA_DIR=str(dep.path/'state/platform'),COBUILD_FLOW_RECEIPT=str(directory/'flow.json'))
+  if os.environ.get('COBUILD_UPGRADE_TRANSFER')=='1':env['COBUILD_UPGRADE_TRANSFER']='1'
+  if accept_transfer:env['COBUILD_UPGRADE_ACCEPT_TRANSFER']='1'
   r=subprocess.run(['node','tests/core-upgrade-fixture.mjs',*(['--seed'] if seed else [])],cwd=ROOT,env=env,capture_output=True,text=True,timeout=150)
   (ROOT/'.local/runtime-repair-fixture.private.log').write_text(r.stdout+r.stderr)
   if r.returncode:(directory/'core-failure.private.log').write_bytes(suite.docker('logs',dep.project+'-core-1'))
@@ -73,7 +75,7 @@ def main():
   suite.verify_snapshot(backup)
   restored=suite.restore(directory/'restored',backup);deps.append(restored)
   with restored.lock():restored.up()
-  fixture(restored)
+  fixture(restored,accept_transfer=True)
   check(restored.schema_state()==dep.schema_state(),'backup restore retains repaired schema identity')
   report['passed']=True
  except Exception as error:report.update(passed=False,error=str(error))
