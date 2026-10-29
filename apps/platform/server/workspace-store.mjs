@@ -499,9 +499,9 @@ export function openWorkspaceStore({directory, now = Date.now, syncProjects = fa
     return new Date(t).toISOString();
   }
 
-  const knowledgeSpaces = projectKnowledgeStore(db,{now});
-  const catalog = projectCatalogStore(db,{now});
   const operations = organizationId ? operationStore(db, {registry:capabilities, now}) : null;
+  const knowledgeSpaces = projectKnowledgeStore(db,{now,lifecycle:!!organizationId,operations});
+  const catalog = projectCatalogStore(db,{now});
   const requirementsSync = projectSyncStore(db, {enabled:syncProjects,now,operations});
 
   function rowToProject(row, actor) {
@@ -555,6 +555,7 @@ export function openWorkspaceStore({directory, now = Date.now, syncProjects = fa
 
   function queueProject(id) {
     const row=selectProject.get(id);if(!row)return;
+    knowledgeSpaces.refresh(id);
     const origin=catalog.info(id),members=JSON.parse(row.members_json),links=JSON.parse(row.links_json);
     const people=new Map([[row.owner_subject,row.owner_name],...members.map(m=>[m.subject,m.name])]);
     requirementsSync.enqueue(id,row.name,row.summary,{
@@ -566,8 +567,7 @@ export function openWorkspaceStore({directory, now = Date.now, syncProjects = fa
     });
   }
   function reconcileProjects(feed) {
-    if(!syncProjects)return;
-    if(feed)catalog.import(feed);
+    if(feed&&syncProjects)catalog.import(feed);
     tx(()=>{for(const row of listProjectsStmt.all())queueProject(row.id);});
   }
 
@@ -730,8 +730,10 @@ export function openWorkspaceStore({directory, now = Date.now, syncProjects = fa
           type:'kick.project.renamed.v1', data:{previousName:before.name, name:project.name},
         };
         const generation = syncProjects ? requirementsSync.generation(id) : 0;
-        return {revision:project.revision, event,
-          projections:event && generation ? [{consumer:'makit.project-snapshot.v1', key:id, generation}] : []};
+        const projections=generation?[{consumer:'makit.project-snapshot.v1',key:id,generation}]:[];
+        if(project.phase==='active'&&project.knowledgeSpace&&project.knowledgeSpace.state!=='legacy'&&before.name!==project.name)
+          projections.push({consumer:'weknow.project-space.v1',key:id,generation:project.revision});
+        return {revision:project.revision,event,projections};
       },
     });
     // Never return stale project content from a replayed receipt.
@@ -809,6 +811,7 @@ export function openWorkspaceStore({directory, now = Date.now, syncProjects = fa
       );
       if (result.changes !== 1) E(409, 'revision_conflict');
       insertAudit.run(id, 'update', actor.subject, actor.name.trim(), ts, '');
+      if(row.name!==data.name.trim())knowledgeSpaces.refresh(id,{changed:true});
       queueProject(id);
       return rowToProject(selectProject.get(id), actor);
     });
@@ -928,6 +931,7 @@ export function openWorkspaceStore({directory, now = Date.now, syncProjects = fa
         ts,
         '',
       );
+      knowledgeSpaces.refresh(id,{changed:true});
       queueProject(id);
       return rowToProject(selectProject.get(id), actor);
     });
@@ -1096,6 +1100,13 @@ export function openWorkspaceStore({directory, now = Date.now, syncProjects = fa
     requirementsSync,
     knowledgeSpaces,
     reconcileProjects,
+    // Deny-only service policy; it never grants a Makit business role.
+    projectWriteState(names){
+      const wanted=new Set(names),blocked=new Set();
+      for(const row of listProjectsStmt.all())if(row.archived)
+        for(const name of [row.name,...catalog.info(row.id).aliases])if(wanted.has(name))blocked.add(name);
+      return {blockedNames:[...blocked]};
+    },
     list: wrapInternal(list),
     get: wrapInternal(get),
     create: wrapInternal(create),

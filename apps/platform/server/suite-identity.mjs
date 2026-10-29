@@ -281,7 +281,7 @@ export function createSuiteIdentity({ config, directory, now = Date.now }) {
         const url = new URL(req.url, config.origins.platform);
         if (path.startsWith("/api/suite/services/")) {
           const match =
-            /^\/api\/suite\/services\/(makit|weknow)\/(directory|member|actions|project|project-access)$/.exec(
+            /^\/api\/suite\/services\/(makit|weknow)\/(directory|member|actions|project|project-access|project-writes)$/.exec(
               path,
             );
           if (!match || req.method !== "POST" || !keys[match[1]])
@@ -310,6 +310,12 @@ export function createSuiteIdentity({ config, directory, now = Date.now }) {
           if (action === "directory") {
             json(res, 200, auth.directorySnapshot());
             return true;
+          }
+          if(action==='project-writes'&&app==='makit'){
+            if(!Array.isArray(payload.names)||payload.names.length>500||payload.names.some(n=>typeof n!=='string'||!n||n.length>200))
+              throw new MailAuthError(400,'项目名称无效');
+            const state=config.modules.includes('kick')&&workspace?workspace.store.projectWriteState(payload.names):{blockedNames:[]};
+            json(res,200,{organizationId:auth.organizationId,...state});return true;
           }
           if (action === "project-access" && app === "weknow") {
             const member = auth.profile(payload.subject);
@@ -368,7 +374,6 @@ export function createSuiteIdentity({ config, directory, now = Date.now }) {
               );
             if (
               p.phase !== "active" ||
-              p.archived ||
               !p.knowledgeSpace?.requested
             )
               throw new MailAuthError(409, "项目未批准创建知识空间");

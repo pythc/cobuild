@@ -1,3 +1,4 @@
+import { ProjectArchivedError } from '../../common/selfhost/project-write-policy';
 import {
   BadRequestException,
   ConflictException,
@@ -574,6 +575,7 @@ export class RequirementUpdateJobsService
       this.logger.error(`需求更新任务 ${job.id} 失败：${message}`);
       if (
         externalWriteStarted &&
+        !(error instanceof ProjectArchivedError) &&
         !(error instanceof FeishuRequestError && error.remoteRejected)
       ) {
         await this.serviceRoleDatabase.run((db) =>

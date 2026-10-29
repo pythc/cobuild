@@ -2,7 +2,7 @@
 
 本入口部署一个组织的 Platform / Kick、Makit、WeKnow、PostgreSQL 17、Redis 与入口代理。飞书、邮件、GitHub、AI 等集成默认关闭。公开发行仍受仓库许可、可移植性及其他发行门禁限制。
 
-> 当前工作树新增显式核心迁移协议。它只接受下述经审核的精确基线与候选清单，不代表任意旧版本均可升级。受管空间安装后禁止回退到不执行新权限边界的旧二进制。验证范围见 [本批实现记录](../docs/design/collaboration-framework/IMPLEMENTATION-02.md)。
+> 当前工作树新增显式核心迁移协议。它只接受下述经审核的精确基线与候选清单，不代表任意旧版本均可升级。受管空间安装后禁止回退到不执行新权限边界的旧二进制。验证范围见 [当前实现记录](../docs/design/collaboration-framework/IMPLEMENTATION-03.md) 和 [原核心迁移记录](../docs/design/collaboration-framework/IMPLEMENTATION-02.md)。
 
 ## 构建与初始化
 
@@ -213,3 +213,24 @@ npm run test:https
 HTTPS 演练另需宿主 OpenSSL（只生成临时测试 CA）及 WeKnow 开发依赖中的 Undici。`--https --with-migrations` 将原完整生命周期跑在三个测试 HTTPS 域名下。加 `--with-browser` 并设置 `COBUILD_PLAYWRIGHT_MODULE` 到已安装 Playwright 的入口，可验证独立 Chromium 中的实际 Cookie 和回调；可用 `COBUILD_CHROMIUM_EXECUTABLE` 指定已有 Chrome，工具不自动下载浏览器。`--https --tls-lifecycle-only --with-browser` 针对证书 / 会话及证书恢复复测，不包含原完整升级 / 迁移演练；`--core-only` 用于默认 HTTP 的核心回归。
 
 测试只在独立进程中把 `.cobuild.test` 域名解析到回环地址，并指定临时 CA；不修改 hosts、DNS、系统信任或个人浏览器。Chromium 正向测试使用精确测试证书的 SPKI 固定，负向浏览器不使用该固定；证书链另由完整 CA 校验客户端验证。此证据不等同于公网 DNS、公有 CA 或目标设备验收。HTTPS 结果见 `provenance/https-checks.json`。
+
+
+## 同结构修复候选与项目联动版本
+
+`0.8.0-dev.0` 的 `core-runtime-v1` 只允许审核清单中的两份平台 store 实现变化；原 SQLite / WeKnow 迁移、执行器和实际表结构保持不变。需要精确的上批基线镜像，不能把未审核的旧部署视作同一基线。
+
+```sh
+python3 deploy/suite.py seal --image cobuild-suite:managed-migration-candidate --version 0.7.0-baseline --output release-managed-base.json
+python3 deploy/suite.py seal --image cobuild-suite:lifecycle-candidate --version 0.8.0-local --base-release release-managed-base.json --migration-plan deploy/migrations/core-runtime-v1.json --output release-lifecycle.json
+python3 deploy/suite.py upgrade /srv/cobuild/team --release release-lifecycle.json
+```
+
+若已有核心迁移 pending，修复镜像必须保留 pending 的完整 schema 清单、迁移计划和执行器，只修应用运行时代码。按同一基线和同一计划封装修复 manifest，再执行：
+
+```sh
+python3 deploy/suite.py resume-upgrade /srv/cobuild/team --release release-fixed.json
+```
+
+预检后原子登记候选替换记录，异常停止本部署，保留数据和 pending。再次中断可不带 `--release` 继续。成功后 `last-recovery.json` 保存本次候选链；该文件位于部署目录，运维审计需要另行留存，冷备份自动保存的是业务 state 和当前发行版本。此入口不能修订已提交 SQL、扩大迁移范围、替换基础镜像或修改持有 schema 的源码。
+
+隔离验证：`npm run test:runtime-repair`。它创建实际启动失败的派生镜像，验证替换为修复候选、再次中断继续、数据保留、重启及冷备份恢复；只清理测试自己创建的部署和数据卷，保留不可变镜像证据，不清理其他工程镜像。

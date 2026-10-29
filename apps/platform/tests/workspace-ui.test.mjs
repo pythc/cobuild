@@ -24,13 +24,13 @@ async function ui({embedded=true,pathname,search='',fetchImpl}={}){
       const value=path.endsWith('auth/start')?{state:flowState,launchUrl:'https://internal.110-lab.cn/mail/auth/launch?state='+flowState}:
         path.endsWith('session')?profile:path.endsWith('projects')?{projects:[]}:path.endsWith('members')?{members:[],source:'feishu',unavailable:false}:{items:[]};
       return {ok:true,json:async()=>value};}};
-  runInNewContext(source+';globalThis.h={state,projectPicker,doLogin,doLogout,handleParentMessage,loadProjects,loadMembers,clearIdentity,renderRequirementsSource,renderShell,renderMemberPicker,refreshMemberPicker,openProjectDialog,collectProjectForm,navigateToProject,bindEvents,renderMilestones,PROJECTS_PAGE,EMBEDDED,isUuid};',context);
+  runInNewContext(source+';globalThis.h={state,projectPicker,doLogin,doLogout,handleParentMessage,loadProjects,loadMembers,clearIdentity,renderRequirementsSource,renderShell,renderMemberPicker,refreshMemberPicker,openProjectDialog,collectProjectForm,navigateToProject,bindEvents,renderMilestones,renderKnowledgeSync,PROJECTS_PAGE,EMBEDDED,isUuid};',context);
   return {...context.h,el,parent,sent,requests,navigated,context};
 }
 
 test('a lost WeKnow grant is distinguished from project approval and transient creation failures',async()=>{
   const h=await ui(),side=h.el('test-side');
-  h.renderMilestones(side,{milestones:[],members:[],knowledgeSpace:{state:'blocked',errorCode:'KNOWLEDGE_RECONNECT_REQUIRED'}});
+  h.renderKnowledgeSync(side,{milestones:[],members:[],knowledgeSpace:{state:'blocked',errorCode:'KNOWLEDGE_RECONNECT_REQUIRED'}});
   assert.match(side.children.flatMap(n=>[n.textContent,...(n.children||[]).map(c=>c.textContent)]).join(''),/授权连接已失效.*管理员重新连接/);
 });
 
@@ -255,4 +255,16 @@ for(const embedded of [false,true])test('super administrator settings open organ
 });
 for(const pathname of ['/workbench','/projects'])test('browser login binds the return application '+pathname,async()=>{
   const h=await ui({embedded:false,pathname});await h.doLogin();assert.deepEqual(JSON.parse(h.requests[0].options.body),{returnTo:pathname});
+});
+
+test('knowledge status distinguishes manual links and recoverable archive failures without granting edit rights',async()=>{
+  const h=await ui(),side=h.el('lifecycle-side');h.state.profile={...profile,role:'super_admin'};
+  h.renderKnowledgeSync(side,{id:'fixture',ownerSubject:profile.subject,archived:true,knowledgeSpace:{state:'blocked',errorCode:'KNOWLEDGE_NAME_CONFLICT'}});
+  const text=side.children.flatMap(n=>[n.textContent,...(n.children||[]).map(c=>c.textContent)]).join('');
+  assert.match(text,/空间名称已单独修改/);assert.match(text,/重试 WeKnow 同步/);
+  const manual=h.el('manual-side');h.renderKnowledgeSync(manual,{links:{knowledgeSpace:'https://example.test/s/existing'}});
+  assert.match(manual.children.flatMap(n=>[n.textContent,...(n.children||[]).map(c=>c.textContent)]).join(''),/手工关联/);
+  h.state.profile=profile;const denied=h.el('other-side');
+  h.renderKnowledgeSync(denied,{ownerSubject:'other',knowledgeSpace:{state:'blocked'}});
+  assert.equal(denied.children.some(n=>n.textContent==='重试 WeKnow 同步'),false);
 });

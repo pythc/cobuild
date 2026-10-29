@@ -131,8 +131,8 @@ def validate_release(value):
         approved_runner=digest(ROOT/'deploy/runtime/migrate.mjs')
         manifest=schema_manifest(value['images']['core']['id'])
         checked_policy(policy.validate_candidate,value['migration'],value['contract'],manifest,approved_runner)
-        if value['migration']['kind']=='core-managed-v1':
-            if value['migration']['plan']!=read(ROOT/'deploy/migrations/core-managed-v1.json'):raise Failure('Core plan differs from the reviewed release plan')
+        if value['migration']['kind'] in ['core-managed-v1','core-runtime-v1']:
+            if value['migration']['plan']!=read(ROOT/('deploy/migrations/'+value['migration']['kind']+'.json')):raise Failure('Core plan differs from the reviewed release plan')
             if manifest.get('coreRunnerDigest')!=digest(ROOT/'deploy/runtime/core-migrate.mjs'):raise Failure('Core runner differs from reviewed implementation')
     return value
 
@@ -396,7 +396,7 @@ class Deployment:
         docker('rm','-f',name)
     def migration_history(self, release=None):
         release=release or self.release
-        if release.get('migration',{}).get('kind')=='core-managed-v1':
+        if release.get('migration',{}).get('kind') in ['core-managed-v1','core-runtime-v1']:
             if self.core_running():raise Failure('Stop core writers before inspecting migration state')
             raw=docker('run','--rm','--network',self.project+'-net','--user',str(os.getuid())+':'+str(os.getgid()),
                 '--cap-drop','ALL','--security-opt','no-new-privileges:true','--memory','512m','--pids-limit','128','--read-only',
@@ -430,7 +430,7 @@ class Deployment:
         if state and state['status']!='migrating' and release['contract']['schema'] in state['compatibleSchemas']:
             return None
         if not release.get('migration'):raise Failure('Schema change requires an explicit additive migration plan')
-        if release['migration']['kind']=='core-managed-v1' and not {'kick','weknow'}<=set(read(self.path/'state/config.json')['modules']):raise Failure('Core migration requires initialized Kick and WeKnow')
+        if release['migration']['kind'] in ['core-managed-v1','core-runtime-v1'] and not {'kick','weknow'}<=set(read(self.path/'state/config.json')['modules']):raise Failure('Core migration requires initialized Kick and WeKnow')
         if release['migration']['kind']=='makit-additive-v1' and 'makit' not in read(self.path/'state/config.json')['modules']:raise Failure('Enable Makit and initialize its database before migrating its schema')
         evidence=checked_policy(policy.authorize_transition,self.release,release,schema_manifest(self.release['images']['core']['id']),schema_manifest(release['images']['core']['id']))
         if state:
@@ -455,8 +455,8 @@ class Deployment:
             docker('run','--rm','--name',self.project+'-migration','--label','cobuild.deployment='+self.instance['id'],
                 '--network',self.project+'-net','--user',str(os.getuid())+':'+str(os.getgid()),
                 '--cap-drop','ALL','--security-opt','no-new-privileges:true','--memory','512m','--pids-limit','128','--read-only',
-                '--mount','type=bind,src='+str(self.path/'state')+',dst=/state'+('' if new['migration']['kind']=='core-managed-v1' else ',readonly'),
-                '--entrypoint','node',new['images']['core']['id'],'deploy/runtime/migrate.mjs',*(['--core'] if new['migration']['kind']=='core-managed-v1' else []),timeout=180)
+                '--mount','type=bind,src='+str(self.path/'state')+',dst=/state'+('' if new['migration']['kind'] in ['core-managed-v1','core-runtime-v1'] else ',readonly'),
+                '--entrypoint','node',new['images']['core']['id'],'deploy/runtime/migrate.mjs',*(['--core'] if new['migration']['kind'] in ['core-managed-v1','core-runtime-v1'] else []),timeout=180)
         finally:self.stop_migration()
         state=self.finish_migration_state(old,new,evidence)
         if state['status']!='complete':raise Failure('Candidate did not finish the declared migration history')
@@ -482,17 +482,32 @@ class Deployment:
             # Only validated additive migrations may retain new schema while
             # returning to an older application. Never restore an old snapshot.
             self.recover(); raise
-    def resume_upgrade(self):
+    def resume_upgrade(self, replacement=None):
         pending=read(self.path/'pending.json')
+        # An interrupted readiness check may have left writers alive. Stop only
+        # this deployment, even when the supplied repair artifact is invalid.
+        self.stop()
         old=validate_release(pending['previous']);new=validate_release(pending['candidate'])
         evidence=checked_policy(policy.authorize_transition,old,new,schema_manifest(old['images']['core']['id']),schema_manifest(new['images']['core']['id']))
         if evidence!=pending.get('migrationEvidence'):raise Failure('Resume evidence differs')
-        self.stop()
         try:
+            if replacement is not None:
+                replacement=validate_release(replacement)
+                checked_policy(policy.validate_runtime_repair,new,replacement,
+                    schema_manifest(new['images']['core']['id']),schema_manifest(replacement['images']['core']['id']))
+                self.preflight(replacement,for_migration=True)
+                repairs=pending.get('repairs',[])
+                if len(repairs)>=32:raise Failure('Too many repair attempts; inspect retained recovery history')
+                pending['repairs']=[*repairs,{'candidate':new,'replacement':replacement,'at':time.time_ns()}]
+                pending['candidate']=replacement
+                # Atomic pending update precedes any new runtime activation.
+                write(self.path/'pending.json',pending)
+                new=replacement
             self.preflight(new,for_migration=True);self.configure(new)
             self.apply_migration(old,new,evidence,pending)
             self.activate_runtime(new);self.start_wait(new)
             write(self.path/'previous.json',old);write(self.path/'release.json',new)
+            if pending.get('repairs'):write(self.path/'last-recovery.json',pending)
             self.release=new;remove_record(self.path/'pending.json')
         except BaseException:
             # A readiness failure can leave partially running writers. Preserve
@@ -641,6 +656,7 @@ def main():
         p=sub.add_parser(action);p.add_argument('directory')
         if action=='backup':p.add_argument('--output',required=True)
         if action=='upgrade':p.add_argument('--release',required=True)
+        if action=='resume-upgrade':p.add_argument('--release')
     for action in ['init','restore','tls-configure']:
         target=sub.choices[action]
         for kind in ['cert','key','ca']:target.add_argument('--tls-'+kind)
@@ -681,7 +697,7 @@ def main():
         elif args.action=='rollback':dep.upgrade(read(dep.path/'previous.json'));print('Compatible application rollback healthy; data retained')
         elif args.action=='status':print(dep.status())
         elif args.action=='recover-owner':print(json.dumps(dep.recover_owner()))
-        elif args.action=='resume-upgrade':dep.resume_upgrade();print('Forward recovery healthy; data retained')
+        elif args.action=='resume-upgrade':dep.resume_upgrade(read(args.release) if args.release else None);print('Forward recovery healthy; data retained')
         elif args.action=='schema-status':print(json.dumps(dep.schema_state() or {'status':'base','actualSchema':dep.release['contract']['schema']},indent=2))
         elif args.action=='tls-configure':print(json.dumps(dep.configure_tls(tls_sources)))
         else:getattr(dep,args.action)();print(args.action+' completed')

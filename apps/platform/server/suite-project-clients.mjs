@@ -59,11 +59,17 @@ export function suiteProjectClients(config, directory, organizationId) {
       async ensure(job) {
         const raw = await call("weknow", "/api/suite/projects/ensure", {
             projectId: job.id,
+            revision:job.revision,name:job.name,expectedName:job.expectedName,archived:job.archived,
           }),
           v = raw.data ?? raw;
+        if(v.projectId!==job.id||v.revision!==job.revision||v.archived!==job.archived||
+            !['managed','legacy','suspended'].includes(v.mode))throw Error('Knowledge receipt mismatch');
+        if(v.mode==='suspended'&&job.archived&&v.spaceId===null&&v.url===null)
+          return {spaceId:null,url:null,name:job.name,mode:v.mode};
         const url = new URL(v.url);
         if (
           v.projectId !== job.id ||
+          (v.mode!=='legacy'&&v.name!==job.name) ||
           !/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/.test(
             v.spaceId,
           ) ||
@@ -75,7 +81,7 @@ export function suiteProjectClients(config, directory, organizationId) {
           url.hash
         )
           throw Error("Knowledge receipt mismatch");
-        return { spaceId: v.spaceId, url: url.href };
+        return { spaceId: v.spaceId, url: url.href,name:v.name,mode:v.mode };
       },
     },
   };

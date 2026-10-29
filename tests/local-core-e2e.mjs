@@ -411,7 +411,7 @@ result=await post('/api/workspace/projects/'+projectId+'/rename',renameInput,own
 check(result.status===200 && result.data.operation.id===renameOperationId && result.data.operation.replayed,'HTTP rename replay retains operation');
 result=await post('/api/workspace/projects/'+projectId+'/rename',{...renameInput,name:'Conflicting reuse'},owner.csrf);
 check(result.status===409 && result.data.code==='REQUEST_CONFLICT','changed request key is rejected');
-project=await pollProject(projectId,p=>p.name===renameInput.name && p.requirementsSync.state==='synced');
+project=await pollProject(projectId,p=>p.name===renameInput.name && p.requirementsSync.state==='synced'&&p.knowledgeSpace.state==='ready');
 result=await request(base+'/api/workspace/projects/operations/'+renameOperationId);
 check(result.status===200 && result.data.state==='succeeded' && result.data.deliveries[0].receipt.mode==='snapshot-converged','remote acknowledgement settles durable operation');
 result=await request(base+'/api/workspace/projects/operations/'+renameOperationId,{jar:'member'});
@@ -419,6 +419,24 @@ check(result.status===403,'operation detail uses current project authority');
 result=await request(config.origins.makit+'/api/workspace/project-management');
 projected=(result.data?.data||result.data)?.projects?.find(p=>p.projectId===projectId);
 check(projected?.projectName===renameInput.name,'Makit projects the new name under the same UUID');
+const originalSpaceId=project.knowledgeSpace.spaceId;
+result=await request(config.origins.weknow+'/api/spaces/info',{body:{spaceId:originalSpaceId}});
+check((result.data?.data||result.data)?.name===renameInput.name,'WeKnow renames the existing managed space');
+result=await request(config.origins.weknow+'/api/spaces/update',{body:{spaceId:originalSpaceId,name:'Manual independent name'}});
+check(result.status===200,'native independent space rename');
+project=(await request(base+'/api/workspace/projects/'+projectId)).data;
+result=await post('/api/workspace/projects/'+projectId+'/rename',{requestId:randomUUID(),revision:project.revision,name:'Final portable project'},owner.csrf);
+check(result.status===200,'new project rename with independently changed space');
+project=await pollProject(projectId,p=>p.knowledgeSpace.state==='blocked');
+check(project.knowledgeSpace.errorCode==='KNOWLEDGE_NAME_CONFLICT','manual WeKnow name produces actionable conflict');
+result=await request(config.origins.weknow+'/api/spaces/info',{body:{spaceId:originalSpaceId}});
+check((result.data?.data||result.data)?.name==='Manual independent name','independent name is not overwritten');
+await request(config.origins.weknow+'/api/spaces/update',{body:{spaceId:originalSpaceId,name:project.name}});
+result=await post('/api/workspace/projects/'+projectId+'/knowledge-space/retry',{},owner.csrf);
+check(result.status===200,'owner retries resolved name conflict');
+project=await pollProject(projectId,p=>p.knowledgeSpace.state==='ready'&&p.requirementsSync.state==='synced');
+check(project.knowledgeSpace.spaceId===originalSpaceId,'rename conflict recovery retains stable space ID');
+
 result = await action(
   "milestone_add",
   { title: "Ship local collaboration", assignee: member.subject, dueAt: null },
@@ -638,12 +656,13 @@ check(
 );
 const page = result.data.data || result.data;
 check(!!page.id, "knowledge page has persistent ID");
+project=(await request(base+'/api/workspace/projects/'+projectId)).data;
 const receipts = await Promise.all(
   [1, 2].map(() =>
     serviceRequest(
       config.origins.weknow,
       "/api/suite/projects/ensure",
-      { organizationId: owner.organizationId, projectId },
+      { organizationId: owner.organizationId, projectId,revision:project.revision,name:project.name,expectedName:project.name,archived:project.archived },
       join(process.env.COBUILD_DATA_DIR, "weknow.service.key"),
     ),
   ),
@@ -744,6 +763,33 @@ for(const archived of [true,false]) {
   check(result.status===200,'project archive state changes');
   result=await wk('/api/pages/info',{pageId:page.id});
   check(archived?[403,404].includes(result.status):result.status===200,'managed access follows current project archive state');
+  const converged=await pollProject(projectId,p=>p.requirementsSync.state==='synced'&&p.knowledgeSpace.state===(archived?'archived':'ready'));
+  check(converged.knowledgeSpace.spaceId===spaceId,'archive/restore preserves managed space');
+  result=await request(config.origins.makit+'/api/workspace/requirements',{body:{title:'Archive policy fixture',project:converged.name,type:'产品需求',introduction:'Local fixture',acceptanceCriteria:'No external delivery',handlerLarkUserIds:[member.id]}});
+  check(archived?result.status===409:[200,201].includes(result.status),'Makit requirement creation follows live project archive state '+result.status);
+  if(archived){
+    result=await request(config.origins.makit+'/api/workspace/requirements',{body:{title:'Alias bypass fixture',project:renameInput.name,type:'产品需求',introduction:'Local fixture',acceptanceCriteria:'No external delivery',handlerLarkUserIds:[member.id]}});
+    check([400,409].includes(result.status),'historical project name cannot bypass archive '+result.status);
+    const aliasPolicy=await serviceRequest(base,'/api/suite/services/makit/project-writes',{organizationId:owner.organizationId,names:[renameInput.name]},join(process.env.COBUILD_DATA_DIR,'makit.service.key'));
+    check(aliasPolicy.blockedNames.includes(renameInput.name),'write policy recognizes historical name independently of UI options');
+    const beforeArchivedWrite=unwrap(await request(config.origins.makit+'/api/workspace/requirements/'+requirement,{jar:'member'}));
+    result=await request(config.origins.makit+'/api/workspace/requirements/'+requirement,{jar:'member',method:'PATCH',body:{clientMutationId:randomUUID(),expectedUpdatedAt:beforeArchivedWrite.requirement.updatedAt,patch:{latestProgress:'Must not persist while archived'}}});
+    const archivedJob=unwrap(result).jobId;
+    check(!!archivedJob,'queued update retains durable job '+result.status+' '+JSON.stringify(result.data));
+    for(let i=0;i<100;i++){
+      result=await request(config.origins.makit+'/api/workspace/requirement-update-jobs/'+archivedJob,{jar:'member'});
+      if(['succeeded','failed','unknown'].includes(unwrap(result)?.status))break;
+      await new Promise(r=>setTimeout(r,200));
+    }
+    check(unwrap(result)?.status==='failed','background writer rejects archived project');
+    result=await request(config.origins.makit+'/api/workspace/requirements/'+requirement,{jar:'member'});
+    check(unwrap(result).requirement.latestProgress!=='Must not persist while archived','rejected worker leaves prior content intact');
+    result=await request(config.origins.makit+'/api/workspace/requirements/'+requirement+'/comments',{jar:'member',body:{content:'Blocked archived comment'}});
+    check(result.status===409,'archived project blocks linked comments');
+    result=await request(config.origins.makit+'/api/workspace/requirements/'+requirement+'/acceptance',{body:{title:'Blocked acceptance',ownerUserIds:[],note:''}});
+    check(result.status===409,'archived project blocks linked acceptance items '+result.status);
+  }
+
 }
 
 // HTTP service routes must not accept a browser request or an unsigned body.

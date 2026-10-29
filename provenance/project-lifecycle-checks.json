@@ -1,0 +1,201 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-29",
+  "version": "0.8.0-dev.0",
+  "baseCommit": "9a4e987e83651d0af0c51aa07a48345c9c328979",
+  "scope": "project rename/archive lifecycle and constrained pending runtime replacement; local synthetic data only",
+  "productionAccess": false,
+  "externalMessages": false,
+  "publicReleaseReady": false,
+  "checks": {
+    "regression": {
+      "passed": 122,
+      "failed": 0
+    },
+    "deploymentPolicyUnits": {
+      "passed": 42,
+      "failed": 0
+    },
+    "nativeCore": {
+      "passed": true,
+      "checks": 196,
+      "scope": "native identity + directory + Kick/Makit/WeKnow collaboration",
+      "externalMessages": false
+    },
+    "nativeBulkAcl": {
+      "passed": true,
+      "checks": 4,
+      "scope": "native bulk ACL SQL; transaction rolled back"
+    },
+    "collections": {
+      "passed": true,
+      "checks": 7,
+      "scope": "native collection restart preservation and fail-closed initialization"
+    },
+    "restart": {
+      "passed": true,
+      "checks": 15,
+      "scope": "three-service restart and account password revocation"
+    },
+    "nativeRun": {
+      "productionAccess": false,
+      "stages": [
+        {
+          "name": "makit-migrations",
+          "exitCode": 0
+        },
+        {
+          "name": "makit-role",
+          "exitCode": 0
+        },
+        {
+          "name": "core-e2e",
+          "exitCode": 0
+        },
+        {
+          "name": "managed-native-queries",
+          "exitCode": 0
+        },
+        {
+          "name": "collections",
+          "exitCode": 0
+        },
+        {
+          "name": "restart-e2e",
+          "exitCode": 0
+        }
+      ],
+      "passed": true,
+      "ownedContainersRemoved": true
+    },
+    "runtimeRepair": {
+      "format": 1,
+      "productionAccess": false,
+      "externalMessages": false,
+      "checks": [
+        "baseline seed",
+        "schema evidence retained after real broken runtime",
+        "failed candidate and unsafe old writers stopped",
+        "replacement is atomic and retains original candidate",
+        "interrupted repaired runtime is stopped",
+        "repair retains exact committed migration history",
+        "resume starts fixed runtime without replaying destructive changes",
+        "sessions, documents, attachments and new writes survive",
+        "completed recovery audit retained",
+        "downgrade rejection preserves healthy fixed runtime",
+        "sessions, documents, attachments and new writes survive",
+        "sessions, documents, attachments and new writes survive",
+        "backup restore retains repaired schema identity"
+      ],
+      "stages": [
+        {
+          "passed": true,
+          "checks": 8,
+          "scope": "baseline seed"
+        },
+        {
+          "passed": true,
+          "checks": 11,
+          "scope": "upgrade persistence"
+        },
+        {
+          "passed": true,
+          "checks": 7,
+          "scope": "upgrade persistence"
+        },
+        {
+          "passed": true,
+          "checks": 7,
+          "scope": "upgrade persistence"
+        }
+      ],
+      "images": {
+        "base": "sha256:92f257d08a577489d48c141baf4f01b943cd70cc915e798542657fe260bb2f12",
+        "broken": "sha256:067a9e4462e6128f1efdde72aa7b7fa7da56356d24cc2002f9228afd520f02e3",
+        "fixed": "sha256:3eab4ddab5fd178ef2b764433d01250ae8a36534cecfde3e681195899f7cf48a"
+      },
+      "injectedFailure": "Core security migration committed; old runtime remains stopped. Repair the candidate and use resume-upgrade; data and backup are retained.",
+      "passed": true,
+      "unrelatedServicesUnchanged": true
+    },
+    "sourceBoundary": {
+      "importedFiles": 2776,
+      "modifiedFiles": 84,
+      "missingFiles": 0,
+      "boundaryViolations": 0,
+      "portabilityFindings": 424
+    },
+    "publicReleaseGate": {
+      "exitCode": 2,
+      "publicReleaseReady": false
+    },
+    "unrelatedServices": {
+      "count": 11,
+      "idsAndStartTimesUnchanged": true
+    },
+    "diffWhitespace": {
+      "passed": true
+    }
+  },
+  "images": {
+    "base": "sha256:92f257d08a577489d48c141baf4f01b943cd70cc915e798542657fe260bb2f12",
+    "broken": "sha256:067a9e4462e6128f1efdde72aa7b7fa7da56356d24cc2002f9228afd520f02e3",
+    "fixed": "sha256:3eab4ddab5fd178ef2b764433d01250ae8a36534cecfde3e681195899f7cf48a"
+  },
+  "review": {
+    "performed": true,
+    "focus": [
+      "stale lease fencing and acknowledged remote names",
+      "manual/legacy space independence",
+      "archive record writes and linked comments/acceptance",
+      "repair manifest and migration immutability",
+      "failure stops only owned deployment"
+    ]
+  },
+  "earlierFailures": [
+    "Queued archive rejection was initially classified as unknown; specific pre-write rejection now becomes failed and full flow was rerun.",
+    "Restart fixture still used the old ensure payload; updated to fresh authoritative revision and complete lifecycle payload.",
+    "Recovery fixture read migration history after stopping databases; now starts only owned databases before inspecting the ledger.",
+    "Synthetic store fixture origin substitution hit the legacy validation allowlist; retained legacy fixture value without network access.",
+    "Source audit required refresh after the final UI edit; regenerated and verify passed."
+  ],
+  "limitations": [
+    "no production release or public distribution",
+    "no browser visual acceptance in this batch",
+    "no cross-machine, power-loss or long-duration capacity verification",
+    "archive does not cancel cross-service requests already admitted",
+    "ambiguous intermediate remote rename can need manual alignment",
+    "last-recovery audit file is retained separately from cold business backup"
+  ],
+  "logSha256": {
+    "lifecycle-verify.log": "14e76301216fca545d67aab7f146278748416cf510da691442369de3e6282666",
+    "lifecycle-deploy-unit.log": "ab67fce6903c14d838d04cba06658eff8c9069ea420d26af50b41b42aea4eda6",
+    "lifecycle-image-build.log": "297d56eb67bfbbf00052f41b9282ce04f3cda457ea7fe427dde234f4885184eb",
+    "lifecycle-native-suite.log": "6ed031b55673c74e2a71138eeee24bdd71f141ff2cd78fa1b69b4121167caa43",
+    "lifecycle-repair.log": "4273d2a211d8c158e0344dd1be4f9d77fe350bda2376cd59c6eb345765a0d299",
+    "lifecycle-release-check.log": "7e4314dc454af3d3cefbd61bac3ab561d0aff2082d6a1bc884ecb32537b76402"
+  },
+  "sourceSha256": {
+    "apps/makit/server/common/selfhost/project-write-policy.ts": "77b35a06014853bc1724281fcbdaeb25ba2363e75e8e53b3402433a3e88428fd",
+    "apps/makit/server/database/workspace-record.store.ts": "22101d4e40e9f0ddda93c79d2e3d2ce72627f2784b0191e4c311bddbf059f3d6",
+    "apps/makit/server/modules/requirements/requirement-update-jobs.service.ts": "fd4a9cb0f77dd70a5a9ded977df26239602744cd0376b695560c3c2e1222caa9",
+    "apps/platform/server/project-knowledge-store.mjs": "fa44c57fa8f37df2f674a27fa4e75f6f8990aac558958adb043398da0e3986b6",
+    "apps/platform/server/suite-identity.mjs": "fce71a40b2057c839b98f14c39ce27f049f9b156703d1ab990329865654879d5",
+    "apps/platform/server/suite-project-clients.mjs": "171773ab1e30c46f04e6902b5df3e0f186fc7c05844f599f92d78189974d3be1",
+    "apps/platform/server/workspace-http.mjs": "b32c18b89b25aa9d66076b5d24c04bf3969ae7dd386188d8e15bc33dec2be404",
+    "apps/platform/server/workspace-store.mjs": "cf0f700c5998a74ad715983afad564eda4240f55c0b652ec5dabd6103ca47023",
+    "apps/platform/src/workspace.js": "94ed5efc1014a65bbb1685e062c9db37ede890df483cb46643409ba765784984",
+    "apps/platform/tests/project-commands.test.mjs": "8db1817101acdb79c75178d1401cb25026fa427fa5ac95568dcb72763b99c0b2",
+    "apps/platform/tests/workspace-ui.test.mjs": "7970863b01d09f5d5f6432d0993a554ced76ea1412a3c926a422f341408bd463",
+    "deploy/migration_policy.py": "0cd2697248f3499d1adaf761ad865c8c27dce4ce463defa4dfb3eb2ac64ff08f",
+    "deploy/migrations/core-runtime-v1.json": "c43fe0e1dd9b29ce960066b627c03a63c304132b32f6e13c345285497ddb137f",
+    "deploy/suite.py": "075067c8539949d1a6e4fc8acf83508f1d0a0a78eba783ce69430fa26f3fe3a9",
+    "deploy/test_runtime_repair.py": "bf6bfd3a03f5686069005154c49789f7f0f98dd2b3edb03556e01305927f6ee0",
+    "integrations/weknow/source/apps/server/src/core/auth/feishu/suite-collaboration.controller.ts": "ec8452ff2e1f332cd06a06b60ad963f5c6f6a920a831ec3009423fcaf179d098",
+    "integrations/weknow/source/apps/server/src/core/auth/feishu/suite-collaboration.service.ts": "02f611d04e15715ac1fb85eea04fd8d92ae770e4aad86986b58a5904adbb180f",
+    "packages/service/channel.mjs": "5d4bcf5e740b4b97b627e814000c69e72a7603983710a9eb913d4f62da6d2678",
+    "tests/local-core-e2e.mjs": "072e986d9d769a04356d3b2217309e3804c0cbb9a041d7ceca1a3aa66393a070",
+    "tests/local-core-restart.mjs": "876a0ab6483f94f7ef19e085a77f5a5b97a8f395962777f5274b7d101e284342",
+    "tools/test_runtime_repair.py": "f4ab57b639d00e53b525cb5c5417ebc8c632fc15b729e6bbee1b3fc2bf628706"
+  }
+}

@@ -2,9 +2,9 @@
 
 面向实验室和小型研发团队的自部署协作套件。以项目为主线，连接项目发起、需求推进与知识沉淀。
 
-**当前阶段：协作框架核心迁移与受管空间实现（0.7.0-dev.0），仅本地验证，尚未达到公开发行条件。** 项目编辑/改名使用通用资源、命令、持久事件和同步回执；新建受管知识空间以项目资格与原生 ACL 交集授权。四个核心模块之外的源码留存，运行配置拒绝启用。详见 [本批实施与验证](docs/design/collaboration-framework/IMPLEMENTATION-02.md)、[首批契约](docs/design/collaboration-framework/IMPLEMENTATION-01.md) 和 [整体方案](docs/design/collaboration-framework/README.md)。
+**当前阶段：项目联动与受限修复（0.8.0-dev.0），仅本地验证，尚未达到公开发行条件。** Kick 改名同步至 Makit 与受管 WeKnow 空间；归档保留数据并限制后续写入，项目详情展示各应用状态和重试。复用现有任务和数据库，没有增加服务或中间件。
 
-0.6 的 HTTPS 记录仍是历史基线。本批构建了本地候选，新增精确审核的跨库迁移及失败后继续升级协议；不支持任意历史版本升级。受管空间迁移提交后，禁止回退到缺少新权限边界的旧镜像。**没有发布线上或公开发行。**
+升级失败后可用同 schema、同迁移计划的修复候选继续恢复，不能修改已提交迁移。详见 [本批实施记录](docs/design/collaboration-framework/IMPLEMENTATION-03.md)、[核心迁移与权限边界](docs/design/collaboration-framework/IMPLEMENTATION-02.md) 和 [整体方案](docs/design/collaboration-framework/README.md)。历史验证记录保持原样；**没有发布线上或公开发行。**
 
 ## 产品范围
 

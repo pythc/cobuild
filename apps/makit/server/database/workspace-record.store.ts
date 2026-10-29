@@ -2,6 +2,7 @@ import { BadRequestException, Inject, Injectable, NotFoundException, Optional } 
 import type { Sql, TransactionSql } from 'postgres';
 import { randomBytes } from 'node:crypto';
 import { RequestContextService } from '../common/selfhost/context';
+import { assertProjectWrites } from '../common/selfhost/project-write-policy';
 import type {
   WorkspaceField, WorkspaceRecord, WorkspaceRecordFilter, WorkspaceUserIdType,
 } from './workspace-record.types';
@@ -17,6 +18,21 @@ interface StoredRecord {
 @Injectable()
 export class WorkspaceRecordStore {
   constructor(@Inject(WORKSPACE_SQL) private readonly client: Sql, @Optional() private readonly context?: RequestContextService) {}
+
+  private async writable(tx:TransactionSql,collectionId:string,rows:Array<Record<string,unknown>>){
+    if(process.env.COBUILD_IDENTITY_MODE!=='local')return;
+    const fields=[...rows];
+    if([process.env.FEISHU_COMMENTS_TABLE,process.env.FEISHU_ACCEPTANCE_TABLE].includes(collectionId)&&rows.length){
+      // Comments and acceptance items belong to their requirement's project.
+      // Resolve both old and new links before any mutation, in the same batch.
+      const parents=await tx<StoredRecord[]>`SELECT record_id,fields FROM makit_record
+        WHERE collection_id=${process.env.FEISHU_REQUIREMENTS_TABLE!} AND record_id IN (
+          SELECT unnest(makit_cell_values(value->'需求')) FROM jsonb_array_elements(${tx.json(rows as never)})
+        )`;
+      fields.push(...parents.map(r=>r.fields));
+    }
+    await assertProjectWrites(fields);
+  }
 
   async openIdByEmployeeId(employeeId: string): Promise<string | null> {
     const rows = await this.client<{ open_id: string }[]>`
@@ -201,6 +217,7 @@ export class WorkspaceRecordStore {
     const actor = await this.auditPerson();
     await this.client.begin(async (tx) => {
       await tx`SELECT pg_advisory_xact_lock(11020261020)`;
+      await this.writable(tx,collectionId,[canonical]);
       const sequence = await tx<{ value: string }[]>`
         UPDATE makit_collection SET next_number = next_number + 1
         WHERE id = ${collectionId} RETURNING next_number - 1 AS value
@@ -268,6 +285,11 @@ export class WorkspaceRecordStore {
     await this.client.begin(async (tx) => {
       await tx`SELECT pg_advisory_xact_lock(11020261020)`;
       // One transaction prevents partially successful bulk updates.
+      if(canonical.length){
+        const previous=await tx<StoredRecord[]>`SELECT record_id,fields FROM makit_record
+          WHERE collection_id=${collectionId} AND record_id IN ${tx(canonical.map(r=>r.recordId))} FOR UPDATE`;
+        await this.writable(tx,collectionId,[...previous.map(r=>r.fields),...canonical.map(r=>r.fields)]);
+      }
       for (const record of canonical) await this.patch(tx, collectionId, record.recordId, record.fields);
     });
     return Promise.all(records.map((record) => this.getRecord(collectionId, record.recordId, userIdType)));
@@ -276,6 +298,9 @@ export class WorkspaceRecordStore {
   async deleteRecord(collectionId: string, recordId: string): Promise<void> {
     await this.client.begin(async(tx)=>{
     await tx`SELECT pg_advisory_xact_lock(11020261020)`;
+    const previous=await tx<StoredRecord[]>`SELECT record_id,fields FROM makit_record
+      WHERE collection_id=${collectionId} AND record_id=${recordId} FOR UPDATE`;
+    await this.writable(tx,collectionId,previous.map(r=>r.fields));
     const rows = await tx`
       DELETE FROM makit_record WHERE collection_id = ${collectionId} AND record_id = ${recordId}
       RETURNING record_id

@@ -1,6 +1,6 @@
 {
   "name": "cobuild-suite",
-  "version": "0.7.0-dev.0",
+  "version": "0.8.0-dev.0",
   "private": true,
   "type": "module",
   "engines": {
@@ -23,6 +23,7 @@
     "test:https": "python3 tools/test_deployment.py --https",
     "test:https-browser": "python3 tools/test_deployment.py --https --with-browser",
     "test:deployment-unit": "python3 -m unittest discover -s deploy -p 'test_*.py'",
-    "test:project-contracts": "node --test apps/platform/tests/project-commands.test.mjs apps/platform/tests/project-sync.test.mjs apps/platform/tests/workspace-store.test.mjs apps/platform/tests/workspace-http.test.mjs apps/platform/tests/workspace-ui.test.mjs"
+    "test:project-contracts": "node --test apps/platform/tests/project-commands.test.mjs apps/platform/tests/project-sync.test.mjs apps/platform/tests/workspace-store.test.mjs apps/platform/tests/workspace-http.test.mjs apps/platform/tests/workspace-ui.test.mjs",
+    "test:runtime-repair": "python3 tools/test_runtime_repair.py"
   }
 }

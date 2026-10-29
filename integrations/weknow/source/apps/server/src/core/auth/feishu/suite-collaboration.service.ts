@@ -140,23 +140,21 @@ export class SuiteCollaborationService
           .execute();
     });
   }
-  async ensure(projectId: string) {
+  async ensure(projectId: string, desired: {revision:number;name:string;expectedName:string;archived:boolean}) {
     if (!this.native || !/^[-a-f0-9]{36}$/.test(projectId || ""))
       throw new ForbiddenException("Invalid suite project");
-    const { project, owner } = await this.call("project", { projectId });
-    if (
-      project.id !== projectId ||
-      project.phase !== "active" ||
-      project.archived ||
-      !project.knowledgeSpace?.requested ||
-      owner.subject !== project.ownerSubject
-    )
-      throw new ForbiddenException("Project is not approved");
     await this.syncDirectory();
     return this.db.transaction().execute(async (trx) => {
       await sql`SELECT pg_advisory_xact_lock(hashtextextended(${this.organizationId + ":project:" + projectId},0))`.execute(
         trx,
       );
+      // Fetch authority after serializing this project. A delayed request may
+      // never roll a newer project name or archive state backwards.
+      const {project,owner}=await this.call('project',{projectId});
+      if(project.id!==projectId||project.phase!=='active'||!project.knowledgeSpace?.requested||owner.subject!==project.ownerSubject)
+        throw new ForbiddenException('Project is not approved');
+      if(project.revision!==desired.revision||project.name!==desired.name||project.archived!==desired.archived)
+        throw new ConflictException({code:'PROJECT_CHANGED',message:'Project changed; retry current version'});
       const binding = await trx
         .selectFrom("suiteIdentityWorkspaces")
         .selectAll()
@@ -183,12 +181,22 @@ export class SuiteCollaborationService
           .where("id", "=", receipt.spaceId)
           .where("workspaceId", "=", binding.workspaceId)
           .where("deletedAt", "is", null)
+          .forUpdate()
           .executeTakeFirst();
         if (!space)
           throw new ConflictException(
             "Linked space unavailable; restore it rather than create a duplicate",
           );
+        const managed=await trx.selectFrom('suiteManagedSpaces').select('spaceId')
+          .where('spaceId','=',space.id).where('projectId','=',projectId).where('organizationId','=',this.organizationId).executeTakeFirst();
+        if(!managed)return {...this.receipt(project,space,'legacy')};
+        if(space.name!==project.name){
+          if(space.name!==desired.expectedName)throw new ConflictException({code:'KNOWLEDGE_NAME_CONFLICT',message:'Space was renamed independently'});
+          space=await trx.updateTable('spaces').set({name:project.name,updatedAt:new Date()})
+            .where('id','=',space.id).returningAll().executeTakeFirstOrThrow();
+        }
       } else {
+        if(project.archived)return {projectId,revision:project.revision,archived:true,mode:'suspended',spaceId:null,url:null};
         const account = await trx
           .selectFrom("suiteIdentityAccounts")
           .selectAll()
@@ -227,13 +235,16 @@ export class SuiteCollaborationService
           })
           .execute();
       }
+      return this.receipt(project,space,'managed');
+    });
+  }
+  private receipt(project:any,space:any,mode:string){
       return {
-        projectId,
+        projectId:project.id,revision:project.revision,archived:project.archived,mode,
         spaceId: space.id,
         name: space.name,
         slug: space.slug,
         url: process.env.APP_URL + "/s/" + space.slug,
       };
-    });
   }
 }

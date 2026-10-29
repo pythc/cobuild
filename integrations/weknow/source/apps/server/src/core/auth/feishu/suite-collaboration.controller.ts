@@ -30,13 +30,15 @@ export class SuiteCollaborationController {
       if (
         payload.organizationId !== process.env.LAB_IDENTITY_TENANT_KEY ||
         Object.keys(payload).some(
-          (k) => !["organizationId", "projectId"].includes(k),
-        )
+          (k) => !["organizationId", "projectId", "revision", "name", "expectedName", "archived"].includes(k),
+        ) || !Number.isSafeInteger(payload.revision) || payload.revision<1 ||
+        typeof payload.archived!=='boolean' ||
+        [payload.name,payload.expectedName].some(v=>typeof v!=='string'||!v.trim()||v.length>80)
       )
         throw Error();
     } catch {
       throw new UnauthorizedException("Invalid suite service request");
     }
-    return this.service.ensure(payload.projectId);
+    return this.service.ensure(payload.projectId,payload);
   }
 }

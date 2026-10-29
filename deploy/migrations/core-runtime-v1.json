@@ -1,0 +1,19 @@
+{
+  "format": 1,
+  "kind": "core-runtime-v1",
+  "rollbackCompatible": false,
+  "changes": {
+    "apps/platform/server/workspace-store.mjs": {
+      "before": "50ac8b187b471bb8b0709245488f653c6639d2b5c2a6a3ef31583d441cb5d909",
+      "after": "cf0f700c5998a74ad715983afad564eda4240f55c0b652ec5dabd6103ca47023"
+    },
+    "apps/platform/server/project-knowledge-store.mjs": {
+      "before": "88f5fed65d83cb0259fdee71b4a6d0c4f3c3d0bfcbc97ae1a13841bbe53cc158",
+      "after": "fa44c57fa8f37df2f674a27fa4e75f6f8990aac558958adb043398da0e3986b6"
+    }
+  },
+  "ledger": {
+    "platform/0001_operations": "79d56d1e854ee5c66503edee1686effcc3fda4e74c71bdcb181a82a433c0d36f",
+    "weknow/20261029T120000-suite-managed-spaces": "c512ac219c99bc4213795eeef7fa90efb182480a9e670582d970597ea3105334"
+  }
+}

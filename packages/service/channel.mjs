@@ -80,8 +80,8 @@ export async function serviceRequest(origin, path, payload, keyFile) {
   if (!r.ok)
     throw Object.assign(Error("Suite connection failed"), {
       status: r.status,
-      code: "SUITE_" + r.status,
-      permanent: [400, 401, 403, 404, 409, 422].includes(r.status),
+      code: ['KNOWLEDGE_NAME_CONFLICT','PROJECT_CHANGED'].includes(value.code)?value.code:"SUITE_" + r.status,
+      permanent: value.code!=='PROJECT_CHANGED'&&[400, 401, 403, 404, 409, 422].includes(r.status),
     });
   return value;
 }

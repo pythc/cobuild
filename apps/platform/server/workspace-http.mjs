@@ -115,12 +115,12 @@ export function createWorkspaceHttp({mail,knowledgeWorkerEnabled=true,apps=appCo
         if(handled){json(res,200,inbox.handle(actor,handled[1],input));return true;}
         const knowledgeRetry=/^projects\/([\w-]+)\/knowledge-space\/retry$/.exec(route);
         if(knowledgeRetry){z.object({}).strict().parse(input);const p=store.get(actor,knowledgeRetry[1]);
-          if(!p.canEdit)throw new WorkspaceError(403,'forbidden');store.knowledgeSpaces.retry(p.id);json(res,200,store.get(actor,p.id));return true;}
+          if(p.ownerSubject!==actor.subject&&!['admin','super_admin'].includes(actor.role))throw new WorkspaceError(403,'forbidden');store.knowledgeSpaces.retry(p.id);json(res,200,store.get(actor,p.id));return true;}
         const retry=/^projects\/([\w-]+)\/requirements-sync\/retry$/.exec(route);
         if(retry){
           if(!projectSyncEnabled)throw new WorkspaceError(503,'需求平台连接尚未启用');
           z.object({}).strict().parse(input);
-          const p=store.get(actor,retry[1]);if(p.archived||p.ownerSubject!==actor.subject&&!['admin','super_admin'].includes(actor.role))throw new WorkspaceError(403,'forbidden');
+          const p=store.get(actor,retry[1]);if(p.ownerSubject!==actor.subject&&!['admin','super_admin'].includes(actor.role))throw new WorkspaceError(403,'forbidden');
           store.requirementsSync.retry(p.id);json(res,200,store.get(actor,p.id));return true;
         }
         const m=/^projects\/([\w-]+)\/(update|rename|apply|review|archive|milestones)(?:\/([\w-]+))?$/.exec(route);

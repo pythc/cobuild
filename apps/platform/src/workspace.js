@@ -468,6 +468,7 @@ function renderProjectSide() {
     button.onclick=()=>openProjectDialog(project);side.append(button);return;
   }
   renderProjectSync(side, project);
+  renderKnowledgeSync(side, project);
   renderMilestones(side, project);
   renderProjectActions(side, project);
 }
@@ -475,7 +476,7 @@ function renderProjectSide() {
 function renderProjectSync(side, project) {
   const sync = project.requirementsSync;
   if (!sync) return;
-  const labels = { queued: '等待同步', syncing: '正在同步', retrying: '同步暂未完成，将自动重试', blocked: '同步未完成', synced: '已关联Makit' };
+  const labels = { queued: '等待同步', syncing: '正在同步', retrying: '同步暂未完成，将自动重试', blocked: '同步未完成', synced: project.archived ? '已归档 · 需求保留' : '已同步' };
   side.append(sideRow('Makit', labels[sync.state] || '同步未完成'));
   if (sync.state === 'synced' && sync.url && sync.url !== project.links?.requirements && isSafeHttpsUrl(sync.url)) {
     const a = el('a', 'ws-btn ws-btn-ghost', '查看项目需求');
@@ -483,7 +484,7 @@ function renderProjectSync(side, project) {
     a.onclick = e => { if (EMBEDDED) { e.preventDefault(); openExternal(sync.url); } };
     side.append(a);
   }
-  if (['retrying','blocked'].includes(sync.state) && !project.archived && (sameUser(project.ownerSubject) || isAdminLike())) {
+  if (['retrying','blocked'].includes(sync.state) && (sameUser(project.ownerSubject) || isAdminLike())) {
     const button = el('button', 'ws-btn ws-btn-ghost', '重新同步'); button.type = 'button'; button.disabled = state.busy;
     button.onclick = async () => {
       if (state.busy) return;
@@ -496,14 +497,27 @@ function renderProjectSync(side, project) {
   }
 }
 
+function renderKnowledgeSync(side,project) {
+  const sync=project.knowledgeSpace;
+  if(!sync){if(project.links?.knowledgeSpace)side.append(sideRow('WeKnow','手工关联 · 沿用空间原有权限'));return;}
+  const labels={awaiting_approval:'等待立项审批',queued:'等待同步',working:'正在同步',retrying:'暂未完成，将自动重试',blocked:'需要处理',ready:'已同步',archived:'已归档 · 空间访问暂停',legacy:'已关联 · 沿用空间原有权限'};
+  side.append(sideRow('WeKnow',labels[sync.state]||'状态待确认'));
+  if(sync.errorCode==='KNOWLEDGE_RECONNECT_REQUIRED')side.append(el('p','ws-error','WeKnow 授权连接已失效，请联系管理员重新连接后重试'));
+  if(sync.errorCode==='KNOWLEDGE_NAME_CONFLICT')side.append(el('p','ws-error','空间名称已单独修改。请在 WeKnow 将名称对齐为当前项目名，再重试同步。'));
+  if(sync.url&&sync.url!==project.links?.knowledgeSpace&&isSafeHttpsUrl(sync.url)){
+    const a=el('a','ws-btn ws-btn-ghost','打开关联空间');a.href=sync.url;a.target='_blank';a.rel='noopener noreferrer';
+    a.onclick=e=>{if(EMBEDDED){e.preventDefault();openExternal(sync.url);}};side.append(a);
+  }
+  if(['blocked','retrying'].includes(sync.state)&&(sameUser(project.ownerSubject)||isAdminLike())){
+    const b=el('button','ws-btn ws-btn-ghost','重试 WeKnow 同步');b.disabled=state.busy;
+    b.onclick=async()=>{if(state.busy)return;state.busy=true;b.disabled=true;
+      try{await api('projects/'+project.id+'/knowledge-space/retry',{method:'POST',data:{}});await loadProjects();}
+      catch(e){toastError(e);}finally{state.busy=false;renderProjectSide();}};side.append(b);
+  }
+}
+
 function renderMilestones(side, project) {
   side.append(el('h4', '', '里程碑'));
-  if(project.knowledgeSpace){
-    const labels={awaiting_approval:'立项通过后创建 WeKnow 空间',queued:'WeKnow 空间等待创建',working:'正在创建 WeKnow 空间',retrying:'WeKnow 空间创建暂未完成，将自动重试',blocked:'WeKnow 空间创建未完成，请检查连接或权限',ready:'WeKnow 项目空间已创建'};
-    const reconnect=project.knowledgeSpace.state==='blocked'&&project.knowledgeSpace.errorCode==='KNOWLEDGE_RECONNECT_REQUIRED';
-    const row=el('div','ws-detail-section');row.append(el('p','ws-muted',reconnect?'WeKnow 授权连接已失效，请联系管理员重新连接后重试':labels[project.knowledgeSpace.state]||'WeKnow 空间状态待确认'));
-    if(project.canEdit&&['blocked','retrying'].includes(project.knowledgeSpace.state)){const b=el('button','ws-btn','重试创建空间');b.onclick=async()=>{b.disabled=true;try{await api('projects/'+project.id+'/knowledge-space/retry',{method:'POST',data:{}});await loadProjects();}catch(e){toastError(e);}finally{b.disabled=false;}};row.append(b);}side.append(row);
-  }
   const ms = Array.isArray(project.milestones) ? project.milestones.slice() : [];
   ms.sort((a, b) => {
     if (a.status !== b.status) return a.status === 'done' ? 1 : -1;
@@ -1170,7 +1184,7 @@ function bindEvents() {
     }, 60000);
     let syncing = false;
     setInterval(async () => {
-      if (syncing || document.hidden || state.busy || state.dialogOpen || !state.profile || !state.projects.some(p => ['queued', 'syncing', 'retrying'].includes(p.requirementsSync?.state))) return;
+      if (syncing || document.hidden || state.busy || state.dialogOpen || !state.profile || !state.projects.some(p => (['queued', 'syncing', 'retrying'].includes(p.requirementsSync?.state)||['queued','working','retrying'].includes(p.knowledgeSpace?.state)))) return;
       syncing = true;
       try { await loadProjects(); } finally { syncing = false; }
     }, 5000);

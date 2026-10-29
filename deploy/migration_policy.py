@@ -24,7 +24,7 @@ def validate_contract(value):
 
 def validate_transition(value):
     fields(value,['format','kind','fromImage','fromContract','plan','planDigest'])
-    if type(value['format']) is not int or value['format']!=1 or value['kind'] not in ['makit-additive-v1','core-managed-v1'] or not isinstance(value['fromImage'],str) or not re.fullmatch(r'sha256:[a-f0-9]{64}',value['fromImage']):
+    if type(value['format']) is not int or value['format']!=1 or value['kind'] not in ['makit-additive-v1','core-managed-v1','core-runtime-v1'] or not isinstance(value['fromImage'],str) or not re.fullmatch(r'sha256:[a-f0-9]{64}',value['fromImage']):
         raise PolicyError('Unsupported migration transition')
     validate_contract(value['fromContract'])
 
@@ -94,6 +94,16 @@ CORE_SQL = 'packages/operations/migrations/0001_operations.sql'
 CORE_WEKNOW = 'integrations/weknow/source/apps/server/dist/database/migrations/20261029T120000-suite-managed-spaces.js'
 
 def core_plan(plan):
+    if isinstance(plan,dict) and plan.get('kind')=='core-runtime-v1':
+        fields(plan,['format','kind','changes','ledger','rollbackCompatible'])
+        if type(plan['format']) is not int or plan['format']!=1 or plan['rollbackCompatible'] is not False:raise PolicyError('Invalid runtime transition')
+        allowed={'apps/platform/server/workspace-store.mjs','apps/platform/server/project-knowledge-store.mjs'}
+        if not isinstance(plan['changes'],dict) or not plan['changes'] or not set(plan['changes'])<=allowed:raise PolicyError('Unreviewable runtime schema owner')
+        for entry in plan['changes'].values():
+            fields(entry,['before','after'])
+            if any(not isinstance(entry[k],str) or not re.fullmatch(r'[a-f0-9]{64}',entry[k]) for k in ['before','after']) or entry['before']==entry['after']:raise PolicyError('Invalid runtime source hashes')
+        if not isinstance(plan['ledger'],dict) or set(plan['ledger'])!={'platform/0001_operations','weknow/20261029T120000-suite-managed-spaces'} or any(not re.fullmatch(r'[a-f0-9]{64}',str(v)) for v in plan['ledger'].values()):raise PolicyError('Invalid retained core ledger')
+        return plan['ledger']
     fields(plan,['format','kind','changes','rollbackCompatible'])
     if type(plan['format']) is not int or plan['format']!=1 or plan['kind']!='core-managed-v1' or plan['rollbackCompatible'] is not False:raise PolicyError('Invalid reviewed core plan')
     changes=plan['changes']
@@ -108,23 +118,26 @@ def core_plan(plan):
     return {'platform/0001_operations':changes[CORE_SQL]['after'],'weknow/20261029T120000-suite-managed-spaces':changes[CORE_WEKNOW]['after']}
 
 def expected_ledger(transition):
-    if transition['kind']=='core-managed-v1':return core_plan(transition['plan'])
+    if transition['kind'] in ['core-managed-v1','core-runtime-v1']:return core_plan(transition['plan'])
     return {name:hashlib.sha256(sql.encode()).hexdigest() for name,sql in generated_files(transition['plan']).items()}
 
 def compatible_schemas(transition,base,target,applied,complete):
     # Old binaries do not enforce managed ACLs. Once any core step commits, no
     # automatic downgrade is allowed; a failed candidate requires forward repair.
-    if transition['kind']=='core-managed-v1' and applied:return [target] if complete else []
+    if transition['kind'] in ['core-managed-v1','core-runtime-v1'] and applied:return [target] if complete else []
     return [base]+([target] if complete else [])
 
 def validate_candidate(migration,contract,manifest,approved_runner=None):
     validate_transition(migration)
     validate_contract(contract)
     if migration['planDigest']!=digest({'fromImage':migration['fromImage'],'fromContract':migration['fromContract'],'toContract':contract,'plan':migration['plan']}):raise PolicyError('Migration plan digest differs')
-    expected=core_plan(migration['plan']) if migration['kind']=='core-managed-v1' else generated_files(migration['plan'])
-    if migration['kind']=='core-managed-v1':
+    expected=core_plan(migration['plan']) if migration['kind'] in ['core-managed-v1','core-runtime-v1'] else generated_files(migration['plan'])
+    if migration['kind'] in ['core-managed-v1','core-runtime-v1']:
         for path,entry in migration['plan']['changes'].items():
             if manifest['files'].get(path)!=entry['after']:raise PolicyError('Candidate core schema differs from reviewed plan')
+        if migration['kind']=='core-runtime-v1':
+            for path,key in [(CORE_SQL,'platform/0001_operations'),(CORE_WEKNOW,'weknow/20261029T120000-suite-managed-spaces')]:
+                if manifest['files'].get(path)!=expected[key]:raise PolicyError('Retained core migration differs')
         if not manifest.get('coreRunnerDigest'):raise PolicyError('Missing core migration runner')
         if approved_runner is not None and manifest.get('runnerDigest')!=approved_runner:raise PolicyError('Core dispatcher differs from reviewed runner')
         return expected
@@ -141,7 +154,7 @@ def authorize_transition(old,new,old_manifest,new_manifest):
     expected=validate_candidate(migration,new['contract'],new_manifest)
     if old['images']['core']['id']!=migration['fromImage'] or not same_schema(old['contract'],migration['fromContract']):raise PolicyError('Migration plan is for a different source release')
     old_files=old_manifest['files'];new_files=new_manifest['files']
-    if migration['kind']=='core-managed-v1':
+    if migration['kind'] in ['core-managed-v1','core-runtime-v1']:
         actual={path:{'before':old_files.get(path),'after':new_files.get(path)} for path in set(old_files)|set(new_files) if old_files.get(path)!=new_files.get(path)}
         if actual!=migration['plan']['changes']:raise PolicyError('Unplanned core schema change')
         if same_schema(old['contract'],new['contract']):raise PolicyError('Core transition must change schema')
@@ -171,6 +184,19 @@ def validate_repair(state,evidence):
     if names[:len(applied)]!=applied or any(evidence['newLedger'].get(k)!=state['newLedger'][k] for k in applied):
         raise PolicyError('Repair must retain every already-committed migration unchanged')
     return evidence
+
+def validate_runtime_repair(candidate,replacement,before,after):
+    """A forward repair can change runtime code, never the schema or its runner."""
+    if not candidate.get('migration') or candidate.get('migration')!=replacement.get('migration'):
+        raise PolicyError('Repair must retain the exact pending migration plan')
+    if not same_schema(candidate['contract'],replacement['contract']):
+        raise PolicyError('Repair must retain the pending schema contract')
+    if any(candidate['images'].get(k)!=replacement['images'].get(k) for k in ['postgres','redis','gateway']):
+        raise PolicyError('Repair cannot change infrastructure images')
+    for key in ['files','runnerDigest','coreRunnerDigest','makitLedger']:
+        if before.get(key)!=after.get(key):raise PolicyError('Repair changes schema files or migration runner')
+    if candidate['images']['core']['id']==replacement['images']['core']['id']:
+        raise PolicyError('Use resume-upgrade without --release for the same candidate')
 
 def validate_state(value):
     fields(value,['format','status','baseContract','targetContract','targetImage','transition','baseLedger','newLedger','applied','complete','actualSchema','compatibleSchemas'])

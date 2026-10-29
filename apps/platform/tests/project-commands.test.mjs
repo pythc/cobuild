@@ -135,3 +135,48 @@ test('additive activation preserves legacy data and reconciles a compatibility w
     assert.equal(store.operation(alice,renamed.operation.id).deliveries[0].receipt.throughGeneration,job.revision);
   } finally {store.close();}
 });
+
+test('managed knowledge rename survives restart, fences stale receipts and retains per-app failure',t=>{
+  const f=fixture(t,{syncProjects:false}),admin={...alice,role:'admin'};
+  let p=f.store.create(alice,{...fields,createKnowledgeSpace:true});
+  p=f.store.apply(alice,p.id,{revision:p.revision,application:'Fixture'});
+  p=f.store.review(admin,p.id,{revision:p.revision,decision:'approve',note:''});
+  let job=f.store.knowledgeSpaces.claim();const spaceId=randomUUID(),url='https://knowledge.110-lab.cn/s/project';
+  f.store.knowledgeSpaces.finish(job,{spaceId,url,name:job.name,mode:'managed'});
+  p=f.store.get(alice,p.id);
+  p=f.store.rename(alice,p.id,{requestId:randomUUID(),revision:p.revision,name:'Renamed'});
+  const op=p.operation.id,stale=f.store.knowledgeSpaces.claim();
+  assert.equal(stale.expectedName,fields.name);assert.equal(stale.name,'Renamed');
+  p=f.store.rename(alice,p.id,{requestId:randomUUID(),revision:p.revision,name:'Final'});
+  assert.equal(f.store.knowledgeSpaces.finish(stale,{spaceId,url,name:'Renamed',mode:'managed'}),false);
+  f.restart();job=f.store.knowledgeSpaces.claim();assert.equal(job.name,'Final');
+  f.store.knowledgeSpaces.fail(job,{permanent:true,code:'KNOWLEDGE_NAME_CONFLICT'});
+  assert.equal(f.store.operation(alice,op).state,'blocked');
+  assert.equal(f.store.get(alice,p.id).knowledgeSpace.errorCode,'KNOWLEDGE_NAME_CONFLICT');
+  f.store.knowledgeSpaces.retry(p.id);job=f.store.knowledgeSpaces.claim();
+  f.store.knowledgeSpaces.finish(job,{spaceId,url,name:'Final',mode:'managed'});
+  assert.equal(f.store.operation(alice,op).state,'succeeded');
+  assert.equal(f.store.get(alice,p.id).knowledgeSpace.spaceId,spaceId);
+  p=f.store.get(alice,p.id);
+  p=f.store.archive(alice,p.id,{revision:p.revision,archived:true});job=f.store.knowledgeSpaces.claim();
+  assert.equal(job.archived,true);f.store.knowledgeSpaces.finish(job,{spaceId,url,name:'Final',mode:'managed'});
+  assert.equal(f.store.get(alice,p.id).knowledgeSpace.state,'archived');
+  assert.deepEqual(f.store.projectWriteState([fields.name,'Renamed','Final','Other']).blockedNames.sort(),[fields.name,'Renamed','Final'].sort());
+  p=f.store.archive(alice,p.id,{revision:p.revision,archived:false});job=f.store.knowledgeSpaces.claim();
+  assert.equal(job.archived,false);f.store.knowledgeSpaces.finish(job,{spaceId,url,name:'Final',mode:'managed'});
+  assert.deepEqual(f.store.projectWriteState(['Final']).blockedNames,[]);
+});
+
+test('archive before first space creation does not invent a remote link; legacy spaces stay independent',t=>{
+  const f=fixture(t,{syncProjects:false}),admin={...alice,role:'admin'};
+  let p=f.store.create(alice,{...fields,createKnowledgeSpace:true});
+  p=f.store.apply(alice,p.id,{revision:p.revision,application:'Fixture'});
+  p=f.store.review(admin,p.id,{revision:p.revision,decision:'approve',note:''});
+  p=f.store.archive(alice,p.id,{revision:p.revision,archived:true});
+  let job=f.store.knowledgeSpaces.claim();f.store.knowledgeSpaces.finish(job,{spaceId:null,url:null,mode:'suspended'});
+  assert.equal(f.store.get(alice,p.id).knowledgeSpace.url,null);
+  p=f.store.archive(alice,p.id,{revision:p.revision,archived:false});
+  job=f.store.knowledgeSpaces.claim();f.store.knowledgeSpaces.finish(job,{spaceId:randomUUID(),url:'https://knowledge.110-lab.cn/s/legacy',name:'Independent name',mode:'legacy'});
+  p=f.store.get(alice,p.id);p=f.store.rename(alice,p.id,{requestId:randomUUID(),revision:p.revision,name:'Unrelated'});
+  assert.equal(f.store.knowledgeSpaces.claim(),null);assert.equal(p.operation.state,'succeeded');
+});

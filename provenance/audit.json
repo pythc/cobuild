@@ -60,6 +60,11 @@
       "currentSha256": "d2520a4ef33a773cc64acc10b7e6122ca4fa0e6229ddc76a77a14f49184c6473"
     },
     {
+      "path": "apps/platform/server/project-knowledge-store.mjs",
+      "baselineSha256": "88f5fed65d83cb0259fdee71b4a6d0c4f3c3d0bfcbc97ae1a13841bbe53cc158",
+      "currentSha256": "fa44c57fa8f37df2f674a27fa4e75f6f8990aac558958adb043398da0e3986b6"
+    },
+    {
       "path": "apps/platform/server/project-sync-store.mjs",
       "baselineSha256": "06ad883b1c8f9007cae9f2dcf6a25c0c699d2361151aebfabe63b5154d6302e6",
       "currentSha256": "fc7572e8c636e5b0b6666e15325bde2205fa728665f454ac6094005dd1f2d13d"
@@ -87,12 +92,12 @@
     {
       "path": "apps/platform/server/workspace-http.mjs",
       "baselineSha256": "9d9c1ade9d545dc6634ebba07ec826ff9a5df3bdc49067124fc54ea82c7e8821",
-      "currentSha256": "ad430b4d779c136a7c767fc99cb20d1eea0c72ddbd2afb8b68b0c79442f633ad"
+      "currentSha256": "b32c18b89b25aa9d66076b5d24c04bf3969ae7dd386188d8e15bc33dec2be404"
     },
     {
       "path": "apps/platform/server/workspace-store.mjs",
       "baselineSha256": "b847a21809bbcfbf8388e16639dbd4fdd4db297739d6024955a3db43432a43bb",
-      "currentSha256": "50ac8b187b471bb8b0709245488f653c6639d2b5c2a6a3ef31583d441cb5d909"
+      "currentSha256": "cf0f700c5998a74ad715983afad564eda4240f55c0b652ec5dabd6103ca47023"
     },
     {
       "path": "apps/platform/src/lab-session.js",
@@ -132,7 +137,12 @@
     {
       "path": "apps/platform/src/workspace.js",
       "baselineSha256": "6d0884f56c2dceaf951b80ace4ec65def32e618d2ef6b8d1e277797fb77838ed",
-      "currentSha256": "4de5197910f664f8164053f47d402032e6e6c4b3e130abd2b09d62e9782b8c90"
+      "currentSha256": "94ed5efc1014a65bbb1685e062c9db37ede890df483cb46643409ba765784984"
+    },
+    {
+      "path": "apps/platform/tests/workspace-ui.test.mjs",
+      "baselineSha256": "eae1a2156c166091b69842803ffe993f9a513e835a0c62ca9174af77b6e540a0",
+      "currentSha256": "7970863b01d09f5d5f6432d0993a554ced76ea1412a3c926a422f341408bd463"
     },
     {
       "path": "apps/makit/client/src/components/CoBuildBrand.tsx",
@@ -200,6 +210,11 @@
       "currentSha256": "62653a446a0b47cc7ddc5873a8ed03cea98b5162313b87f76b0ee253af358eb6"
     },
     {
+      "path": "apps/makit/server/database/workspace-record.store.ts",
+      "baselineSha256": "b79d7b32cabd7a0485e4f96180839f7229b5768b547d4f9303958defd08462cd",
+      "currentSha256": "22101d4e40e9f0ddda93c79d2e3d2ce72627f2784b0191e4c311bddbf059f3d6"
+    },
+    {
       "path": "apps/makit/server/modules/operations/operations.model.ts",
       "baselineSha256": "258106b4015174da3ea1d1e617549c335e89cc71fb9e270d2ca5bc415d75d2cb",
       "currentSha256": "9740e853cbc76d7c42dd23fb4bdae5e560ed7661762d92a9d0c08ddefe6d46ac"
@@ -237,7 +252,7 @@
     {
       "path": "apps/makit/server/modules/requirements/requirement-update-jobs.service.ts",
       "baselineSha256": "5e898e6666bd47600553c4f6ab7bb5147f3aaab0d9de22158fb3bac05e9ea4f8",
-      "currentSha256": "0aa632c7d6a2abf544074af8cbd99b8af3e199e7da0303459c52e720d35f0a87"
+      "currentSha256": "fd4a9cb0f77dd70a5a9ded977df26239602744cd0376b695560c3c2e1222caa9"
     },
     {
       "path": "apps/makit/server/modules/requirements/requirements-command.service.ts",
@@ -1418,7 +1433,7 @@
     {
       "rule": "lab-service-address",
       "path": "apps/platform/src/workspace.js",
-      "line": 1080
+      "line": 1094
     },
     {
       "rule": "lab-service-address",
@@ -1814,6 +1829,16 @@
       "rule": "lab-service-address",
       "path": "apps/platform/tests/persistent-login.test.mjs",
       "line": 34
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/project-commands.test.mjs",
+      "line": 144
+    },
+    {
+      "rule": "lab-service-address",
+      "path": "apps/platform/tests/project-commands.test.mjs",
+      "line": 179
     },
     {
       "rule": "lab-service-address",

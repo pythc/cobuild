@@ -103,10 +103,11 @@ check(
   r.status === 200 && r.data.title === "Project design",
   "project document persisted",
 );
+const currentProject=(await req(base+'/api/workspace/projects/'+saved.projectId)).data;
 const receipt = await serviceRequest(
   cfg.origins.weknow,
   "/api/suite/projects/ensure",
-  { organizationId: saved.organizationId, projectId: saved.projectId },
+  { organizationId: saved.organizationId, projectId: saved.projectId,revision:currentProject.revision,name:currentProject.name,expectedName:currentProject.name,archived:currentProject.archived },
   join(process.env.COBUILD_DATA_DIR, "weknow.service.key"),
 );
 check(
