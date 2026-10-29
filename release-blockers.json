@@ -43,9 +43,10 @@
       "evidence": [
         "provenance/native-runtime-checks.json",
         "docs/LOCAL-RUNTIME.md",
-        "provenance/collaboration-checks.json"
+        "provenance/collaboration-checks.json",
+        "provenance/makit-local-brand-checks.json"
       ],
-      "scopeNote": "Native core runtime and account/project service keys verified locally. Unported extensions, external integrations, branding portability and deployment remain open."
+      "scopeNote": "Native core runtime and account/project service keys verified locally. Makit header and light/dark favicons now use bundled local SVG assets, verified in actual Chrome. Unported extensions, external integrations, remaining branding portability and target deployment remain open."
     },
     {
       "id": "identity",

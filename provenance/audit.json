@@ -145,6 +145,16 @@
       "currentSha256": "e0c2068803b9f89c444b50e8d8d89003a1b4e5823e0340c18c97f2f09976bef9"
     },
     {
+      "path": "apps/makit/client/index.html",
+      "baselineSha256": "a3dffe7a4f232d61b9842d4f64f5feb16a06f7c58d2fdaf3156453808c88aa65",
+      "currentSha256": "886c6ce0b22e9c270bf46e62310f7244ddb1a1e6a5ce3d9c7b0f0c4f2db0551e"
+    },
+    {
+      "path": "apps/makit/client/selfhost.html",
+      "baselineSha256": "7589dd20d233fb6ee9aaaab0a73489ff57561be9bb007923a67734218fadbbfb",
+      "currentSha256": "8c2170add901a033ee5a377c76d69c24cc5d98962ee4e784cd194911e1d93dd3"
+    },
+    {
       "path": "apps/makit/client/src/api/index.ts",
       "baselineSha256": "eb1026b54feb0f8c8a4603a82b51c477b2f92f72bfca814db9459068fbd7e298",
       "currentSha256": "94d0006ea5e8b2bc98127d4b2ec3587da916d21f433b5bdcc5054accd0043327"
@@ -158,6 +168,11 @@
       "path": "apps/makit/client/src/components/relay/RelayWidget.tsx",
       "baselineSha256": "dd677ae43f6308c161b6956f335dbeef7954dcedb3cf9b0cf6b62c4e569ffadf",
       "currentSha256": "c51df95698af8418383fe15e525f1866483f5a16d50f73b955e4b084626c6626"
+    },
+    {
+      "path": "apps/makit/client/src/lib/brand.ts",
+      "baselineSha256": "7d56ee67a56fb0558a382b49a1fe5903f795857b09f040da7bf89dc27a9c2a79",
+      "currentSha256": "8ddb4b00b06eb1ff29268a6e621f8336e46abd83197b97122dd2d07f803c84fb"
     },
     {
       "path": "apps/makit/client/src/pages/ProjectsPage/ProjectActionsDialog.tsx",

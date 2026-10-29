@@ -1,0 +1,96 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-29",
+  "scope": "Makit local brand and favicon assets; local verification only",
+  "baseCommit": "ebb71d39d2e29dfc438035aaad9166723e5e021d",
+  "productionAccess": false,
+  "externalMessages": false,
+  "publicReleaseReady": false,
+  "assetSource": {
+    "path": "apps/platform/src/assets/cobuild/requirements-logo.svg",
+    "sha256": "d9cbee3eb69634ef1f6a132e2d4066065f90a8a066c64a65b86d95eeed18309b",
+    "blueCopyIsExact": true,
+    "darkVariant": "same vector paths with white fill"
+  },
+  "checks": {
+    "makitClientBuild": true,
+    "localAssetsMatchBuild": true,
+    "legacyBrandUrlsAbsentFromClientAndBuild": true,
+    "browser": {
+      "passed": true,
+      "version": "156.0.8078.73",
+      "checks": 37,
+      "brandChecks": [
+        "Makit header icon decodes from the local application",
+        "Makit light favicon is served locally as SVG",
+        "Makit dark favicon is served locally as SVG"
+      ],
+      "scope": "real local services, isolated Chrome context, existing project flow with temporary asset checks"
+    },
+    "visualReview": {
+      "passed": true,
+      "scope": "blue and white SVG preview plus actual Makit narrow header"
+    },
+    "nativeServices": {
+      "productionAccess": false,
+      "stages": [
+        {
+          "name": "makit-migrations",
+          "exitCode": 0
+        },
+        {
+          "name": "makit-role",
+          "exitCode": 0
+        },
+        {
+          "name": "core-e2e",
+          "exitCode": 0
+        },
+        {
+          "name": "managed-native-queries",
+          "exitCode": 0
+        },
+        {
+          "name": "collections",
+          "exitCode": 0
+        },
+        {
+          "name": "restart-e2e",
+          "exitCode": 0
+        },
+        {
+          "name": "project-state-browser",
+          "exitCode": 0
+        }
+      ],
+      "passed": true,
+      "ownedContainersRemoved": true
+    },
+    "cleanup": {
+      "ownedContainersRemoved": true,
+      "unrelatedContainers": 11,
+      "idsAndStartTimesUnchanged": true
+    }
+  },
+  "sourceSha256": {
+    "apps/makit/client/src/lib/brand.ts": "8ddb4b00b06eb1ff29268a6e621f8336e46abd83197b97122dd2d07f803c84fb",
+    "apps/makit/client/index.html": "886c6ce0b22e9c270bf46e62310f7244ddb1a1e6a5ce3d9c7b0f0c4f2db0551e",
+    "apps/makit/client/selfhost.html": "8c2170add901a033ee5a377c76d69c24cc5d98962ee4e784cd194911e1d93dd3",
+    "apps/makit/client/public/brand/makit.svg": "d9cbee3eb69634ef1f6a132e2d4066065f90a8a066c64a65b86d95eeed18309b",
+    "apps/makit/client/public/brand/makit-on-dark.svg": "9e0df74421a25ff2efdbae4b04a0b1dea1e8772d57f1429a65aa16dd554b8dae"
+  },
+  "evidenceSha256": {
+    "makit-local-brand-browser.mjs": "da7518a737574b2f157c9919eeef283a71af95b4c4e8398671e3b7f712edd2c4",
+    "makit-local-brand-build.log": "13edbd83f565c0a594c45e51ea56f47b21456b3b5503b05a95ddedc48fd220da",
+    "makit-local-brand-native.log": "2027a28ed1de422936fa0e2eb31a0655fe5f96b6706f52bf50a309369ea41000",
+    "makit-local-brand-audit.log": "f605500d084f9c2b303a3802b7ee9afb1aef7e3275b32c0cb08af10b3766ee9b",
+    "project-state-browser/report.json": "44cd8a4f23fe77fd5f55bad708f1a50c8f117bcdc1c665778b42cea3404cbfa7",
+    "project-state-browser/makit-brand-variants.png": "669b0abb13ad2538f8c96d87b85abb3752d7a3ec741d3c3aa69d05e2ea00c3cc",
+    "project-state-browser/makit-narrow.png": "ce1edce389b52a84f49710e9252e7619c938d72fa3da9bc4a7d92072a5681d64"
+  },
+  "limits": [
+    "No production, plugin or hosted Miaoda deployment performed.",
+    "Current local acceptance uses HTTP; no new migration or immutable release image was needed for this static-asset change.",
+    "Other branding portability and license review remain separate release gates."
+  ]
+}
