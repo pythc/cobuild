@@ -270,9 +270,19 @@
       "currentSha256": "7efdfed7395e6c9908ff69d3eadef22dccf192251dd1ab2671e0ebdf29d57659"
     },
     {
+      "path": "apps/makit/server/modules/requirements/requirement-ai-review.service.ts",
+      "baselineSha256": "37abb4c9574ebf6d7908f02669ce699710f442af39b85c02565a2334ec533aba",
+      "currentSha256": "4f6307834a8a7e1653bf6434a3c5b119a1e36bd04c732923e47b68ef8bda5139"
+    },
+    {
       "path": "apps/makit/server/modules/requirements/requirement-operation-outbox.service.ts",
       "baselineSha256": "e07350866a9c929c9501aa9e7bd731ca0001f7451e47358c3a430a9f6d7d0311",
       "currentSha256": "512aab9f39621338f7b4ef3f9797dabec565b61495ecfa94140e5b12780a7487"
+    },
+    {
+      "path": "apps/makit/server/modules/requirements/requirement-release-readiness.service.ts",
+      "baselineSha256": "e759c232e735ae2774386146f8f00ed679aecc2ad31221464f8be81b6cb615f8",
+      "currentSha256": "7ec52f722f44cc267721764c9bc2295c2a0313f2718f77eb0739035d62771ea2"
     },
     {
       "path": "apps/makit/server/modules/requirements/requirement-update-jobs.service.ts",
@@ -308,6 +318,16 @@
       "path": "apps/makit/shared/api.interface.ts",
       "baselineSha256": "ef35829d8608abec7010438a2e33ed5255b00c8dda595bf07ec38a06405305cb",
       "currentSha256": "f084de5cd0614e16b26b572948923c5697b0b6517f234e35ab14c7c4af5ad476"
+    },
+    {
+      "path": "apps/makit/test/unit/iteration-configuration.spec.ts",
+      "baselineSha256": "227c61b7cf30fa5a72d6c2b5b1329bae35443dccc76475afb5ca4327984f1e79",
+      "currentSha256": "b74c168c26efcb62a66bf5f9f16eb649952fed5a1cce2b907c9b48dc5b017af0"
+    },
+    {
+      "path": "apps/makit/test/unit/requirement-release-readiness.service.spec.ts",
+      "baselineSha256": "850ae10ae7e5b678569ee2825f145ef924e8bd11afc26b59649aee2f99474d76",
+      "currentSha256": "7025a780a4faf63294c4bd3f5df76661f66f69b0db571e92711e0faff5fe050e"
     },
     {
       "path": "integrations/weknow/source/apps/client/package.json",

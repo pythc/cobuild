@@ -16,6 +16,7 @@ test("core adapters derive native identity, callbacks, session age and disabled 
   assert.equal(a.LAB_IDENTITY_TENANT_KEY, b.LAB_IDENTITY_TENANT_KEY);
   assert.equal(b.JWT_TOKEN_EXPIRES_IN, "30d");
   assert.equal(a.MAKIT_WORKERS_ENABLED, "false");
+  assert.equal(a.MAKIT_AI_REVIEW_ENABLED, "false");
   assert.equal(a.MAKIT_EXTERNAL_WRITES_ENABLED, "false");
   assert.equal(b.FEISHU_ENABLED, "false");
   assert.equal(a.SERVER_HOST, "127.0.0.1");
@@ -66,6 +67,6 @@ test("disabled services cannot receive an environment, and public destinations c
 test('public code source never enables legacy Makit workers or credentials',()=>{
   const enabled={...config,codeSources:{githubPublic:true}};
   const env=localApplicationEnvironment(enabled,'makit',org);
-  assert.equal(env.MAKIT_WORKERS_ENABLED,'false');assert.equal(env.MAKIT_EXTERNAL_WRITES_ENABLED,'false');
+  assert.equal(env.MAKIT_WORKERS_ENABLED,'false');assert.equal(env.MAKIT_AI_REVIEW_ENABLED,'false');assert.equal(env.MAKIT_EXTERNAL_WRITES_ENABLED,'false');
   assert.ok(!Object.keys(env).some(k=>k.startsWith('GITHUB_')));
 });

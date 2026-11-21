@@ -52,7 +52,7 @@ try {
       COBUILD_WEKNOW_ORIGIN: config.modules.includes('weknow') ? config.origins.weknow : '',
       COBUILD_SERVICE_KEY_FILE: data + '/makit.service.key', MAKIT_PUBLIC_URL: config.origins.makit,
       SERVER_HOST: '0.0.0.0', SERVER_PORT: String(ports.makit), MAKIT_STORAGE: 'postgres',
-      MAKIT_WORKERS_ENABLED: 'false', MAKIT_EXTERNAL_WRITES_ENABLED: 'false', REQUIREMENT_PLATFORM_APP_ID: 'cobuild-local',
+      MAKIT_WORKERS_ENABLED: 'false', MAKIT_AI_REVIEW_ENABLED: String(config.integrations.ai), MAKIT_EXTERNAL_WRITES_ENABLED: 'false', REQUIREMENT_PLATFORM_APP_ID: 'cobuild-local',
       MAKIT_DATABASE_URL: `postgres://makit_application:${secrets.makitDatabase}@postgres:5432/makit`,
       MAKIT_SESSION_ENCRYPTION_KEY: secrets.makitSession };
     const migration = { ...env, MAKIT_MIGRATION_DATABASE_URL: `postgres://suite_admin:${secrets.database}@postgres:5432/makit`, MAKIT_APPLICATION_PASSWORD: secrets.makitDatabase };

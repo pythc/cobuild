@@ -43,6 +43,7 @@ export function localApplicationEnvironment(input, id, organizationId) {
         SERVER_PORT: url.port,
         MAKIT_STORAGE: "postgres",
         MAKIT_WORKERS_ENABLED: "false",
+        MAKIT_AI_REVIEW_ENABLED: String(config.integrations.ai),
         MAKIT_EXTERNAL_WRITES_ENABLED: "false",
         REQUIREMENT_PLATFORM_APP_ID: "cobuild-local",
       }

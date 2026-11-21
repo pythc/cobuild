@@ -638,7 +638,7 @@ describe('configured rules apply to real command paths', () => {
     });
     const feishu = { searchRecords: jest.fn() };
     const service = new RequirementReleaseReadinessService(
-      {} as never,
+      { execute: jest.fn().mockResolvedValue([]) } as never,
       feishu as never,
       {} as never,
       {} as never,

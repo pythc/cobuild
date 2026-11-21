@@ -1,0 +1,140 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-21",
+  "version": "0.14.0-dev.0",
+  "baseCommit": "6d0035b07e2a74eca1a8d6cd73a2ac8f90bd3f18",
+  "scope": "Targeted Makit backport into native self-hosted suite; local validation and private Git history publication",
+  "productionAccess": false,
+  "externalMessages": false,
+  "publicReleaseReady": false,
+  "sourceSnapshots": [
+    {
+      "path": "apps/makit/server/modules/requirements/requirement-ai-review.service.ts",
+      "snapshotSha256": "4f6307834a8a7e1653bf6434a3c5b119a1e36bd04c732923e47b68ef8bda5139"
+    },
+    {
+      "path": "apps/makit/server/modules/requirements/requirement-release-readiness.service.ts",
+      "snapshotSha256": "7ec52f722f44cc267721764c9bc2295c2a0313f2718f77eb0739035d62771ea2"
+    },
+    {
+      "path": "apps/makit/server/modules/requirements/self-test-report.model.ts",
+      "snapshotSha256": "4b79b841eeb4f3f85c3b8d1f3dcb6adcb335994d79e80623a2aa163e19c7c1b6"
+    }
+  ],
+  "sourceMaintenance": {
+    "importedFiles": 2776,
+    "modifiedImportedFiles": 96,
+    "missingImportedFiles": 0,
+    "audit": "hashes and existing line pointers updated only; previous pattern results retained without re-screening",
+    "securityScan": "not run per user instruction"
+  },
+  "preserved": {
+    "schemaAndMigrationFiles": 149,
+    "nativeSourceFiles": 2124,
+    "verifiedAgainst": "6d0035b07e2a74eca1a8d6cd73a2ac8f90bd3f18",
+    "newSchema": false,
+    "newDependencies": false
+  },
+  "checks": {
+    "root": 89,
+    "projectContracts": 86,
+    "deploymentPolicyUnit": 46,
+    "makitTargeted": {
+      "suites": 7,
+      "tests": 87
+    },
+    "makitRunnableUnit": {
+      "suites": 82,
+      "tests": 677,
+      "excludedLegacySuites": [
+        "reviewer-notification-migration.spec.ts",
+        "requirement-update-job-migration.spec.ts",
+        "platform-migrations.spec.ts",
+        "operations-openapi-contract.spec.ts"
+      ],
+      "reason": "Expected post-deploy SQL and docs/openapi.json absent already in base HEAD"
+    },
+    "makitTypecheck": true,
+    "makitServerBuild": true,
+    "native": {
+      "core-e2e": {
+        "passed": true,
+        "checks": 207,
+        "scope": "native identity + directory + Kick/Makit/WeKnow collaboration",
+        "externalMessages": false
+      },
+      "managed-native-queries": {
+        "passed": true,
+        "checks": 4,
+        "scope": "native bulk ACL SQL; transaction rolled back"
+      },
+      "collections": {
+        "passed": true,
+        "checks": 7,
+        "scope": "native collection restart preservation and fail-closed initialization"
+      },
+      "restart-e2e": {
+        "passed": true,
+        "checks": 15,
+        "scope": "three-service restart and account password revocation"
+      }
+    },
+    "browser": {
+      "passed": true,
+      "checks": 77,
+      "screenshots": [
+        "project-overview-desktop.png",
+        "project-overview-narrow.png",
+        "project-overview-narrow-detail.png",
+        "project-access-desktop.png",
+        "project-access-narrow.png",
+        "kick-edit-desktop.png",
+        "kick-archived-desktop.png",
+        "project-overview-populated.png",
+        "makit-edit-desktop.png",
+        "weknow-project-desktop.png",
+        "project-access-member.png",
+        "kick-narrow.png",
+        "makit-narrow.png",
+        "project-transfer-request.png",
+        "project-transfer-accept.png",
+        "project-transfer-accept-narrow.png",
+        "project-transfer-complete.png"
+      ],
+      "visualInspection": [
+        "makit-edit-desktop.png",
+        "makit-narrow.png",
+        "project-overview-populated.png",
+        "weknow-project-desktop.png"
+      ],
+      "limitations": "WeKnow space screenshot contains loading list; new report behavior validated via real HTTP rather than new browser UI assertions"
+    },
+    "makitFinalTargeted": {
+      "suites": 5,
+      "tests": 92,
+      "passed": true
+    }
+  },
+  "cleanup": {
+    "existingContainers": 15,
+    "existingUnchanged": true,
+    "ownedNativeContainersRemaining": [],
+    "preexistingPreviewStillRunning": true
+  },
+  "notRun": [
+    "security scan",
+    "audit.py and wrapper verify/release checks",
+    "fresh dependency install",
+    "new container image lifecycle",
+    "production deployment",
+    "real AI or notification send"
+  ],
+  "gitPublication": {
+    "target": "https://github.com/pythc/cobuild",
+    "visibility": "private",
+    "targetBranch": "main",
+    "history": "preserve existing commits",
+    "release": false
+  },
+  "localEvidence": ".local/evidence/makit-backport-0.14.0-dev.0/"
+}

@@ -19,7 +19,7 @@ function database(rows: Record<string, unknown>[]) {
   const orderBy = jest.fn().mockResolvedValue(rows);
   const where = jest.fn().mockReturnValue({ orderBy, limit: jest.fn().mockResolvedValue(rows.slice(0,1)) });
   const from = jest.fn().mockReturnValue({ where });
-  return { select: jest.fn().mockReturnValue({ from }), where };
+  return { select: jest.fn().mockReturnValue({ from }), execute: jest.fn().mockResolvedValue([]), where };
 }
 
 function snapshot(overrides: Record<string, unknown> = {}) {

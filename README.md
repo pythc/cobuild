@@ -2,9 +2,9 @@
 
 面向实验室和小型研发团队的自部署协作套件。以项目为主线，连接项目发起、需求推进与知识沉淀。
 
-**当前阶段：项目概览的只读代码状态（0.13.0-dev.0），仅本地验证，尚未达到公开发行条件。** 可按需读取公共 GitHub 仓库的近期 PR 和指定提交检查；默认关闭，不使用凭据，不启动代码写入或通知。
+**当前阶段：Makit 评审控制与自测报告读取回补（0.14.0-dev.0），已完成本地验证，尚未达到公开发行条件。** 保留通用身份和项目协作；AI 评审默认关闭，自测报告页面与发布检查统一读取。
 
-当前完成度与待办见 [实施状态](docs/design/collaboration-framework/STATUS.md)，本批边界见 [实施记录 08](docs/design/collaboration-framework/IMPLEMENTATION-08.md)，整体目标见 [改造方案](docs/design/collaboration-framework/README.md)。历史验证记录保持原样；**没有发布线上或公开发行。**
+当前完成度与待办见 [实施状态](docs/design/collaboration-framework/STATUS.md)，本批边界见 [实施记录 09](docs/design/collaboration-framework/IMPLEMENTATION-09.md)，整体目标见 [改造方案](docs/design/collaboration-framework/README.md)。历史验证记录保持原样；**没有发布线上或公开发行。** GitHub 私有开发仓库：[pythc/cobuild](https://github.com/pythc/cobuild)，保留本地提交历史。
 
 ## 产品范围
 

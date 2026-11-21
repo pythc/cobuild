@@ -518,6 +518,27 @@ check(
   detail.requirement.handlers.some((p) => p.id === member.id),
   "native member assignment preserved",
 );
+// Backported review controls run through native identity and the application database.
+const engineeringUrl = config.origins.makit + '/api/workspace/requirements/' + requirement;
+result = await request(engineeringUrl + '/engineering', { jar: 'member' });
+check(result.status === 200, 'native member reads the retained engineering workspace');
+check(unwrap(result).history.length === 0, 'disabled AI leaves new requirement review history empty');
+result = await request(engineeringUrl + '/release-readiness', { jar: 'member' });
+check(result.status === 200, 'release readiness remains readable with AI disabled');
+check(unwrap(result).checks.find(x => x.key === 'self_test_report')?.passed === false, 'missing report still blocks its release check');
+const savedReport = 'Verified native identity, project assignment, permission revocation and retry paths.';
+result = await request(engineeringUrl + '/artifacts/self_test_report', { jar: 'member', method: 'PATCH', body: { sourceType: 'inline', content: savedReport } });
+check(result.status === 200, 'native member saves a self-test artifact with AI disabled');
+check(unwrap(result).artifacts.self_test_report?.content === savedReport, 'existing workspace displays the saved artifact');
+check(unwrap(result).history.length === 0, 'saving an artifact does not enqueue AI');
+result = await request(engineeringUrl + '/release-readiness', { jar: 'member' });
+check(result.status === 200 && unwrap(result).checks.find(x => x.key === 'self_test_report')?.passed === true, 'release gate reads the same saved artifact');
+result = await request(engineeringUrl + '/reviews/clarity/retry', { jar: 'member', body: {} });
+check(result.status === 503 && JSON.stringify(result.data).includes('AI 评审已停用'), 'native HTTP retry reports AI disabled');
+result = await request(engineeringUrl + '/engineering', { jar: 'member' });
+check(result.status === 200 && unwrap(result).history.length === 0, 'retry preserves artifacts and review history');
+result = await request(engineeringUrl + '/engineering', { jar: 'anonymous-review' });
+check(result.status === 401, 'engineering data still requires login');
 const updateId = randomUUID(),
   updateInput = {
     clientMutationId: updateId,

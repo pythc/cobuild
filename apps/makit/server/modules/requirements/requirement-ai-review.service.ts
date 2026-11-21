@@ -41,6 +41,7 @@ import { RequirementAccessService } from './requirement-access.service';
 import { hasMeaningfulText, isDefectType } from './requirements.model';
 import { RequirementsQueryService } from './requirements-query.service';
 import { isOnlyMaterialTemplate } from '@shared/material-templates';
+import { resolveSelfTestReport, type SelfTestReportArtifact } from './self-test-report.model';
 import { OperationsSettingsService } from '../operations/operations-settings.service';
 import { OperationsTelemetryService } from '../operations/operations-telemetry.service';
 import {
@@ -272,7 +273,7 @@ function parseJsonArray<T>(value: string): T[] {
   }
 }
 
-function iso(value: Date | string | null): string | null {
+function iso(value: Date | string | number | null): string | null {
   if (!value) return null;
   const date: Date = value instanceof Date ? value : new Date(value);
   return Number.isNaN(date.getTime()) ? null : date.toISOString();
@@ -299,6 +300,8 @@ export class RequirementAiReviewService
   ) {}
 
   onModuleInit(): void {
+    if (process.env.MAKIT_AI_REVIEW_ENABLED === 'false') return;
+
     if (process.env.MAKIT_WORKERS_ENABLED === 'false') return;
     setTimeout((): void => this.dispatchPending(), 0);
     this.recoveryTimer = setInterval(
@@ -329,12 +332,14 @@ export class RequirementAiReviewService
         LIMIT 30
       `),
     ]);
-    const artifactMap = new Map<RequirementArtifactKind, ArtifactRow>(
-      artifacts.map((row): [RequirementArtifactKind, ArtifactRow] => [
+    const artifactMap = new Map<RequirementArtifactKind, SelfTestReportArtifact>(
+      artifacts.map((row): [RequirementArtifactKind, SelfTestReportArtifact] => [
         row.kind,
         row,
       ]),
     );
+    const selfTestReport = resolveSelfTestReport(requirement, artifacts);
+    if (selfTestReport) artifactMap.set('self_test_report', selfTestReport);
     const hashes: Record<RequirementAiReviewType, string> = {
       clarity: this.clarityMaterial(requirement)?.sourceHash || '',
       technical_stability:
@@ -492,6 +497,8 @@ export class RequirementAiReviewService
       this.artifactRows(requirementId),
     ]);
     this.access.assertCanUpdate(requirement, {}, actor);
+    if (process.env.MAKIT_AI_REVIEW_ENABLED === 'false') throw new ServiceUnavailableException('AI 评审已停用');
+
     if (isDefectType(requirement.type)) {
       throw new BadRequestException('缺陷需求不需要 AI 评审');
     }
@@ -521,6 +528,8 @@ export class RequirementAiReviewService
       'technical_stability',
       'delivery_readiness',
     ];
+    if (process.env.MAKIT_AI_REVIEW_ENABLED === 'false') { this.access.assertCanUpdate(requirement, {}, actor); return {requirementId:requirement.id,triggered:[],skipped:allTypes.map(type=>({type,reason:'AI 评审已停用'}))}; }
+
     if (isDefectType(requirement.type)) {
       return {
         requirementId: requirement.id,
@@ -614,6 +623,8 @@ export class RequirementAiReviewService
     after: RequirementSummary,
     actor: CurrentUserSummary,
   ): Promise<void> {
+    if (process.env.MAKIT_AI_REVIEW_ENABLED === 'false') return;
+
     if (isDefectType(after.type) || isTicketType(after.type)) {
       await this.serviceRoleDatabase.run((database) =>
         database.execute(
@@ -647,6 +658,8 @@ export class RequirementAiReviewService
     requirement: RequirementSummary,
     actor: CurrentUserSummary,
   ): Promise<void> {
+    if (process.env.MAKIT_AI_REVIEW_ENABLED === 'false') return;
+
     if (isDefectType(requirement.type) || isTicketType(requirement.type)) return;
     const material = this.clarityMaterial(requirement);
     if (!material) return;
@@ -697,6 +710,8 @@ export class RequirementAiReviewService
     requirement: RequirementSummary,
     type: RequirementAiReviewType,
   ): Promise<void> {
+    if (process.env.MAKIT_AI_REVIEW_ENABLED === 'false') return;
+
     const material: ReviewMaterial = await this.currentMaterial(
       requirement,
       type,
@@ -847,7 +862,7 @@ export class RequirementAiReviewService
   }
 
   private artifactSummary(
-    row?: ArtifactRow,
+    row?: SelfTestReportArtifact,
   ): RequirementArtifactSummary | null {
     if (!row) return null;
     return {
@@ -922,6 +937,8 @@ export class RequirementAiReviewService
     mode: 'auto' | 'manual' = 'auto',
     batchId: string = randomUUID(),
   ): Promise<void> {
+    if (process.env.MAKIT_AI_REVIEW_ENABLED === 'false') return;
+
     const snapshot: string = material.snapshot.slice(0, MAX_SOURCE_LENGTH);
     const dedupeKey: string = this.hash(
       `${material.requirementId}:${material.type}:${material.sourceHash}:${MODEL}:${RULE_SET_VERSION}${mode === 'manual' ? `:${batchId}` : ''}`,
@@ -960,6 +977,8 @@ export class RequirementAiReviewService
   }
 
   private dispatchPending(): void {
+    if (process.env.MAKIT_AI_REVIEW_ENABLED === 'false') return;
+
     if (process.env.MAKIT_WORKERS_ENABLED === 'false') return;
     const work = (): Promise<void> => this.processPending();
     void (
@@ -970,6 +989,8 @@ export class RequirementAiReviewService
   }
 
   private async processPending(): Promise<void> {
+    if (process.env.MAKIT_AI_REVIEW_ENABLED === 'false') return;
+
     if (this.processing) return;
     this.processing = true;
     try {
@@ -1011,6 +1032,8 @@ export class RequirementAiReviewService
   }
 
   private async processOne(id: string): Promise<boolean> {
+    if (process.env.MAKIT_AI_REVIEW_ENABLED === 'false') return false;
+
     const lockToken: string = randomUUID();
     const policy =
       (await this.settings?.get())?.ai || DEFAULT_OPERATIONS_SETTINGS.ai;
@@ -1129,6 +1152,8 @@ export class RequirementAiReviewService
     usage: ModelUsage;
     providerRequestId: string | null;
   }> {
+    if (process.env.MAKIT_AI_REVIEW_ENABLED === 'false') throw new ServiceUnavailableException('AI 评审已停用');
+
     const apiKey: string = process.env.DEEPSEEK_API_KEY?.trim() || '';
     if (!apiKey) throw new ServiceUnavailableException('AI 评审服务尚未配置');
     const definition = REVIEW_DEFINITIONS[type];

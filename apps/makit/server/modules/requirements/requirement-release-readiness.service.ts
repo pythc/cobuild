@@ -3,7 +3,7 @@ import {
   DRIZZLE_DATABASE,
   type PostgresJsDatabase,
 } from '@lark-apaas/fullstack-nestjs-core';
-import { and, desc, eq } from 'drizzle-orm';
+import { and, desc, eq, sql } from 'drizzle-orm';
 import type {
   GitHubActorSummary,
   PullRequestCheckSummary,
@@ -22,8 +22,8 @@ import {
 import { DEFAULT_REPOSITORY } from '../pull-requests/github-pull-requests.service';
 import { PullRequestRefreshCoordinatorService } from '../pull-requests/pull-request-refresh-coordinator.service';
 import { FeishuService, type BaseRecord } from './feishu.service';
-import { hasMeaningfulText } from './requirements.model';
 import { RequirementsQueryService } from './requirements-query.service';
+import { resolveSelfTestReport, selfTestReportReadiness, type SelfTestReportArtifact } from './self-test-report.model';
 
 type PullRequestSnapshotRecord = typeof pullRequestSnapshot.$inferSelect;
 
@@ -163,8 +163,9 @@ export class RequirementReleaseReadinessService {
       patch.releaseOwnerLarkUserIds,
       requirement.releaseOwners.length,
     );
-    const selfTestReport: string =
-      patch.selfTestReport ?? requirement.selfTestReport;
+    const selfTestReport = !selected || selected.has('self_test_report')
+      ? await this.selfTestReportCheck(requirement, patch.selfTestReport)
+      : null;
     const requireMerged: boolean = targetStatus === '已发布';
     const pullRequestMerged: boolean = pullRequest?.state === 'MERGED';
     const githubChecksPassed: boolean = Boolean(
@@ -217,8 +218,8 @@ export class RequirementReleaseReadinessService {
       this.check(
         'self_test_report',
         '自测报告已填写',
-        hasMeaningfulText(selfTestReport),
-        hasMeaningfulText(selfTestReport) ? '已填写' : '缺少有效自测报告',
+        selfTestReport?.passed ?? false,
+        selfTestReport?.detail ?? '未启用此检查',
       ),
       this.check(
         'testers',
@@ -372,6 +373,17 @@ export class RequirementReleaseReadinessService {
       throw new BadRequestException(`发布就绪检查未通过：${visible}${suffix}`);
     }
     return readiness;
+  }
+
+  private async selfTestReportCheck(
+    requirement: RequirementSummary,
+    legacyOverride?: string,
+  ): Promise<{ passed: boolean; detail: string }> {
+    const artifacts = await this.db.execute<SelfTestReportArtifact>(sql`
+      SELECT * FROM requirement_artifact
+      WHERE requirement_id = ${requirement.id} AND kind = 'self_test_report'
+    `);
+    return selfTestReportReadiness(resolveSelfTestReport(requirement, artifacts, legacyOverride));
   }
 
   private assertReleaseStatus(targetStatus: string): void {
