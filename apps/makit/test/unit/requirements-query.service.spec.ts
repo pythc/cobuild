@@ -278,6 +278,32 @@ describe('RequirementsQueryService paged queries', () => {
     expect(result.items.map((item) => item.title)).toEqual(['我负责处理']);
   });
 
+  it('finds participation across all requirement roles by identity', async () => {
+    const roles = [
+      '当前处理人', '提出人', '产品人员', '研发人员', '测试人员',
+      'FO', '发布负责人', '关注人',
+    ];
+    const records = roles.map((role, index) =>
+      requirementRecord(String(index), role, {
+        当前处理人: [{ id: 'ou_other', name: '当前用户' }],
+        [role]: [{ id: 'ou_handler', name: '当前用户' }],
+      }),
+    );
+    const { service } = createService([
+      ...records,
+      requirementRecord('other', '同名成员参与的需求', {
+        当前处理人: [{ id: 'ou_other', name: '当前用户' }],
+      }),
+    ]);
+
+    const result = await service.requirementsPage(
+      identity,
+      { participatingOnly: true },
+      false,
+    );
+    expect(result.items.map((item) => item.title).sort()).toEqual(roles.sort());
+  });
+
   it('keeps legacy status filter links working during migration', async () => {
     const { service } = createService([
       requirementRecord('1', '历史已评审需求', { 状态: '已评审' }),

@@ -293,7 +293,8 @@ export default function RequirementsPage() {
   const foId = searchParams.get('fo') || '';
   const risk = (searchParams.get('risk') || '') as RiskFilter;
   const groupBy = (searchParams.get('group') || '') as GroupBy;
-  const mineOnly = searchParams.get('mine') === '1';
+  const participatingOnly = searchParams.get('mine') === '1';
+  const mineOnly = !participatingOnly && searchParams.get('assigned') === '1';
   const page: number = Math.max(
     1,
     Math.trunc(Number(searchParams.get('page')) || 1),
@@ -339,6 +340,7 @@ export default function RequirementsPage() {
     foOwnerId: foId,
     risk: risk || undefined,
     mineOnly,
+    participatingOnly,
     groupBy: groupBy || undefined,
     sortBy,
     sortOrder,
@@ -348,6 +350,7 @@ export default function RequirementsPage() {
 
   const updateParam = (key: string, value: string): void => {
     const next: URLSearchParams = new URLSearchParams(searchParams);
+    if (key === 'mine' && value) next.delete('assigned');
     if (value) next.set(key, value);
     else next.delete(key);
     if (!['page', 'create', 'view'].includes(key)) next.delete('page');
@@ -433,7 +436,8 @@ export default function RequirementsPage() {
     testerId ||
     foId ||
     risk ||
-    mineOnly,
+    mineOnly ||
+    participatingOnly,
   );
   const activeFilterCount: number = [
     search,
@@ -449,7 +453,7 @@ export default function RequirementsPage() {
     testerId,
     foId,
     risk,
-    mineOnly ? '1' : '',
+    mineOnly || participatingOnly ? '1' : '',
   ].filter(Boolean).length;
   const startColumnResize = (
     column: RequirementColumnKey,
@@ -550,7 +554,8 @@ export default function RequirementsPage() {
     ...(risk
       ? [{ key: 'risk', label: `风险：${RISK_FILTER_LABELS[risk]}` }]
       : []),
-    ...(mineOnly ? [{ key: 'mine', label: '仅我处理' }] : []),
+    ...(mineOnly ? [{ key: 'assigned', label: '仅我处理' }] : []),
+    ...(participatingOnly ? [{ key: 'mine', label: '我参与的' }] : []),
   ];
 
   return (
@@ -898,11 +903,12 @@ export default function RequirementsPage() {
             </PopoverContent>
           </Popover>
           <Button
-            variant={mineOnly ? 'secondary' : 'outline'}
+            variant={participatingOnly ? 'secondary' : 'outline'}
             className="h-10"
-            onClick={() => updateParam('mine', mineOnly ? '' : '1')}
+            aria-pressed={participatingOnly}
+            onClick={() => updateParam('mine', participatingOnly ? '' : '1')}
           >
-            我处理的
+            我参与的
           </Button>
           <div className="col-span-2 flex h-10 items-center justify-between gap-3 lg:col-span-1 lg:justify-end">
             <span className="whitespace-nowrap text-xs text-muted-foreground">

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import './ticket-responsive.css';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
@@ -36,8 +36,10 @@ import {
 } from '@/api';
 import InlineRequirementFieldEditor from '@/components/InlineRequirementFieldEditor';
 import RequirementClarityReviewPanel from '@/components/RequirementClarityReviewPanel';
+import { RequirementContentEditor } from '@/components/RequirementContentEditor';
 import RequirementEngineeringPanel from '@/components/RequirementEngineeringPanel';
 import RequirementFormDialog from '@/components/RequirementFormDialog';
+import RequirementMarkdown from '@/components/RequirementMarkdown';
 import RequirementTypeBadge from '@/components/RequirementTypeBadge';
 import {
   downloadRelayResource,
@@ -46,7 +48,6 @@ import {
 import QuickPersonnelEditor from '@/components/QuickPersonnelEditor';
 import StatusTransitionDialog from '@/components/StatusTransitionDialog';
 import { ErrorState, LoadingState } from '@/components/WorkspaceStates';
-import { TiptapEditorComplete } from '@/components/business-ui/tiptap-editor';
 import { UserSelect } from '@/components/business-ui/user-select';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -72,13 +73,13 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
-import { Streamdown } from '@/components/ui/streamdown';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import {
   errorMessage,
   formatDate,
-  isHtmlContent,
+  hasMarkdownFormatting,
+  parseRequirementContent,
   peopleLabel,
   STATUS_STYLES,
 } from '@/lib/requirement-utils';
@@ -138,6 +139,10 @@ export default function RequirementDetailPage() {
   const [transitionOpen, setTransitionOpen] = useState(false);
   const [comment, setComment] = useState('');
   const [acceptanceTitle, setAcceptanceTitle] = useState('');
+  const showAcceptancePreview = useMemo(
+    () => hasMarkdownFormatting(acceptanceTitle),
+    [acceptanceTitle],
+  );
   const [acceptanceOwners, setAcceptanceOwners] = useState<string[]>([]);
   const [relationType, setRelationType] =
     useState<RelationCreateInput['type']>('相关');
@@ -153,6 +158,11 @@ export default function RequirementDetailPage() {
     useState<WorkflowRequiredField>();
 
   const detailQuery = useLazyRequirementDetail(recordId, activeTab);
+  const introductionValue = detailQuery.data?.requirement.introduction || '';
+  const introduction = useMemo(
+    () => parseRequirementContent(introductionValue),
+    [introductionValue],
+  );
   const cachedType = queryClient.getQueryData<WorkspaceBrowserResponse>(BROWSER_WORKSPACE_QUERY_KEY)
     ?.requirements.find((item) => item.id === recordId)?.type;
   const knownType = detailQuery.data?.requirement.type || cachedType;
@@ -319,7 +329,6 @@ export default function RequirementDetailPage() {
   const acceptanceCompleted = detail.acceptanceItems.filter(
     (item) => item.completed,
   ).length;
-  const introductionIsHtml = isHtmlContent(requirement.introduction);
 
   return (
     <div className={cn('space-y-5', ticket && 'ticket-detail-page')}>
@@ -580,16 +589,17 @@ export default function RequirementDetailPage() {
                   ) : null}
                 </div>
                 {requirement.introduction ? (
-                  introductionIsHtml ? (
-                    <TiptapEditorComplete
-                      value={requirement.introduction}
+                  introduction.format === 'richText' ? (
+                    <RequirementContentEditor
+                      value={introduction.value}
                       readOnly
                       className="min-h-0 w-full"
                     />
                   ) : (
-                    <Streamdown className="rounded-lg border px-4 py-3 text-sm">
-                      {requirement.introduction}
-                    </Streamdown>
+                    <RequirementMarkdown
+                      value={introduction.value}
+                      className="overflow-x-auto rounded-lg border px-4 py-3 text-sm"
+                    />
                   )
                 ) : (
                   <div className="rounded-lg border border-dashed px-4 py-8 text-center text-sm text-muted-foreground">
@@ -713,13 +723,15 @@ export default function RequirementDetailPage() {
               >
                 {requirement.capabilities.canManageAcceptance ? (
                   <div className="rounded-lg border p-4">
-                    <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_280px_auto]">
-                      <Input
+                    <div className="grid items-start gap-3 md:grid-cols-[minmax(0,1fr)_280px_auto]">
+                      <Textarea
+                        aria-label="新增验收项"
                         value={acceptanceTitle}
                         onChange={(event) =>
                           setAcceptanceTitle(event.target.value)
                         }
-                        placeholder="新增一条可验证的验收项"
+                        placeholder="新增一条可验证的验收项，支持 Markdown"
+                        className="max-h-64"
                       />
                       <UserSelect
                         multiple
@@ -741,15 +753,37 @@ export default function RequirementDetailPage() {
                         添加
                       </Button>
                     </div>
+                    {showAcceptancePreview && (
+                      <div className="mt-3 max-h-52 overflow-auto rounded-lg border bg-muted/35 p-3">
+                        <p className="mb-2 text-xs font-medium text-muted-foreground">预览</p>
+                        <RequirementMarkdown value={acceptanceTitle} />
+                      </div>
+                    )}
                   </div>
                 ) : null}
                 <div className="space-y-2">
                   {detail.acceptanceItems.map((item) => (
-                    <label
+                    <div
                       key={item.id}
-                      className="flex cursor-pointer items-start gap-3 rounded-lg border px-4 py-3 hover:bg-muted/40"
+                      className={cn(
+                        'flex items-start gap-3 rounded-lg border px-4 py-3',
+                        requirement.capabilities.canManageAcceptance &&
+                          'cursor-pointer hover:bg-muted/40',
+                      )}
+                      onClick={(event) => {
+                        if (
+                          !requirement.capabilities.canManageAcceptance ||
+                          (event.target as Element).closest('a, button, input') ||
+                          window.getSelection()?.toString()
+                        ) return;
+                        acceptanceToggleMutation.mutate({
+                          item,
+                          completed: !item.completed,
+                        });
+                      }}
                     >
                       <Checkbox
+                        aria-labelledby={`acceptance-title-${item.id}`}
                         checked={item.completed}
                         disabled={!requirement.capabilities.canManageAcceptance}
                         onCheckedChange={(checked) =>
@@ -759,22 +793,28 @@ export default function RequirementDetailPage() {
                           })
                         }
                       />
-                      <span className="min-w-0 flex-1">
-                        <span
+                      <div className="min-w-0 flex-1">
+                        <div
+                          id={`acceptance-title-${item.id}`}
                           className={cn(
-                            'block text-sm font-medium',
+                            'overflow-x-auto text-sm font-medium',
                             item.completed &&
                               'text-muted-foreground line-through',
                           )}
                         >
-                          {item.title}
-                        </span>
-                        <span className="mt-1 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-                          <span>负责人：{peopleLabel(item.owner)}</span>
-                          {item.note ? <span>{item.note}</span> : null}
-                        </span>
-                      </span>
-                    </label>
+                          <RequirementMarkdown value={item.title} className="[&>:first-child]:mt-0 [&>:last-child]:mb-0" />
+                        </div>
+                        <div className="mt-1 text-xs text-muted-foreground">
+                          负责人：{peopleLabel(item.owner)}
+                          {item.note && (
+                            <RequirementMarkdown
+                              value={item.note}
+                              className="overflow-x-auto text-inherit [&>:first-child]:mt-1 [&>:last-child]:mb-0"
+                            />
+                          )}
+                        </div>
+                      </div>
+                    </div>
                   ))}
                   {!detail.acceptanceItems.length ? (
                     <p className="py-10 text-center text-sm text-muted-foreground">

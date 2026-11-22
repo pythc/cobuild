@@ -80,7 +80,7 @@ export function TiptapEditor({
     queueMicrotask(() => {
       const current = editor.getHTML();
       if (valueRef.current !== current) {
-        editor.commands.setContent(value);
+        editor.commands.setContent(value, { emitUpdate: false });
       }
     });
   }, [value, editor]);

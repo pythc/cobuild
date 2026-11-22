@@ -18,7 +18,7 @@ import type { User } from '@/components/business-ui/types/user';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { TiptapEditorComplete } from '@/components/business-ui/tiptap-editor';
+import { RequirementContentEditor } from '@/components/RequirementContentEditor';
 import { Label } from '@/components/ui/label';
 import {
   Dialog,
@@ -86,7 +86,8 @@ export default function ConfiguredStatusTransitionDialog({
     const timer = window.setTimeout(() => {
       const field = contentRef.current?.querySelector<HTMLElement>(`[data-workflow-field="${initialFocusField}"]`);
       field?.scrollIntoView({ block: 'center', behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
-      field?.querySelector<HTMLElement>('input,textarea,button,[contenteditable="true"]')?.focus();
+      const editor = field?.querySelector<HTMLElement>('textarea,[contenteditable="true"]');
+      (editor ?? field?.querySelector<HTMLElement>('input,button'))?.focus();
     }, 80);
     return () => window.clearTimeout(timer);
   }, [open, initialFocusField]);
@@ -149,6 +150,7 @@ export default function ConfiguredStatusTransitionDialog({
   useEffect(() => {
     if (!open) {
       initialized.current = false;
+      setText({});
       return;
     }
     if (initialized.current) return;
@@ -366,10 +368,10 @@ export default function ConfiguredStatusTransitionDialog({
                       }
                     />
                   ) : field === 'introduction' ? (
-                    <TiptapEditorComplete
-                      value={text[field] || ''}
+                    <RequirementContentEditor
+                      value={text.introduction || ''}
                       onValueChange={(value) =>
-                        setText((previous) => ({ ...previous, [field]: value }))
+                        setText((previous) => ({ ...previous, introduction: value }))
                       }
                       className="min-h-48 max-h-96"
                     />

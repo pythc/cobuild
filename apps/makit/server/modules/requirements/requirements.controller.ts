@@ -294,6 +294,7 @@ export class RequirementsController {
       foOwnerId: raw.fo,
       risk,
       mineOnly: raw.mine === '1' || raw.mine === 'true',
+      participatingOnly: raw.participating === '1' || raw.participating === 'true',
       excludeId: raw.excludeId,
       groupBy: [
         'status',

@@ -21,6 +21,7 @@ import {
   type TiptapEditorProps,
 } from '@/components/business-ui/tiptap-editor/tiptap-editor';
 import { cn } from '@/lib/utils';
+import type { Extensions } from '@tiptap/react';
 
 export interface TiptapEditorCompleteProps extends Omit<
   TiptapEditorProps,
@@ -28,6 +29,7 @@ export interface TiptapEditorCompleteProps extends Omit<
 > {
   /** 占位符文本 */
   placeholder?: string;
+  additionalExtensions?: Extensions;
 }
 
 /**
@@ -57,10 +59,14 @@ export interface TiptapEditorCompleteProps extends Omit<
 export function TiptapEditorComplete({
   className,
   placeholder,
+  additionalExtensions = [],
   readOnly = false,
   ...props
 }: TiptapEditorCompleteProps) {
-  const extensions = [CompleteKit.configure({ placeholder: { placeholder } })];
+  const extensions = [
+    CompleteKit.configure({ placeholder: { placeholder } }),
+    ...additionalExtensions,
+  ];
 
   return (
     <TiptapEditor

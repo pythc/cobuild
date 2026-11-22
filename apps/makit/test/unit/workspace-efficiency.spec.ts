@@ -1,5 +1,9 @@
 import { validateSavedViewConfig } from '../../shared/workspace-efficiency';
 import {
+  legacySavedViewConfig,
+  savedViewSearch,
+} from '../../client/src/lib/saved-view-query';
+import {
   materialTemplate,
   isOnlyMaterialTemplate,
 } from '../../shared/material-templates';
@@ -22,11 +26,20 @@ describe('saved view contracts', () => {
       }),
     ).toBe(true);
   });
+  it('restores participant filters and preserves legacy handler views', () => {
+    const participation = { query: { participatingOnly: true } };
+    expect(validateSavedViewConfig(participation)).toBe(true);
+    expect(savedViewSearch(participation).toString()).toBe('mine=1');
+    const legacy = legacySavedViewConfig('mine=1&view=cards');
+    expect(legacy?.query).toEqual({ mineOnly: true });
+    expect(legacy && savedViewSearch(legacy).toString()).toBe('assigned=1&view=cards');
+  });
   it.each([
     { query: { page: 5 } },
     { query: { redirect: 'https://evil.test' } },
     { query: { pageSize: 1000 } },
     { query: { mineOnly: 'yes' } },
+    { query: { participatingOnly: 'yes' } },
     { query: { groupBy: 'untrusted' } },
     { query: { sortBy: 'body' } },
     { query: {}, columnWidths: { title: Number.NaN } },

@@ -563,6 +563,7 @@ export interface RequirementListQuery {
   foOwnerId?: string;
   risk?: RequirementListRiskFilter;
   mineOnly?: boolean;
+  participatingOnly?: boolean;
   excludeId?: string;
   groupBy?: RequirementListGroupBy;
   sortBy?: RequirementListSortBy;

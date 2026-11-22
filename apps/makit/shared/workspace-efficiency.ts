@@ -147,7 +147,7 @@ export function validateSavedViewConfig(raw: unknown): raw is SavedViewConfig {
       if (typeof item !== 'string' || item.length > 500) return false;
     } else if (key in ENUMS) {
       if (typeof item !== 'string' || !ENUMS[key].includes(item)) return false;
-    } else if (key === 'mineOnly') {
+    } else if (key === 'mineOnly' || key === 'participatingOnly') {
       if (typeof item !== 'boolean') return false;
     } else if (key === 'pageSize') {
       if (!Number.isInteger(item) || Number(item) < 1 || Number(item) > 100)
