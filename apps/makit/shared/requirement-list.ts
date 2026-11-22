@@ -107,6 +107,7 @@ class RequirementListSelector {
   private matchesListQuery(
     item: RequirementSummary,
     query: RequirementListQuery,
+    currentPersonIds: ReadonlySet<string>,
   ): boolean {
     const keyword: string = query.search?.trim().toLowerCase() || '';
     if (
@@ -190,6 +191,21 @@ class RequirementListSelector {
       return false;
     }
     if (query.mineOnly && !item.isMine) return false;
+    if (
+      query.participatingOnly &&
+      ![
+        item.handlers,
+        item.proposers,
+        item.productOwners,
+        item.developers,
+        item.testers,
+        item.foOwners,
+        item.releaseOwners,
+        item.followers,
+      ].some((people) => people.some((person) => currentPersonIds.has(person.id)))
+    ) {
+      return false;
+    }
     if (query.risk === 'in-progress' && !requirementInProgress(item)) {
       return false;
     }
@@ -426,9 +442,14 @@ class RequirementListSelector {
     input: RequirementListQuery,
   ): RequirementListResponse {
     const query = this.normalizedListQuery(input);
+    const currentPersonIds = new Set(
+      query.participatingOnly
+        ? [snapshot.currentUser.openId, snapshot.currentUser.employeeId].filter(Boolean)
+        : [],
+    );
     const filtered: RequirementSummary[] = snapshot.requirements
       .filter((item: RequirementSummary): boolean =>
-        this.matchesListQuery(item, query),
+        this.matchesListQuery(item, query, currentPersonIds),
       )
       .sort((left: RequirementSummary, right: RequirementSummary): number =>
         this.compareRequirements(left, right, query.sortBy, query.sortOrder),

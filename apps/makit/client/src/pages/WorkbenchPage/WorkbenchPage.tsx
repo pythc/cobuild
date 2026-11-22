@@ -30,28 +30,28 @@ const STAT_CARDS = [
   {
     key: 'mine',
     label: '我处理的',
-    href: '/requirements?mine=1',
+    href: '/requirements?assigned=1',
     icon: UserRoundCheck,
     tone: 'text-primary bg-primary/10',
   },
   {
     key: 'inProgress',
     label: '进行中',
-    href: '/requirements?mine=1&risk=in-progress',
+    href: '/requirements?assigned=1&risk=in-progress',
     icon: CircleDot,
     tone: 'text-blue-600 bg-blue-50',
   },
   {
     key: 'blocked',
     label: '阻塞',
-    href: '/requirements?mine=1&risk=blocked',
+    href: '/requirements?assigned=1&risk=blocked',
     icon: AlertTriangle,
     tone: 'text-red-600 bg-red-50',
   },
   {
     key: 'overdue',
     label: '逾期',
-    href: '/requirements?mine=1&risk=overdue',
+    href: '/requirements?assigned=1&risk=overdue',
     icon: Clock3,
     tone: 'text-orange-600 bg-orange-50',
   },
@@ -149,7 +149,7 @@ export default function WorkbenchPage() {
           <CardHeader className="flex-row items-center justify-between space-y-0 p-5 pb-3">
             <CardTitle className="text-base">待我推进</CardTitle>
             <Button variant="ghost" size="sm" asChild>
-              <Link to="/requirements?mine=1">
+              <Link to="/requirements?assigned=1">
                 查看全部
                 <ArrowRight className="size-4" />
               </Link>
@@ -180,7 +180,7 @@ export default function WorkbenchPage() {
           <CardHeader className="flex-row items-center justify-between space-y-0 p-5 pb-3">
             <CardTitle className="text-base">风险提醒</CardTitle>
             <Button variant="ghost" size="sm" asChild>
-              <Link to="/requirements?mine=1&sortBy=risk&sortOrder=desc">
+              <Link to="/requirements?assigned=1&sortBy=risk&sortOrder=desc">
                 查看全部
                 <ArrowRight className="size-4" />
               </Link>

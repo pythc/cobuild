@@ -216,6 +216,7 @@ export async function getRequirements(
     fo: query.foOwnerId,
     risk: query.risk,
     mine: query.mineOnly ? '1' : undefined,
+    participating: query.participatingOnly ? '1' : undefined,
     excludeId: query.excludeId,
     groupBy: query.groupBy,
     sortBy: query.sortBy,

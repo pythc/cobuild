@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type {
   RequirementArtifactKind,
@@ -18,7 +18,8 @@ import {
 import { toast } from 'sonner';
 import { saveRequirementArtifact } from '@/api';
 import RequirementAiReviewCard from '@/components/RequirementAiReviewCard';
-import { TiptapEditorComplete } from '@/components/business-ui/tiptap-editor';
+import { RequirementContentEditor } from '@/components/RequirementContentEditor';
+import RequirementMarkdown from '@/components/RequirementMarkdown';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -32,7 +33,11 @@ import {
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useRequirementEngineering } from '@/hooks/use-requirement-engineering';
-import { errorMessage, formatDate } from '@/lib/requirement-utils';
+import {
+  errorMessage,
+  formatDate,
+  parseRequirementContent,
+} from '@/lib/requirement-utils';
 import { cn } from '@/lib/utils';
 import MaterialTemplateButton from './MaterialTemplateButton';
 import { isOnlyMaterialTemplate } from '@shared/material-templates';
@@ -73,6 +78,8 @@ function ArtifactSection({
   const Icon = definition.icon;
   const [open, setOpen] = useState(false);
   const [sourceType, setSourceType] = useState<RequirementArtifactSourceType>('inline');
+  const storedContent = artifact?.content || '';
+  const initial = useMemo(() => parseRequirementContent(storedContent), [storedContent]);
   const [content, setContent] = useState('');
   const [documentUrl, setDocumentUrl] = useState('');
   useEffect(() => { if (focusRequest?.kind === kind) setOpen(true); }, [focusRequest?.nonce, focusRequest?.kind, kind]);
@@ -80,9 +87,9 @@ function ArtifactSection({
   useEffect(() => {
     if (!open) return;
     setSourceType(artifact?.sourceType || 'inline');
-    setContent(artifact?.content || '');
+    setContent(storedContent);
     setDocumentUrl(artifact?.documentUrl || '');
-  }, [artifact, open]);
+  }, [artifact, open, storedContent]);
 
   const saveMutation = useMutation({
     mutationFn: () =>
@@ -141,8 +148,12 @@ function ArtifactSection({
               ) : null}
             </div>
             {artifact.sourceType === 'inline' ? (
-              <div className="mt-3 max-h-52 overflow-y-auto rounded-lg bg-muted/35 p-3 text-sm leading-6">
-                <TiptapEditorComplete value={artifact.content} readOnly className="min-h-0 w-full" />
+              <div className="mt-3 max-h-52 overflow-auto rounded-lg bg-muted/35 p-3 text-sm leading-6">
+                {initial.format === 'markdown' ? (
+                  <RequirementMarkdown value={initial.value} />
+                ) : (
+                  <RequirementContentEditor value={initial.value} readOnly className="min-h-0 w-full" />
+                )}
               </div>
             ) : artifact.readable ? (
               <div className="mt-3 flex items-center gap-2 text-sm">
@@ -193,8 +204,10 @@ function ArtifactSection({
               <TabsTrigger value="feishu_doc"><Link2 className="size-4" />飞书文档</TabsTrigger>
             </TabsList>
             <TabsContent value="inline" className="mt-4">
-              <div className="mb-3 flex justify-end"><MaterialTemplateButton kind={kind} value={content} onChange={setContent} /></div>
-              <TiptapEditorComplete
+              <div className="mb-3 flex justify-end">
+                <MaterialTemplateButton kind={kind} value={content} onChange={setContent} />
+              </div>
+              <RequirementContentEditor
                 value={content}
                 onValueChange={setContent}
                 placeholder={definition.placeholder}

@@ -12,7 +12,8 @@ const KEYS: Record<string, string> = {
   testerId: 'tester',
   foOwnerId: 'fo',
   groupBy: 'group',
-  mineOnly: 'mine',
+  mineOnly: 'assigned',
+  participatingOnly: 'mine',
 };
 export function savedViewSearch(config: SavedViewConfig): URLSearchParams {
   const params = new URLSearchParams();
@@ -34,7 +35,7 @@ export function legacySavedViewConfig(raw: string): SavedViewConfig | null {
   for (const [key, value] of params) {
     if (['page', 'create', 'returnTo', 'view'].includes(key) || !value)
       continue;
-    const name = reverse[key] || key;
+    const name = key === 'mine' ? 'mineOnly' : reverse[key] || key;
     query[name] =
       name === 'mineOnly'
         ? value === '1'

@@ -162,12 +162,37 @@
     {
       "path": "apps/makit/client/src/api/index.ts",
       "baselineSha256": "eb1026b54feb0f8c8a4603a82b51c477b2f92f72bfca814db9459068fbd7e298",
-      "currentSha256": "94d0006ea5e8b2bc98127d4b2ec3587da916d21f433b5bdcc5054accd0043327"
+      "currentSha256": "9e52647856cbe5b951e123d6fa1a156fc4a997edc58a85f82fa1b637e14f9639"
     },
     {
       "path": "apps/makit/client/src/components/CoBuildBrand.tsx",
       "baselineSha256": "c39e562d53aa85c32e8bef354d43909f7a053cd2effe3f0d18f9a15bc372a686",
       "currentSha256": "976ffac63299b1162b3acf8914044a4b7c5ea875ee7abe11965c68d9a9e10b80"
+    },
+    {
+      "path": "apps/makit/client/src/components/ConfiguredStatusTransitionDialog.tsx",
+      "baselineSha256": "e29544ad6a21ab14e3ab54d1fcf454eafa86fd926b7b3d6dbfa8551155f95e50",
+      "currentSha256": "d38fd0c7d33ea3db0a29b9a25931fb3e87999ea39f053560fa148f511ebebbfa"
+    },
+    {
+      "path": "apps/makit/client/src/components/RequirementEngineeringPanel.tsx",
+      "baselineSha256": "525eb248be5c8c6845f23f671ee29f18b32b284ab985ed83650caca8a3ab3931",
+      "currentSha256": "fe059241c915768c8cf7b2670657b4fe7ec84cebe0f703e603750b50b762aed0"
+    },
+    {
+      "path": "apps/makit/client/src/components/RequirementFormDialog.tsx",
+      "baselineSha256": "d2cb41bdca695c9dbfe09b41f7f3e110988c858c674df4a1136d246cf2aabdb7",
+      "currentSha256": "e5028e5aa52373bc066accfb31886d8ca4c23cee101648d26170bffa4dbf8b8a"
+    },
+    {
+      "path": "apps/makit/client/src/components/business-ui/tiptap-editor/tiptap-editor-complete.tsx",
+      "baselineSha256": "13edbbb90fe2ad928db6306d20a42e0be89595ee3508dff39e011c0c94e2f17e",
+      "currentSha256": "bd9d3496c91556194323b9a84b589bda4ecb2e48e5a5ec9848f1b97dff75f2fb"
+    },
+    {
+      "path": "apps/makit/client/src/components/business-ui/tiptap-editor/tiptap-editor.tsx",
+      "baselineSha256": "0084d18c1ed1964084220aed4163e06457214cade8168d6c56d7045e47384f43",
+      "currentSha256": "bce7ac49640dbc931fdc140f3cc12ffd34e01f85f85f8041d99c1345bc0d0365"
     },
     {
       "path": "apps/makit/client/src/components/relay/RelayWidget.tsx",
@@ -178,6 +203,16 @@
       "path": "apps/makit/client/src/lib/brand.ts",
       "baselineSha256": "7d56ee67a56fb0558a382b49a1fe5903f795857b09f040da7bf89dc27a9c2a79",
       "currentSha256": "8ddb4b00b06eb1ff29268a6e621f8336e46abd83197b97122dd2d07f803c84fb"
+    },
+    {
+      "path": "apps/makit/client/src/lib/requirement-utils.ts",
+      "baselineSha256": "fbc92ca411349bf473cebdbdbc56c0273bf76c0c2926bb717ce8bb9498cba8ce",
+      "currentSha256": "c1acb96d5dc3943c7eadd382d87529285cf9868a2d97c994134eb572d64453a8"
+    },
+    {
+      "path": "apps/makit/client/src/lib/saved-view-query.ts",
+      "baselineSha256": "efc6c21538b9cc38e2254e2e111e5c666146232371c4e81806687350e25384c2",
+      "currentSha256": "d0f14006705dfdd61dd35a25ed0c44ccbf720e02a65442afcf178aa01aa024cb"
     },
     {
       "path": "apps/makit/client/src/pages/ProjectsPage/ProjectActionsDialog.tsx",
@@ -195,6 +230,21 @@
       "currentSha256": "e63f36e413fc1fb5d79cf21946fca70e0d429434fefc1d70a0844e7fcb2a0194"
     },
     {
+      "path": "apps/makit/client/src/pages/RequirementDetailPage/RequirementDetailPage.tsx",
+      "baselineSha256": "2caf1a218285badff2fb8a5601cb733609399ca20ee47409a47e63bdd403926c",
+      "currentSha256": "709f7802476c6dbffecfde701c4456aed1e236ce5d5cbfa0fbd22b56394f2e88"
+    },
+    {
+      "path": "apps/makit/client/src/pages/RequirementsPage/RequirementsPage.tsx",
+      "baselineSha256": "b5ecb286fd1bd654ec5dea4eb03c92911e4c760b8cff6b0fa975b65bb9c07b63",
+      "currentSha256": "f558a6bc36e0886b57ec00322658c982c90755d10370fa4318a8a8d70d503866"
+    },
+    {
+      "path": "apps/makit/client/src/pages/WorkbenchPage/WorkbenchPage.tsx",
+      "baselineSha256": "20e82633d00ac17ce1a9effb7c586add7f54d136ac7f8b4031f45e70ac4be132",
+      "currentSha256": "af0e3532553dac5e591a8b266e9033689c8d60b50449ec9b30cbd65549f0f3f6"
+    },
+    {
       "path": "apps/makit/client/src/selfhost-index.tsx",
       "baselineSha256": "dd3826154a084e16a35bd22ef4af9f17665a3f37d96260a8644502e116314820",
       "currentSha256": "b1e0da58340dd874686cfe21388705ead915219add7cb45fdfc486e45b3e62fe"
@@ -202,12 +252,12 @@
     {
       "path": "apps/makit/package-lock.json",
       "baselineSha256": "8b6a2fb691d6b925688049c5f1c9c85f40097dea2de99253a9a990236bec49bc",
-      "currentSha256": "208dfaa14d531ccdb19eda81711d1ad58a07309af960ca035796114ab231af5b"
+      "currentSha256": "75db2759cf55bb79e110fc6d9600352e15bf3f3bc4e9b3dbe559b2b881f0df2d"
     },
     {
       "path": "apps/makit/package.json",
       "baselineSha256": "3cba06bfa60e9c724e062655227b5f417e4e67f8fadb4104cd2b995a9de3d251",
-      "currentSha256": "24c29070073758689f71560531a9bd5097f09b499a836b7b5770dc4d1406de2a"
+      "currentSha256": "6357446fe0d96a5a2a768659616f0816f83c570f15fd842808ba8294ff170892"
     },
     {
       "path": "apps/makit/server/common/selfhost/access.guard.ts",
@@ -300,6 +350,11 @@
       "currentSha256": "7e03ab289f0967a17572b2a72bee6175af3cfc93120bfd7eec4effc0e2cfaf76"
     },
     {
+      "path": "apps/makit/server/modules/requirements/requirements.controller.ts",
+      "baselineSha256": "74a33ef6602c7eb791c67569f736e4f39f76b4bb84c97a76d918904125beecab",
+      "currentSha256": "61e7a930d2e2946b08bdcda9ab14132d701d32add7d3ed277a0b89cf7364d1e3"
+    },
+    {
       "path": "apps/makit/server/modules/requirements/requirements.module.ts",
       "baselineSha256": "8b8289732c63b58df3b93c6f3f0ab8a4f300f52fc169ce7da201518d98a41953",
       "currentSha256": "d5540d2b843063574cb4e3531026d60a7f55513c12d14c25798391783ecfa1ae"
@@ -317,7 +372,17 @@
     {
       "path": "apps/makit/shared/api.interface.ts",
       "baselineSha256": "ef35829d8608abec7010438a2e33ed5255b00c8dda595bf07ec38a06405305cb",
-      "currentSha256": "f084de5cd0614e16b26b572948923c5697b0b6517f234e35ab14c7c4af5ad476"
+      "currentSha256": "5e90b75ea2f4679a3d4072caf6813cfb2720f579b122b9800e9f90dee5282447"
+    },
+    {
+      "path": "apps/makit/shared/requirement-list.ts",
+      "baselineSha256": "e6bfe26c8d7384f1955c23498a8d8069919e6001915cf84fd3b253aac5365eda",
+      "currentSha256": "91b85c4ddc9e1fee7c036f8cbb44b17efcef43d194084e2304f24b076ea340bc"
+    },
+    {
+      "path": "apps/makit/shared/workspace-efficiency.ts",
+      "baselineSha256": "b11fdd09557a242b2a80c755aa6f1509305e90d04d04aa9e77fadf454d2e329d",
+      "currentSha256": "b251121c2408279e544302f90596f2a69cbf5cc5051987abe03eb7a0ea004701"
     },
     {
       "path": "apps/makit/test/unit/iteration-configuration.spec.ts",
@@ -328,6 +393,16 @@
       "path": "apps/makit/test/unit/requirement-release-readiness.service.spec.ts",
       "baselineSha256": "850ae10ae7e5b678569ee2825f145ef924e8bd11afc26b59649aee2f99474d76",
       "currentSha256": "7025a780a4faf63294c4bd3f5df76661f66f69b0db571e92711e0faff5fe050e"
+    },
+    {
+      "path": "apps/makit/test/unit/requirements-query.service.spec.ts",
+      "baselineSha256": "f66c166ae53fbaae0255a32d01d2ad235b2bf5f2176468f9f22fa296c1f5bd72",
+      "currentSha256": "cd26e30f378ba5bfdbe6fa942e273c689f5be700d187c849bba8a7e8f5c20374"
+    },
+    {
+      "path": "apps/makit/test/unit/workspace-efficiency.spec.ts",
+      "baselineSha256": "abaaf3389ca2d3b030d6ef39d6f79f3df50cc1a95fd08a1956e437809f0b213c",
+      "currentSha256": "81705d720c4fe61ef0c1b826603bfa6512bcecef94c6d1dec48d5f5329f423ea"
     },
     {
       "path": "integrations/weknow/source/apps/client/package.json",

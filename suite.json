@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
   "name": "CoBuild",
-  "version": "0.14.0-dev.0",
+  "version": "1.0.1",
   "distribution": "self-hosted",
-  "stage": "makit-review-backport-local",
+  "stage": "makit-markdown-and-participation-local",
   "modules": [
     {
       "id": "platform",

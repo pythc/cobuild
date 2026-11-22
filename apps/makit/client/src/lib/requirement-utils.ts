@@ -1,5 +1,5 @@
 import type { PersonRef, RequirementSummary } from '@shared/api.interface';
-import { marked } from 'marked';
+import { Marked, marked } from 'marked';
 
 export const STATUS_ORDER: string[] = [
   '新',
@@ -159,6 +159,80 @@ export function editorHtml(value: string): string {
     breaks: true,
     gfm: true,
   }) as string;
+}
+
+export type RequirementContentFormat = 'markdown' | 'richText';
+
+const formattingTokens = new Set([
+  'blockquote', 'code', 'codespan', 'del', 'em', 'heading', 'hr', 'image',
+  'link', 'list', 'strong', 'table',
+]);
+
+export function hasMarkdownFormatting(value: string): boolean {
+  let formatted = false;
+  marked.walkTokens(marked.lexer(value), (token) => {
+    if (formattingTokens.has(token.type)) formatted = true;
+  });
+  return formatted;
+}
+
+function isAllowedMarkdownUrl(value: string, protocols: string[]): boolean {
+  try {
+    return protocols.includes(new URL(value, 'https://example.invalid').protocol);
+  } catch {
+    return false;
+  }
+}
+
+const requirementMarkdown = new Marked({
+  gfm: true,
+  breaks: true,
+  renderer: {
+    html: ({ text }) =>
+      text.replace(/&/gu, '&amp;').replace(/</gu, '&lt;').replace(/>/gu, '&gt;'),
+    link({ href, tokens }) {
+      return isAllowedMarkdownUrl(href, ['https:', 'http:', 'mailto:', 'tel:'])
+        ? false
+        : this.parser.parseInline(tokens);
+    },
+    image({ href, tokens }) {
+      return isAllowedMarkdownUrl(href, ['https:', 'http:'])
+        ? false
+        : this.parser.parseInline(tokens);
+    },
+    list({ ordered, items }) {
+      if (ordered || !items.every((item) => item.task)) return false;
+      const tasks = items.map(({ checked, tokens }) =>
+        `<li data-type="taskItem" data-checked="${Boolean(checked)}">${this.parser.parse(tokens)}</li>`,
+      );
+      return `<ul data-type="taskList">${tasks.join('')}</ul>`;
+    },
+  },
+});
+
+export function requirementMarkdownHtml(value: string): string {
+  return requirementMarkdown.parse(value, { async: false });
+}
+
+export function parseRequirementContent(value: string): {
+  format: RequirementContentFormat;
+  value: string;
+} {
+  const firstTag = /^<[^>]+>/u.exec(value.trimStart())?.[0] || '';
+  if (!isHtmlContent(firstTag)) {
+    return { format: 'markdown', value };
+  }
+  // Plain Markdown pasted into the old rich text editor was saved as paragraphs.
+  // Only unwrap text-only paragraphs so existing formatting and embeds are preserved.
+  if (/^(?:\s*<p>(?:[^<]|<br\s*\/?>)*<\/p>)+\s*$/iu.test(value)) {
+    const parsed = new DOMParser().parseFromString(
+      value.replace(/<br\s*\/?>/giu, '\n'),
+      'text/html',
+    );
+    const markdown = Array.from(parsed.body.children, (p) => p.textContent).join('\n');
+    if (hasMarkdownFormatting(markdown)) return { format: 'markdown', value: markdown };
+  }
+  return { format: 'richText', value };
 }
 
 export function errorMessage(error: unknown): string {

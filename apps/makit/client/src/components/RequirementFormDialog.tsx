@@ -7,9 +7,9 @@ import type {
 } from '@shared/api.interface';
 import { ChevronDown, LoaderCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { RequirementContentEditor } from '@/components/RequirementContentEditor';
 import SingleIterationSelect from '@/components/SingleIterationSelect';
 import { iterationAssignmentError } from '@shared/iteration-assignment';
-import { TiptapEditorComplete } from '@/components/business-ui/tiptap-editor';
 import { UserSelect } from '@/components/business-ui/user-select';
 import type { User } from '@/components/business-ui/types/user';
 import { Button } from '@/components/ui/button';
@@ -32,11 +32,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import {
-  editorHtml,
-  errorMessage,
-  plainText,
-} from '@/lib/requirement-utils';
+import { errorMessage, plainText } from '@/lib/requirement-utils';
 import {
   employeePersonRefs,
   employeeUserIds,
@@ -134,7 +130,7 @@ function initialState(
 ): FormState {
   return {
     title: requirement?.title || '',
-    introduction: editorHtml(requirement?.introduction || ''),
+    introduction: requirement?.introduction || '',
     acceptanceCriteria: requirement?.acceptanceCriteria || '',
     selfTestReport: requirement?.selfTestReport || '',
     gitBranchName: requirement?.gitBranchName || '',
@@ -231,10 +227,10 @@ function DeferredIntroductionEditor({
   }
 
   return (
-    <TiptapEditorComplete
+    <RequirementContentEditor
       value={value}
       onValueChange={onValueChange}
-      placeholder="建议包含：背景与目标、用户场景、方案说明、边界与非目标"
+      placeholder="填写背景与目标、用户场景、方案说明及边界"
       className="min-h-56 max-h-[420px] w-full"
     />
   );
@@ -546,6 +542,7 @@ function StandardRequirementFormDialog({
                 <FieldLabel>需求介绍</FieldLabel>
                 {introductionEditing ? (
                   <DeferredIntroductionEditor
+                    key={requirement?.id || 'new'}
                     value={form.introduction}
                     onValueChange={(value) => set('introduction', value)}
                   />
