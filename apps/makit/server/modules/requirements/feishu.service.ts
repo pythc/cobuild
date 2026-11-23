@@ -603,13 +603,24 @@ export class FeishuService {
     await this.getUserByUnionId(await this.identities.unionId(employeeId));
   }
 
-  private readonly groupMembers = new Map<string,{ids:string[];expires:number}>();
+  private readonly groupMembers = new Map<string, { ids: string[]; expires: number }>();
+  private readonly groupMemberRequests = new Map<string, Promise<string[]>>();
+
   private async cachedChatMembers(chatId: string) {
     const cached = this.groupMembers.get(chatId);
     if (cached && cached.expires > Date.now()) return cached.ids;
-    const ids = await this.listChatMemberIds(chatId);
-    this.groupMembers.set(chatId,{ids,expires:Date.now()+60000});
-    return ids;
+
+    const pending = this.groupMemberRequests.get(chatId);
+    if (pending) return pending;
+
+    const request = this.listChatMemberIds(chatId)
+      .then((ids) => {
+        this.groupMembers.set(chatId, { ids, expires: Date.now() + 60_000 });
+        return ids;
+      })
+      .finally(() => this.groupMemberRequests.delete(chatId));
+    this.groupMemberRequests.set(chatId, request);
+    return request;
   }
 
   async organizationSnapshot() {
